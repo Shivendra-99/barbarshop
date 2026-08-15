@@ -1,0 +1,451 @@
+.explore {
+  display: grid;
+  grid-template-columns: 520px 1fr;
+  height: calc(100vh - var(--header-h));
+}
+
+/* ---------------- Results list ---------------- */
+
+.explore__list {
+  overflow-y: auto;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.explore__listHead {
+  padding: 26px 30px;
+  position: sticky;
+  top: 0;
+  background: var(--bg);
+  z-index: 5;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.explore__count {
+  font-family: var(--font-display);
+  font-size: 26px;
+  color: var(--heading);
+  margin: 0;
+  font-weight: 400;
+}
+
+.explore__sub {
+  margin: 8px 0 0;
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  color: var(--muted-4);
+}
+
+.explore__filters {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+
+.explore__empty {
+  padding: 56px 30px;
+  text-align: center;
+  color: var(--muted-3);
+}
+
+.explore__empty p {
+  margin: 0 0 20px;
+  font-weight: 300;
+  font-size: 16px;
+}
+
+.explore__row {
+  display: flex;
+  gap: 18px;
+  padding: 22px 30px;
+  border-bottom: 1px solid var(--line);
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  transition: background 0.18s ease;
+}
+
+.explore__row:hover {
+  background: var(--surface);
+}
+
+.explore__row.is-selected {
+  background: #121214;
+}
+
+.explore__row img {
+  width: 118px;
+  height: 112px;
+  object-fit: cover;
+  border-radius: var(--r-md);
+  flex-shrink: 0;
+}
+
+.explore__rowBody {
+  flex: 1;
+  min-width: 0;
+}
+
+.explore__rowTop {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: baseline;
+}
+
+.explore__rowName {
+  font-family: var(--font-display);
+  font-size: 19px;
+  color: var(--heading);
+}
+
+.explore__rowRating {
+  font-size: 13px;
+  color: var(--gold);
+  white-space: nowrap;
+}
+
+.explore__rowMeta {
+  display: block;
+  font-size: 13px;
+  color: var(--muted-3);
+  margin-top: 5px;
+}
+
+.explore__rowFoot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.explore__rowPrice {
+  font-size: 14px;
+  color: var(--heading);
+}
+
+.explore__rowNext {
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted-3);
+}
+
+.explore__rowNext.is-soon {
+  color: var(--green);
+}
+
+/* ---------------- Map ---------------- */
+
+.map {
+  position: relative;
+  background: var(--map-base);
+  overflow: hidden;
+}
+
+.map__grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 90px 90px;
+}
+
+.map__road {
+  position: absolute;
+  background: var(--map-road);
+}
+
+.map__road--h1 {
+  left: 0;
+  right: 0;
+  top: 38%;
+  height: 26px;
+  transform: rotate(-4deg);
+}
+
+.map__road--h2 {
+  left: 0;
+  right: 0;
+  top: 70%;
+  height: 18px;
+}
+
+.map__road--v1 {
+  top: 0;
+  bottom: 0;
+  left: 34%;
+  width: 22px;
+  transform: rotate(3deg);
+}
+
+.map__road--v2 {
+  top: 0;
+  bottom: 0;
+  left: 66%;
+  width: 14px;
+}
+
+.map__park {
+  position: absolute;
+  left: 6%;
+  top: 6%;
+  width: 230px;
+  height: 150px;
+  background: rgba(90, 120, 110, 0.16);
+  border-radius: 6px;
+}
+
+.map__water {
+  position: absolute;
+  right: 8%;
+  bottom: 10%;
+  width: 300px;
+  height: 190px;
+  background: rgba(70, 100, 140, 0.18);
+  border-radius: 6px;
+}
+
+.map__pin {
+  position: absolute;
+  transform: translate(-50%, -100%);
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  animation: pinDrop 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
+}
+
+@keyframes pinDrop {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -140%) scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -100%) scale(1);
+  }
+}
+
+.map__pin.is-selected {
+  z-index: 20;
+}
+
+.map__pinLabel {
+  padding: 8px 14px;
+  background: var(--surface-raised);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: var(--r-md);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.5);
+  white-space: nowrap;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  transition: all 0.18s ease;
+}
+
+.map__pin:hover .map__pinLabel {
+  border-color: var(--gold-line);
+}
+
+.map__pin.is-selected .map__pinLabel {
+  background: var(--gold);
+  color: var(--bg);
+  border-color: var(--gold);
+}
+
+.map__pinStem {
+  width: 1px;
+  height: 12px;
+  background: var(--surface-raised);
+}
+
+.map__pin.is-selected .map__pinStem {
+  background: var(--gold);
+}
+
+.map__where {
+  position: absolute;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 13px 22px;
+  background: rgba(12, 12, 14, 0.9);
+  border: 1px solid rgba(198, 161, 91, 0.28);
+  border-radius: 40px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  white-space: nowrap;
+}
+
+.map__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--green);
+}
+
+.map__whereText {
+  font-size: 14px;
+  color: var(--text);
+}
+
+.map__div {
+  width: 1px;
+  height: 16px;
+  background: var(--line-soft);
+}
+
+.map__whereWhen {
+  font-size: 13px;
+  color: var(--muted-3);
+}
+
+.map__zoom {
+  position: absolute;
+  right: 24px;
+  top: 96px;
+  display: flex;
+  flex-direction: column;
+  background: rgba(12, 12, 14, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+
+.map__zoom button {
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  color: var(--text);
+  transition: background 0.18s ease;
+}
+
+.map__zoom button:first-child {
+  border-bottom: 1px solid var(--line-strong);
+}
+
+.map__zoom button:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.map__card {
+  position: absolute;
+  left: 28px;
+  bottom: 28px;
+  width: 360px;
+  max-width: calc(100% - 56px);
+  background: var(--surface);
+  border: 1px solid rgba(198, 161, 91, 0.32);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+}
+
+.map__cardTop {
+  display: flex;
+  gap: 16px;
+  padding: 16px;
+}
+
+.map__cardTop img {
+  width: 96px;
+  height: 96px;
+  object-fit: cover;
+  border-radius: var(--r-md);
+  flex-shrink: 0;
+}
+
+.map__cardName {
+  font-family: var(--font-display);
+  font-size: 19px;
+  color: var(--heading);
+}
+
+.map__cardMeta {
+  font-size: 13px;
+  color: var(--muted-3);
+  margin-top: 5px;
+}
+
+.map__cardPrice {
+  font-size: 14px;
+  color: var(--heading);
+  margin-top: 8px;
+}
+
+.map__cardCta {
+  border-radius: 0;
+  padding: 14px;
+  font-size: 12px;
+  letter-spacing: 0.16em;
+}
+
+/* ---------------- Responsive ---------------- */
+
+@media (max-width: 1100px) {
+  .explore {
+    grid-template-columns: 420px 1fr;
+  }
+  .map__card {
+    width: 320px;
+  }
+}
+
+@media (max-width: 900px) {
+  .explore {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+  .explore__list {
+    border-right: none;
+    overflow: visible;
+  }
+  .explore__listHead {
+    position: static;
+  }
+  .map {
+    height: 560px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+  }
+}
+
+@media (max-width: 560px) {
+  .explore__row {
+    padding: 18px 20px;
+    gap: 14px;
+  }
+  .explore__row img {
+    width: 92px;
+    height: 92px;
+  }
+  .explore__listHead {
+    padding: 20px;
+  }
+  .map__card {
+    left: 16px;
+    right: 16px;
+    width: auto;
+    max-width: none;
+  }
+  .map__where {
+    left: 16px;
+    right: 16px;
+    transform: none;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .map__pin {
+    animation: none;
+  }
+}

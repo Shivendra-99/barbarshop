@@ -1,0 +1,370 @@
+/* ---------------- Banner ---------------- */
+
+.shop__banner {
+  position: relative;
+  height: 420px;
+  overflow: hidden;
+}
+
+.shop__bannerImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.7;
+}
+
+.shop__bannerScrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(10, 10, 11, 0.35), rgba(10, 10, 11, 0.96));
+}
+
+.shop__bannerBody {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding-bottom: 40px;
+}
+
+.shop__kicker {
+  margin-bottom: 14px;
+}
+
+.shop__name {
+  font-size: clamp(34px, 5.5vw, 56px);
+  color: var(--heading-bright);
+}
+
+.shop__facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 26px;
+  margin-top: 16px;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.shop__rating {
+  color: var(--gold);
+}
+
+.shop__open {
+  color: var(--green);
+}
+
+/* ---------------- Layout ---------------- */
+
+.shop__grid {
+  padding-top: 44px;
+  padding-bottom: 96px;
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 56px;
+  align-items: start;
+}
+
+.shop__main {
+  min-width: 0;
+}
+
+.shop__tabs {
+  margin-bottom: 36px;
+}
+
+/* ---------------- Services ---------------- */
+
+.svc {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 30px;
+  padding: 24px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.svc__name {
+  font-size: 19px;
+  color: var(--heading);
+}
+
+.svc__desc {
+  font-size: 14px;
+  font-weight: 300;
+  color: var(--muted-3);
+  margin: 7px 0 0;
+  max-width: 520px;
+  line-height: 1.6;
+}
+
+.svc__right {
+  display: flex;
+  align-items: center;
+  gap: 26px;
+  flex-shrink: 0;
+}
+
+.svc__priceBlock {
+  text-align: right;
+}
+
+.svc__price {
+  font-family: var(--font-display);
+  font-size: 20px;
+  color: var(--heading);
+}
+
+.svc__dur {
+  font-size: 12px;
+  color: var(--muted-4);
+  margin-top: 4px;
+}
+
+.svc__book {
+  padding: 10px 22px;
+  font-size: 12px;
+}
+
+/* ---------------- Team ---------------- */
+
+.team {
+  margin-top: 56px;
+}
+
+.team__title {
+  font-family: var(--font-display);
+  font-size: 28px;
+  color: var(--heading);
+  margin: 0 0 24px;
+  font-weight: 400;
+}
+
+.team__grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+.team__card {
+  overflow: hidden;
+}
+
+.team__card img {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+}
+
+.team__body {
+  padding: 18px 20px;
+}
+
+.team__name {
+  font-size: 17px;
+  color: var(--heading);
+}
+
+.team__role {
+  font-size: 13px;
+  color: var(--muted-4);
+  margin-top: 5px;
+}
+
+.team__rating {
+  font-size: 13px;
+  color: var(--gold);
+  margin-top: 10px;
+}
+
+/* ---------------- Gallery ---------------- */
+
+.gallery {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-auto-rows: 210px;
+  gap: 14px;
+}
+
+.gallery__cell {
+  overflow: hidden;
+  border-radius: var(--r-md);
+  background: var(--surface);
+}
+
+.gallery__cell img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s ease;
+}
+
+.gallery__cell:hover img {
+  transform: scale(1.05);
+}
+
+/* ---------------- Reviews ---------------- */
+
+.rev {
+  padding: 26px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.rev__top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.rev__name {
+  font-size: 16px;
+  color: var(--heading);
+}
+
+.rev__date {
+  font-size: 13px;
+  color: var(--muted-4);
+}
+
+.rev__stars {
+  color: var(--gold);
+  font-size: 12px;
+  letter-spacing: 0.2em;
+  margin: 10px 0 12px;
+}
+
+.rev__body {
+  font-size: 16px;
+  font-weight: 300;
+  line-height: 1.7;
+  color: var(--muted-2);
+  margin: 0;
+}
+
+.rev__meta {
+  font-size: 13px;
+  color: var(--muted-4);
+  margin-top: 10px;
+}
+
+/* ---------------- Booking rail ---------------- */
+
+.rail {
+  position: sticky;
+  top: calc(var(--header-h) + 29px);
+  background: var(--surface);
+  border: 1px solid var(--gold-line);
+  border-radius: var(--r-lg);
+  padding: 28px;
+}
+
+.rail__next {
+  font-family: var(--font-display);
+  font-size: 26px;
+  color: var(--heading);
+  margin: 12px 0 22px;
+}
+
+.rail__slots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.rail__slot {
+  padding: 9px 14px;
+  border: 1px solid var(--line-soft);
+  font-size: 13px;
+  color: var(--text);
+  border-radius: var(--r-sm);
+  transition: all 0.18s ease;
+}
+
+.rail__slot:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+.rail__hours {
+  margin-top: 22px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  font-size: 14px;
+  color: var(--muted-3);
+}
+
+.rail__hoursRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.rail__hoursVal {
+  color: var(--text);
+}
+
+.rail__note {
+  margin-top: 20px;
+  padding: 14px;
+  background: var(--gold-wash);
+  border: 1px solid rgba(198, 161, 91, 0.2);
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+/* ---------------- Responsive ---------------- */
+
+@media (max-width: 1040px) {
+  .shop__grid {
+    grid-template-columns: 1fr;
+    gap: 44px;
+  }
+  .rail {
+    position: static;
+  }
+  .team__grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 760px) {
+  .shop__banner {
+    height: 320px;
+  }
+  .shop__grid {
+    padding-bottom: 64px;
+  }
+  .svc {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  .svc__right {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .svc__priceBlock {
+    text-align: left;
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+  }
+  .svc__dur {
+    margin-top: 0;
+  }
+  .gallery {
+    grid-template-columns: repeat(2, 1fr);
+    grid-auto-rows: 160px;
+  }
+  .team__grid {
+    grid-template-columns: 1fr;
+  }
+  .tabs {
+    gap: 20px;
+  }
+}
