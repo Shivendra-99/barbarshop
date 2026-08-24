@@ -1,0 +1,334 @@
+/* ---------------- Banner ---------------- */
+
+.salon__banner {
+  position: relative;
+  min-height: 380px;
+  display: flex;
+  align-items: flex-end;
+  overflow: hidden;
+}
+
+.salon__bannerImg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.salon__bannerScrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(20, 17, 12, 0.25), rgba(20, 17, 12, 0.9));
+}
+
+.salon__bannerBody {
+  position: relative;
+  padding-top: 60px;
+  padding-bottom: 36px;
+}
+
+.salon__kicker {
+  font-size: 11px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--gold-light);
+  margin-bottom: 14px;
+}
+
+.salon__name {
+  font-size: clamp(32px, 5vw, 54px);
+  color: #fff;
+}
+
+.salon__facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  margin-top: 14px;
+  font-size: 14px;
+  color: #d8cfbc;
+}
+
+.salon__rating {
+  color: var(--gold-light);
+  font-variant-numeric: tabular-nums;
+}
+
+.salon__open {
+  color: #9fd0af;
+}
+
+.salon__modes {
+  display: flex;
+  gap: 8px;
+  margin-top: 18px;
+  flex-wrap: wrap;
+}
+
+.salon__modes .badge {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(227, 199, 122, 0.5);
+  color: var(--gold-light);
+}
+
+/* ---------------- Layout ---------------- */
+
+.salon__grid {
+  padding-top: 40px;
+  padding-bottom: 88px;
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 48px;
+  align-items: start;
+}
+
+.salon__main {
+  min-width: 0;
+}
+
+.salon__tabs {
+  margin-bottom: 30px;
+}
+
+/* ---------------- Services ---------------- */
+
+.svcList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.svc {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 28px;
+  padding: 22px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.svc__name {
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--heading);
+  margin: 0;
+}
+
+.svc__desc {
+  font-size: 14px;
+  font-weight: 300;
+  color: var(--muted-2);
+  margin: 6px 0 0;
+  max-width: 480px;
+  line-height: 1.6;
+}
+
+.svc__right {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  flex-shrink: 0;
+}
+
+.svc__priceBlock {
+  text-align: right;
+}
+
+.svc__price {
+  font-family: var(--font-display);
+  font-size: 20px;
+  color: var(--heading);
+}
+
+.svc__dur {
+  font-size: 12px;
+  color: var(--muted-3);
+  margin-top: 3px;
+}
+
+/* ---------------- Team ---------------- */
+
+.team {
+  gap: 18px;
+}
+
+.team__card {
+  overflow: hidden;
+}
+
+.team__card img {
+  width: 100%;
+  height: 190px;
+  object-fit: cover;
+}
+
+.team__body {
+  padding: 16px 18px 18px;
+}
+
+.team__name {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--heading);
+}
+
+.team__role {
+  font-size: 13px;
+  color: var(--muted-3);
+  margin-top: 4px;
+}
+
+.team__rating {
+  font-size: 13px;
+  color: var(--gold-deep);
+  margin-top: 8px;
+}
+
+/* ---------------- About ---------------- */
+
+.about__text {
+  font-size: 16px;
+  font-weight: 300;
+  line-height: 1.7;
+  color: var(--muted);
+  margin: 0 0 28px;
+  max-width: 620px;
+}
+
+.about__list {
+  margin: 0;
+}
+
+.about__row {
+  display: flex;
+  gap: 24px;
+  padding: 14px 0;
+  border-top: 1px solid var(--line);
+}
+
+.about__row dt {
+  flex: 0 0 160px;
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted-3);
+}
+
+.about__row dd {
+  margin: 0;
+  font-size: 15px;
+  color: var(--text);
+}
+
+/* ---------------- Booking rail ---------------- */
+
+.rail {
+  position: sticky;
+  top: 128px;
+  background: var(--surface);
+  border: 1px solid var(--gold-line);
+  border-radius: var(--r-lg);
+  padding: 24px;
+  box-shadow: var(--shadow-sm);
+}
+
+.rail__price {
+  font-family: var(--font-display);
+  font-size: 28px;
+  color: var(--heading);
+  margin: 10px 0 18px;
+}
+
+.rail__offer {
+  padding: 11px 14px;
+  margin-bottom: 18px;
+  background: var(--gold-wash);
+  border: 1px solid var(--gold-line);
+  border-radius: var(--r-sm);
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--text-soft);
+}
+
+.rail__offer strong {
+  color: var(--gold-deep);
+}
+
+.rail__modes {
+  list-style: none;
+  margin: 22px 0 0;
+  padding: 20px 0 0;
+  border-top: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.rail__modeLabel {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--heading);
+}
+
+.rail__modeNote {
+  display: block;
+  font-size: 13px;
+  color: var(--muted-3);
+  margin-top: 2px;
+  line-height: 1.5;
+}
+
+.rail__note {
+  margin-top: 20px;
+  padding: 12px 14px;
+  background: var(--surface-alt);
+  border-radius: var(--r-sm);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--muted-2);
+}
+
+/* ---------------- Responsive ---------------- */
+
+@media (max-width: 1040px) {
+  .salon__grid {
+    grid-template-columns: 1fr;
+    gap: 36px;
+  }
+  .rail {
+    position: static;
+  }
+}
+
+@media (max-width: 700px) {
+  .salon__banner {
+    min-height: 280px;
+  }
+  .svc {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+  }
+  .svc__right {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .svc__priceBlock {
+    text-align: left;
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+  }
+  .svc__dur {
+    margin-top: 0;
+  }
+  .about__row {
+    flex-direction: column;
+    gap: 4px;
+  }
+  .about__row dt {
+    flex: none;
+  }
+}

@@ -1,9 +1,9 @@
 {
-  "name": "barbernow",
+  "name": "salonsathi",
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "description": "BarberNow — book the perfect barber near you in seconds.",
+  "description": "SalonSathi — book your appointment, skip the wait.",
   "scripts": {
     "dev": "vite",
     "build": "vite build",

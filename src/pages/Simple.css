@@ -1,0 +1,264 @@
+/* Shared layout for Wallet, Account and Help. */
+
+.simple {
+  padding-top: 48px;
+  padding-bottom: 88px;
+}
+
+.simple__title {
+  font-size: clamp(30px, 4.4vw, 44px);
+}
+
+.simple__lede {
+  margin-top: 12px;
+  max-width: 520px;
+}
+
+.simple__heading {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 400;
+  color: var(--heading);
+  margin: 40px 0 18px;
+}
+
+.panel .simple__heading:first-child {
+  margin-top: 0;
+}
+
+/* ---------------- Wallet ---------------- */
+
+.walletCard {
+  margin-top: 28px;
+  padding: 30px;
+  border-radius: var(--r-lg);
+  background: linear-gradient(135deg, #1c1710, #2b2213 60%, #3a2d17);
+  border: 1px solid var(--gold-line);
+  color: #f6efdf;
+  box-shadow: var(--shadow-md);
+}
+
+.walletCard__label {
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--gold-light);
+}
+
+.walletCard__amount {
+  font-family: var(--font-display);
+  font-size: clamp(38px, 6vw, 54px);
+  line-height: 1.1;
+  margin: 10px 0 22px;
+  color: #fff;
+}
+
+.walletCard__cta {
+  display: inline-flex;
+}
+
+.ledger {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ledger__row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+}
+
+.ledger__icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  flex-shrink: 0;
+}
+
+.ledger__icon--credit {
+  background: var(--green-wash);
+  color: var(--green);
+}
+
+.ledger__icon--debit {
+  background: var(--red-wash);
+  color: var(--red);
+}
+
+.ledger__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.ledger__note {
+  display: block;
+  font-size: 15px;
+  color: var(--heading);
+}
+
+.ledger__when {
+  display: block;
+  font-size: 12.5px;
+  color: var(--muted-3);
+  margin-top: 3px;
+}
+
+.ledger__amount {
+  font-size: 16px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.ledger__amount--credit {
+  color: var(--green);
+}
+
+.ledger__amount--debit {
+  color: var(--red);
+}
+
+/* ---------------- Account ---------------- */
+
+.statRow {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-top: 28px;
+}
+
+.stat {
+  padding: 18px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+}
+
+.stat__label {
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted-3);
+}
+
+.stat__value {
+  font-family: var(--font-display);
+  font-size: 26px;
+  color: var(--heading);
+  margin-top: 8px;
+}
+
+.stat__value--sm {
+  font-size: 18px;
+}
+
+.panel {
+  margin-top: 32px;
+  padding: 26px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+}
+
+.panel--danger {
+  border-color: var(--red-line);
+  background: var(--red-wash);
+}
+
+.panel__text {
+  font-size: 14.5px;
+  line-height: 1.65;
+  color: var(--muted);
+  margin: 0 0 16px;
+}
+
+.panel__text--fine {
+  font-size: 13px;
+  color: var(--muted-3);
+  margin: 14px 0 0;
+}
+
+.panel__actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.cityRow {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* ---------------- Help ---------------- */
+
+.payGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.payGrid__item {
+  padding: 22px;
+}
+
+.payGrid__title {
+  font-family: var(--font-display);
+  font-size: 19px;
+  font-weight: 400;
+  color: var(--heading);
+  margin: 0 0 10px;
+}
+
+.payGrid__body {
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--muted-2);
+  margin: 0;
+}
+
+.helpFaq {
+  margin: 0;
+}
+
+.helpFaq__item {
+  padding: 20px 0;
+  border-top: 1px solid var(--line);
+}
+
+.helpFaq__q {
+  font-size: 17px;
+  font-weight: 500;
+  color: var(--heading);
+}
+
+.helpFaq__a {
+  margin: 8px 0 0;
+  font-size: 15px;
+  font-weight: 300;
+  line-height: 1.7;
+  color: var(--muted);
+}
+
+/* ---------------- Responsive ---------------- */
+
+@media (max-width: 780px) {
+  .simple {
+    padding-top: 32px;
+  }
+  .statRow,
+  .payGrid {
+    grid-template-columns: 1fr;
+  }
+}

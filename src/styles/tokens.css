@@ -1,23 +1,113 @@
-/* BarberNow design tokens */
+/* ============================================================
+   SalonSathi design tokens
+
+   Two themes on one set of semantic names:
+     :root                 → customer surfaces (cream / ivory + gold)
+     [data-theme="admin"]  → owner & founder panels (charcoal + gold)
+
+   Components never reference a raw colour, so a surface changes
+   theme purely by which wrapper it sits inside.
+   ============================================================ */
 
 :root {
   /* Surfaces */
-  --bg: #0a0a0b;
-  --surface: #111113;
-  --surface-alt: #0d0d0f;
-  --surface-raised: #141416;
+  --bg: #fbf7f0;
+  --bg-tint: #f5eee1;
+  --surface: #ffffff;
+  --surface-alt: #f7f1e7;
+  --surface-raised: #ffffff;
+  --surface-sunken: #f0e8da;
 
-  /* Brand */
-  --gold: #c6a15b;
-  --gold-light: #e4c88a;
-  --gold-dim: rgba(198, 161, 91, 0.18);
-  --gold-wash: rgba(198, 161, 91, 0.08);
-  --gold-line: rgba(198, 161, 91, 0.3);
+  /* Brand gold.
+     --gold fills; --gold-deep is the only gold safe for text on cream
+     (5.4:1 on --bg, where --gold manages just 2.1:1). */
+  --gold: #c9a227;
+  --gold-deep: #8a6a15;
+  --gold-light: #e3c77a;
+  --gold-pale: #f2e3bd;
+  --gold-dim: rgba(201, 162, 39, 0.22);
+  --gold-wash: rgba(201, 162, 39, 0.08);
+  --gold-line: rgba(201, 162, 39, 0.38);
+  --on-gold: #1a1712;
 
   /* Text */
-  --text: #efeae1;
-  --heading: #f4efe6;
+  --heading-bright: #14110c;
+  --heading: #1f1a13;
+  --text: #3a342b;
+  --text-soft: #554d41;
+  --muted: #6b6255;
+  --muted-2: #7a7164;
+  --muted-3: #8c8375;
+  --muted-4: #9d9486;
+  --muted-5: #b0a696;
+  --disabled: #c9c0b1;
+
+  /* Status */
+  --green: #3f7d52;
+  --green-wash: rgba(63, 125, 82, 0.1);
+  --green-line: rgba(63, 125, 82, 0.35);
+  --amber: #9a6f14;
+  --amber-wash: rgba(154, 111, 20, 0.1);
+  --amber-line: rgba(154, 111, 20, 0.35);
+  --red: #a53f34;
+  --red-wash: rgba(165, 63, 52, 0.09);
+  --red-line: rgba(165, 63, 52, 0.32);
+
+  /* Hairlines */
+  --line: rgba(31, 26, 19, 0.09);
+  --line-strong: rgba(31, 26, 19, 0.14);
+  --line-soft: rgba(31, 26, 19, 0.18);
+
+  /* Elevation */
+  --shadow-sm: 0 1px 2px rgba(31, 26, 19, 0.06);
+  --shadow-md: 0 8px 24px rgba(31, 26, 19, 0.08);
+  --shadow-lg: 0 22px 50px rgba(31, 26, 19, 0.14);
+
+  /* Type */
+  --font-display: 'Marcellus', Georgia, serif;
+  --font-body: 'Jost', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+  /* Rhythm */
+  --gutter: 48px;
+  --max-w: 1280px;
+  --header-h: 72px;
+
+  /* Radii — the cream identity is softer than the old dark one */
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 16px;
+  --r-xl: 22px;
+  --r-pill: 999px;
+
+  /* Motion */
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --dur-fast: 0.18s;
+  --dur: 0.28s;
+  --dur-slow: 0.6s;
+}
+
+/* ---------- Admin / owner theme ---------- */
+
+[data-theme='admin'] {
+  --bg: #0a0a0b;
+  --bg-tint: #101014;
+  --surface: #141416;
+  --surface-alt: #0d0d0f;
+  --surface-raised: #1a1a1e;
+  --surface-sunken: #08080a;
+
+  --gold: #c6a15b;
+  --gold-deep: #d9b978;
+  --gold-light: #e4c88a;
+  --gold-pale: #3a3018;
+  --gold-dim: rgba(198, 161, 91, 0.2);
+  --gold-wash: rgba(198, 161, 91, 0.08);
+  --gold-line: rgba(198, 161, 91, 0.34);
+  --on-gold: #0a0a0b;
+
   --heading-bright: #f6f1e7;
+  --heading: #f4efe6;
+  --text: #efeae1;
   --text-soft: #c7c1b7;
   --muted: #b0aa9f;
   --muted-2: #a9a399;
@@ -26,34 +116,27 @@
   --muted-5: #5f5a53;
   --disabled: #3e3b37;
 
-  /* Status */
   --green: #7bae8b;
+  --green-wash: rgba(123, 174, 139, 0.12);
   --green-line: rgba(123, 174, 139, 0.4);
-  --red: #b4726a;
-  --red-line: rgba(180, 114, 106, 0.4);
+  --amber: #d2a54a;
+  --amber-wash: rgba(210, 165, 74, 0.12);
+  --amber-line: rgba(210, 165, 74, 0.4);
+  --red: #c8837a;
+  --red-wash: rgba(200, 131, 122, 0.12);
+  --red-line: rgba(200, 131, 122, 0.4);
 
-  /* Hairlines */
   --line: rgba(255, 255, 255, 0.07);
-  --line-strong: rgba(255, 255, 255, 0.1);
-  --line-soft: rgba(255, 255, 255, 0.14);
+  --line-strong: rgba(255, 255, 255, 0.11);
+  --line-soft: rgba(255, 255, 255, 0.16);
 
-  /* Type */
-  --font-display: 'Marcellus', Georgia, serif;
-  --font-body: 'Jost', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-
-  /* Rhythm */
-  --gutter: 48px;
-  --max-w: 1360px;
-  --header-h: 71px;
-
-  /* Radii */
-  --r-sm: 2px;
-  --r-md: 3px;
-  --r-lg: 4px;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 10px 30px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 24px 60px rgba(0, 0, 0, 0.6);
 }
 
 @media (max-width: 760px) {
   :root {
-    --gutter: 20px;
+    --gutter: 18px;
   }
 }

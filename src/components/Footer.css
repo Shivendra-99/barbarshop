@@ -1,32 +1,68 @@
 .ftr {
-  background: var(--surface-alt);
-  border-top: 1px solid var(--gold-dim);
-  padding: 70px 0 40px;
+  background: #14110c;
+  color: #cfc5b1;
+  margin-top: 80px;
+}
+
+.ftr__trust {
+  border-bottom: 1px solid rgba(201, 162, 39, 0.22);
+  background: rgba(201, 162, 39, 0.06);
+}
+
+.ftr__trustRow {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 14px 36px;
+  padding-top: 20px;
+  padding-bottom: 20px;
+}
+
+.ftr__trustItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 13px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #e6dcc6;
+}
+
+.ftr__trustDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--gold-light);
 }
 
 .ftr__grid {
   display: grid;
   grid-template-columns: 1.6fr 1fr 1fr 1fr;
   gap: 48px;
+  padding-top: 64px;
+  padding-bottom: 8px;
 }
 
 .ftr__word {
   font-family: var(--font-display);
-  font-size: 19px;
-  letter-spacing: 0.22em;
-  color: var(--heading);
+  font-size: 26px;
+  color: #f6efdf;
 }
 
 .ftr__blurb {
   font-size: 15px;
   font-weight: 300;
   line-height: 1.7;
-  color: var(--muted-4);
-  margin: 18px 0 0;
-  max-width: 300px;
+  color: #9c9382;
+  margin: 12px 0 0;
+  max-width: 280px;
 }
 
 .ftr__heading {
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--gold-light);
   margin-bottom: 16px;
 }
 
@@ -36,30 +72,28 @@
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 11px;
   font-size: 14px;
-  color: var(--muted-3);
 }
 
-.ftr__links li {
-  cursor: pointer;
-  transition: color 0.18s ease;
-  width: fit-content;
+.ftr__links a {
+  color: #9c9382;
 }
 
-.ftr__links li:hover {
-  color: var(--text);
+.ftr__links a:hover {
+  color: #f6efdf;
 }
 
 .ftr__base {
   margin-top: 48px;
-  padding-top: 24px;
-  border-top: 1px solid var(--line);
+  padding-top: 22px;
+  padding-bottom: 32px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
   display: flex;
   justify-content: space-between;
   gap: 16px;
   font-size: 13px;
-  color: var(--muted-5);
+  color: #7c7466;
 }
 
 @media (max-width: 900px) {
@@ -71,14 +105,32 @@
 
 @media (max-width: 560px) {
   .ftr {
-    padding: 52px 0 32px;
+    margin-top: 56px;
   }
   .ftr__grid {
     grid-template-columns: 1fr;
-    gap: 30px;
+    gap: 28px;
+    padding-top: 44px;
   }
   .ftr__base {
     flex-direction: column;
     gap: 8px;
+  }
+}
+
+/* Touch targets: footer links are small text, so grow the hit area on
+   pointer-coarse devices rather than shrinking the visual rhythm. */
+.ftr__links a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+}
+
+@media (pointer: coarse) {
+  .ftr__links {
+    gap: 2px;
+  }
+  .ftr__links a {
+    min-height: 44px;
   }
 }

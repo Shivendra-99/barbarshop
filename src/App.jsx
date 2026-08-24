@@ -1,14 +1,17 @@
 import { Route, Routes } from 'react-router-dom'
 import Layout from './components/Layout'
 import ScrollToTop from './components/ScrollToTop'
+import Protected from './components/Protected'
 import Home from './pages/Home'
-import Explore from './pages/Explore'
-import Shop from './pages/Shop'
-import Booking from './pages/Booking'
-import Verify from './pages/Verify'
+import Salons from './pages/Salons'
+import Salon from './pages/Salon'
+import Book from './pages/Book'
 import Confirmed from './pages/Confirmed'
 import Appointments from './pages/Appointments'
-import Dashboard from './pages/Dashboard'
+import Wallet from './pages/Wallet'
+import Account from './pages/Account'
+import Help from './pages/Help'
+import Login from './pages/Login'
 import NotFound from './pages/NotFound'
 
 export default function App() {
@@ -18,14 +21,52 @@ export default function App() {
       <Routes>
         <Route element={<Layout />}>
           <Route path="/" element={<Home />} />
-          <Route path="/explore" element={<Explore />} />
-          <Route path="/shop" element={<Shop />} />
-          <Route path="/shop/:shopId" element={<Shop />} />
-          <Route path="/booking" element={<Booking />} />
-          <Route path="/verify" element={<Verify />} />
-          <Route path="/confirmed" element={<Confirmed />} />
-          <Route path="/appointments" element={<Appointments />} />
-          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/salons" element={<Salons />} />
+          <Route path="/salon/:salonId" element={<Salon />} />
+          <Route path="/help" element={<Help />} />
+          <Route path="/login" element={<Login />} />
+
+          <Route
+            path="/book/:salonId"
+            element={
+              <Protected>
+                <Book />
+              </Protected>
+            }
+          />
+          <Route
+            path="/confirmed/:bookingId"
+            element={
+              <Protected>
+                <Confirmed />
+              </Protected>
+            }
+          />
+          <Route
+            path="/appointments"
+            element={
+              <Protected>
+                <Appointments />
+              </Protected>
+            }
+          />
+          <Route
+            path="/wallet"
+            element={
+              <Protected>
+                <Wallet />
+              </Protected>
+            }
+          />
+          <Route
+            path="/account"
+            element={
+              <Protected>
+                <Account />
+              </Protected>
+            }
+          />
+
           <Route path="*" element={<NotFound />} />
         </Route>
       </Routes>

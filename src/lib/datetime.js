@@ -34,9 +34,10 @@ export const isClosed = (date) => date.getDay() === 0
 
 /**
  * Builds a Monday-first month grid. Leading blanks keep the first row aligned.
- * Days in the past and closing days are returned disabled.
+ * Past days are always disabled; `closedOn` marks business closing days, and
+ * defaults to never — salons set their own weekly closures.
  */
-export function buildCalendar(year, month, today = startOfToday()) {
+export function buildCalendar(year, month, today = startOfToday(), closedOn = () => false) {
   const first = new Date(year, month, 1)
   const lead = (first.getDay() + 6) % 7
   const dayCount = new Date(year, month + 1, 0).getDate()
@@ -49,7 +50,7 @@ export function buildCalendar(year, month, today = startOfToday()) {
   for (let day = 1; day <= dayCount; day += 1) {
     const date = new Date(year, month, day)
     const past = date < today
-    const closed = isClosed(date)
+    const closed = closedOn(date)
     cells.push({
       key: toISO(date),
       iso: toISO(date),

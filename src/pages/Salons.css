@@ -1,0 +1,82 @@
+.salons {
+  padding-top: 44px;
+  padding-bottom: 80px;
+}
+
+.salons__head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 28px;
+}
+
+.salons__head .eyebrow {
+  display: block;
+  margin-bottom: 12px;
+}
+
+.salons__title {
+  font-size: clamp(30px, 4.4vw, 46px);
+}
+
+.salons__lede {
+  font-size: 16px;
+  margin-top: 10px;
+}
+
+.salons__sort {
+  flex-shrink: 0;
+}
+
+.salons__select {
+  min-height: 44px;
+  padding: 10px 14px;
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-sm);
+  color: var(--text);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.salons__select:focus {
+  border-color: var(--gold);
+  outline: none;
+}
+
+.salons__filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 28px;
+  padding-bottom: 28px;
+  margin-bottom: 32px;
+  border-bottom: 1px solid var(--line);
+}
+
+.salons__filterGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.salons__grid {
+  margin-top: 4px;
+}
+
+@media (max-width: 780px) {
+  .salons {
+    padding-top: 28px;
+  }
+  .salons__head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  .salons__sort {
+    width: 100%;
+  }
+  .salons__select {
+    width: 100%;
+  }
+}

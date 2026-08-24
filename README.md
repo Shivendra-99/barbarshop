@@ -1,7 +1,10 @@
-# BarberNow
+# SalonSathi
 
-A React implementation of the `BarberNow.dc.html` Claude Design prototype — a
-barbershop booking marketplace with a dark/gold editorial aesthetic.
+**Book Your Appointment, Skip The Wait**
+
+A salon booking marketplace for men's salons, unisex salons and beauty parlours
+across Lucknow, Mumbai and Delhi NCR. Book at the salon or at home, pay online or
+in cash, cancel with an instant wallet refund.
 
 ## Running it
 
@@ -13,66 +16,76 @@ npm install
 npm run dev
 ```
 
-`npm run build` produces a production bundle in `dist/`, `npm run preview` serves it.
+`npm run build` produces a production bundle in `dist/`; `npm run preview` serves it.
 
-## Screens
+## The six rules, and where they live
 
-The prototype's eight `sc-if` route branches became real routes:
-
-| Route | Screen |
-| --- | --- |
-| `/` | Home — hero, featured shops, how it works, testimonials, FAQ |
-| `/explore` | Split results list + interactive map with price pins |
-| `/shop/:shopId` | Shop detail — services, team, gallery, reviews, booking rail |
-| `/booking` | Service / barber / date / time picker with live summary |
-| `/verify` | 6-digit OTP with auto-advance, paste and resend countdown |
-| `/confirmed` | Booking confirmation |
-| `/appointments` | Upcoming and past appointments |
-| `/dashboard` | Barber-side dashboard — KPIs, schedule, earnings, requests |
+| # | Rule | Implementation |
+| --- | --- | --- |
+| 1 | At Salon / Home Service — the owner decides | `serviceModes` per salon in [`seed.js`](src/data/seed.js). The Where step in [`Book.jsx`](src/pages/Book.jsx) only offers a choice when the salon supports both; home bookings capture an address and add the salon's travel fee |
+| 2 | OTP login, remembered 30 days | [`Login.jsx`](src/pages/Login.jsx) → [`AppStore`](src/store/AppStore.jsx). Session carries an `expiresAt`; an expired session is dropped on hydrate |
+| 3 | Online → founder, 10% off first booking only; offline → cash to salon; zero commission | All of it in [`pricing.js`](src/lib/pricing.js). `quote()` grants the discount only when `paymentMode === 'online'` **and** the customer has no prior bookings |
+| 4 | Pop-up to customer, founder and owner | One `createBooking` fans out to three audiences (`user:`, `owner:`, `founder`) in the store, plus a toast for whoever is signed in |
+| 5 | Owner adds salon, founder accepts/declines | Salons carry `status: pending / approved / rejected`. Only `approved` reach `publicSalons`. The seed ships one pending salon so the gate is visible |
+| 6 | Cancel → Wallet (instant) / UPI (2–3 days) | `refundFor()` in pricing; the cancel dialog in [`Appointments.jsx`](src/pages/Appointments.jsx). Wallet credits immediately and writes a ledger row; UPI is marked `processing`. Cash bookings correctly refund nothing |
 
 ## Structure
 
 ```
 src/
-  assets/        images + the registry every screen imports from
-  components/    Header, Footer, Layout, Reveal, ScrollToTop
-  data/          shops, services, barbers, reviews, dashboard data
-  hooks/         useReveal (scroll-triggered fade-up)
-  lib/           datetime helpers (calendar grid, slots, formatting)
-  pages/         one component + one stylesheet per screen
-  state/         BookingContext — the shared booking selection
-  styles/        tokens.css (design tokens) + base.css (reset, primitives)
+  assets/       images + the registry every screen imports from
+  components/   Header, Footer, Layout, Toast, Protected, Reveal
+  data/         seed.js — categories, cities, salons, services, staff
+  hooks/        useReveal
+  lib/          datetime, money (₹ / en-IN), pricing, storage
+  pages/        one component + one stylesheet per screen
+  store/        AppStore (domain state) + Prefs (city & category)
+  styles/       tokens (dual theme) → blocks → base
 ```
 
-The prototype's single `DCLogic` class held all state. That state is now split:
-selections that must survive navigation (shop, service, barber, date, slot, OTP)
-live in `BookingContext`; view-local state (open FAQ, active tab, map selection)
-stays in the component that owns it.
+### State
 
-## Notes on the port
+`AppStore` is a reducer persisted to `localStorage` under a versioned key, so
+bookings, wallet balance, notifications and the OTP session survive a reload.
+Bump `STORE_VERSION` in [`storage.js`](src/lib/storage.js) to discard old shapes
+rather than migrate them.
 
-- **Dates are live.** The prototype hardcoded August 2026 with "today" pinned to
-  the 15th. `src/lib/datetime.js` derives everything from the real current date,
-  so past days grey out and Sundays stay closed on their own.
-- **Styling** moved from inline attributes to stylesheets with CSS custom
-  properties (`src/styles/tokens.css`), which is what makes hover, focus and
-  responsive states possible — the prototype's `style-hover` attribute had no
-  real CSS equivalent. Only genuinely dynamic values stay inline.
-- **Responsive**: the prototype was desktop-only. Every screen now collapses
-  down to 375px.
-- **Accessibility**: real `<button>`/`<input>` elements, `aria-pressed` on
-  selectable options, `aria-selected` on tabs, labelled OTP cells, visible focus
-  rings, and a `prefers-reduced-motion` path that disables all motion.
+`Prefs` is separate on purpose — city and category are view preferences, not
+domain records, and persist independently of the session.
+
+### Theming
+
+Two themes over one set of semantic tokens in
+[`tokens.css`](src/styles/tokens.css): `:root` is the cream/gold customer theme,
+`[data-theme="admin"]` is the charcoal/gold panel theme for the owner and founder
+dashboards. Components reference only semantic names, so a surface changes theme
+by which wrapper it sits in. Gold splits into `--gold` (fills) and `--gold-deep`
+(the only gold that passes contrast as text on cream).
+
+## Built so far
+
+Foundation and the complete customer journey: choose salon → salon detail →
+service, at-salon/home, professional, date and slot → payment → OTP →
+confirmation → bookings, cancellation, refunds, wallet, account.
+
+**Not built yet:** the owner panel (add salon, manage bookings) and the founder
+admin (KPIs, approvals queue, cash ledger). The data model and approval states
+already support both — `setSalonStatus` and the `owner:` / `founder` notification
+audiences are wired and unused.
+
+## Note on payments
+
+Online payments settle to a single founder account, as specified. That is
+collecting money on behalf of other merchants, which in India requires a Payment
+Aggregator licence or a licensed PA with split settlement (Razorpay Route,
+Cashfree Easy Split). It does not affect this prototype — nothing moves real
+money — but the payout logic is deliberately isolated in `pricing.js` so that
+change lands in one file.
+
+Commission is `0` by decision and lives in one constant.
 
 ## Images
 
-The three photographs referenced by the design source could **not** be retrieved.
-The design API caps file reads at 256 KiB and each photo is a ~2048px PNG well
-over that, so only the top ~13% of each file arrived — non-interlaced, so the
-remainder is unrecoverable.
-
-The app therefore ships brand-matched SVG placeholders. To drop in the real
-photos: download the three PNGs from the design project, put them in
-`src/assets/`, and repoint the three imports at the top of
-[`src/assets/index.js`](src/assets/index.js). Nothing else needs to change —
-every screen resolves its imagery through that one module.
+Photography generated with Viewmax (Gemini 3 Pro), resized and re-encoded to
+WebP — 69–120 KB each, down from ~2.8 MB. Every screen resolves imagery through
+[`src/assets/index.js`](src/assets/index.js).

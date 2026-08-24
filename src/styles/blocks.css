@@ -1,0 +1,235 @@
+/* Layout blocks shared across customer pages. */
+
+.section {
+  padding: 96px 0;
+}
+
+.section__head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 44px;
+}
+
+.section__head .eyebrow,
+.section__centered .eyebrow {
+  display: block;
+  margin-bottom: 14px;
+}
+
+.section__centered {
+  text-align: center;
+  margin-bottom: 52px;
+}
+
+.section__more {
+  font-size: 13px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--gold-deep);
+  border-bottom: 1px solid var(--gold-line);
+  padding-bottom: 4px;
+  white-space: nowrap;
+  min-height: 44px;
+}
+
+.section__more:hover {
+  color: var(--gold);
+  border-bottom-color: var(--gold);
+}
+
+.grid3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+/* ---------------- Salon card ---------------- */
+
+.salonCard {
+  display: flex;
+}
+
+.salonCard__btn {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  transition:
+    border-color var(--dur) ease,
+    transform var(--dur) var(--ease),
+    box-shadow var(--dur) ease;
+}
+
+.salonCard__btn:hover {
+  border-color: var(--gold-line);
+  transform: translateY(-5px);
+  box-shadow: var(--shadow-md);
+}
+
+.salonCard__media {
+  position: relative;
+  display: block;
+  height: 200px;
+  overflow: hidden;
+}
+
+.salonCard__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.6s var(--ease);
+}
+
+.salonCard__btn:hover .salonCard__media img {
+  transform: scale(1.05);
+}
+
+.salonCard__badge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  padding: 6px 12px;
+  background: rgba(255, 255, 255, 0.94);
+  border-radius: var(--r-pill);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--gold-deep);
+}
+
+.salonCard__body {
+  display: block;
+  padding: 18px 20px 22px;
+}
+
+.salonCard__row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: baseline;
+}
+
+.salonCard__name {
+  font-family: var(--font-display);
+  font-size: 20px;
+  color: var(--heading);
+}
+
+.salonCard__rating {
+  font-size: 14px;
+  color: var(--gold-deep);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.salonCard__meta {
+  display: block;
+  font-size: 13px;
+  color: var(--muted-3);
+  margin-top: 6px;
+}
+
+.salonCard__modes {
+  display: flex;
+  gap: 6px;
+  margin-top: 14px;
+  flex-wrap: wrap;
+}
+
+.salonCard__foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.salonCard__price {
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.salonCard__price strong {
+  color: var(--heading);
+  font-weight: 500;
+}
+
+.salonCard__open {
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  color: var(--green);
+}
+
+/* ---------------- Empty state ---------------- */
+
+.empty {
+  padding: 64px 28px;
+  text-align: center;
+  border: 1px dashed var(--gold-line);
+  border-radius: var(--r-lg);
+  background: var(--surface-alt);
+}
+
+.empty__title {
+  font-family: var(--font-display);
+  font-size: 24px;
+  color: var(--heading);
+  margin: 0 0 10px;
+}
+
+.empty__text {
+  font-size: 16px;
+  font-weight: 300;
+  color: var(--muted-2);
+  margin: 0 auto 22px;
+  max-width: 420px;
+  line-height: 1.6;
+}
+
+/* ---------------- Skip link ---------------- */
+
+.skip {
+  position: absolute;
+  left: 12px;
+  top: -60px;
+  z-index: 300;
+  padding: 12px 18px;
+  background: var(--surface);
+  border: 1px solid var(--gold);
+  border-radius: var(--r-sm);
+  color: var(--heading);
+  transition: top var(--dur-fast) ease;
+}
+
+.skip:focus {
+  top: 12px;
+}
+
+@media (max-width: 1040px) {
+  .grid3 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 780px) {
+  .section {
+    padding: 64px 0;
+  }
+  .grid3 {
+    grid-template-columns: 1fr;
+  }
+  .section__head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+  }
+}
