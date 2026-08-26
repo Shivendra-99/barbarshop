@@ -2,48 +2,56 @@ import { useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams, Link } from 'react-router-dom'
 import { useApp, SESSION_DAYS } from '../store/AppStore'
 import { useToast } from '../components/Toast'
-import { BRAND } from '../data/seed'
+import { BRAND, DEMO_ACCOUNTS } from '../data/seed'
 import { IMG_UNISEX } from '../assets'
 import './Login.css'
+
+/** Where each role lands after signing in, unless a specific page was requested. */
+const HOME_FOR_ROLE = { founder: '/admin', owner: '/owner', customer: '/' }
 
 const OTP_LENGTH = 6
 const PHONE_LENGTH = 10
 
-/** Demo-only: a real build would send this over SMS and never expose it. */
-const makeCode = () => String(Math.floor(100000 + Math.random() * 899999))
-
 export default function Login() {
   const navigate = useNavigate()
   const [params] = useSearchParams()
-  const { login } = useApp()
+  const { requestOtp, verifyOtp } = useApp()
   const { push } = useToast()
 
   const next = params.get('next') || '/'
   const [step, setStep] = useState('phone')
   const [phone, setPhone] = useState('')
   const [name, setName] = useState('')
-  const [code, setCode] = useState('')
+  const [code, setCode] = useState('') // dev code echoed by the API
   const [digits, setDigits] = useState(Array(OTP_LENGTH).fill(''))
   const [error, setError] = useState('')
+  const [busy, setBusy] = useState(false)
   const inputs = useRef([])
 
   const phoneValid = /^[6-9]\d{9}$/.test(phone)
   const otpComplete = digits.every((d) => d !== '')
   const entered = useMemo(() => digits.join(''), [digits])
 
-  const sendCode = (e) => {
+  const sendCode = async (e) => {
     e.preventDefault()
     if (!phoneValid) {
       setError('Enter a valid 10-digit mobile number.')
       return
     }
-    const fresh = makeCode()
-    setCode(fresh)
-    setDigits(Array(OTP_LENGTH).fill(''))
-    setError('')
-    setStep('otp')
-    push({ title: 'OTP sent', body: `Code sent to +91 ${phone}`, tone: 'info' })
-    window.setTimeout(() => inputs.current[0]?.focus(), 60)
+    setBusy(true)
+    try {
+      const res = await requestOtp(phone)
+      setCode(res.devCode || '') // present only while SMS is stubbed
+      setDigits(Array(OTP_LENGTH).fill(''))
+      setError('')
+      setStep('otp')
+      push({ title: 'OTP sent', body: `Code sent to +91 ${phone}`, tone: 'info' })
+      window.setTimeout(() => inputs.current[0]?.focus(), 60)
+    } catch (err) {
+      setError(err.message || 'Could not send the code. Try again.')
+    } finally {
+      setBusy(false)
+    }
   }
 
   const focusCell = (i) => {
@@ -82,23 +90,36 @@ export default function Login() {
     if (e.key === 'ArrowRight' && i < OTP_LENGTH - 1) focusCell(i + 1)
   }
 
-  const verify = (e) => {
+  const verify = async (e) => {
     e.preventDefault()
-    if (!otpComplete) return
-    if (entered !== code) {
-      setError('That code does not match. Check and try again.')
+    if (!otpComplete || busy) return
+    setBusy(true)
+    try {
+      const user = await verifyOtp(phone, entered, name.trim() || undefined)
+      push({
+        title: `Welcome to ${BRAND.name}`,
+        body:
+          user.role === 'customer'
+            ? `Signed in as +91 ${phone}`
+            : `Signed in as ${user.name} · ${user.role}`,
+        meta: `Stays signed in for ${SESSION_DAYS} days`,
+        tone: 'success',
+      })
+      // Staff go to their dashboard; a requested `next` only applies to customers.
+      const dest = user.role === 'customer' ? next : HOME_FOR_ROLE[user.role]
+      navigate(dest, { replace: true })
+    } catch (err) {
+      setError(err.message || 'That code is incorrect.')
       setDigits(Array(OTP_LENGTH).fill(''))
       focusCell(0)
-      return
+      setBusy(false)
     }
-    login(phone, { name: name.trim() || 'Guest' })
-    push({
-      title: `Welcome to ${BRAND.name}`,
-      body: `Signed in as +91 ${phone}`,
-      meta: `Stays signed in for ${SESSION_DAYS} days`,
-      tone: 'success',
-    })
-    navigate(next, { replace: true })
+  }
+
+  const useDemo = (demoPhone) => {
+    setPhone(demoPhone)
+    setName('')
+    setError('')
   }
 
   return (
@@ -161,9 +182,28 @@ export default function Login() {
                 )}
               </label>
 
-              <button type="submit" className="btn btn--gold btn--block" disabled={!phoneValid}>
-                Send OTP
+              <button type="submit" className="btn btn--gold btn--block" disabled={!phoneValid || busy}>
+                {busy ? 'Sending…' : 'Send OTP'}
               </button>
+
+              <div className="login__demoAccounts">
+                <span className="login__demoLabel">Try a demo role</span>
+                <div className="login__demoChips">
+                  {DEMO_ACCOUNTS.map((d) => (
+                    <button
+                      key={d.phone}
+                      type="button"
+                      className="chip"
+                      onClick={() => useDemo(d.phone)}
+                    >
+                      {d.label}
+                    </button>
+                  ))}
+                </div>
+                <span className="login__demoHint">
+                  Or use any other number to sign in as a customer.
+                </span>
+              </div>
 
               <p className="login__fine">
                 By continuing you agree to our Terms and Privacy Policy.
@@ -219,7 +259,7 @@ export default function Login() {
                 </p>
               )}
 
-              <button type="submit" className="btn btn--gold btn--block" disabled={!otpComplete}>
+              <button type="submit" className="btn btn--gold btn--block" disabled={!otpComplete || busy}>
                 Verify &amp; continue
               </button>
 

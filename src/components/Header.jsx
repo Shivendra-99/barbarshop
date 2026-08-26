@@ -1,9 +1,30 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { useApp } from '../store/AppStore'
+import { usePrefs, THEMES } from '../store/Prefs'
 import { BRAND, CITIES } from '../data/seed'
 import { formatINR } from '../lib/money'
 import './Header.css'
+
+const THEME_ICONS = {
+  light: (
+    <>
+      <circle cx="10" cy="10" r="3.6" fill="currentColor" />
+      <path
+        d="M10 1.6v2.2M10 16.2v2.2M18.4 10h-2.2M3.8 10H1.6M15.9 4.1l-1.6 1.6M5.7 14.3l-1.6 1.6M15.9 15.9l-1.6-1.6M5.7 5.7 4.1 4.1"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
+    </>
+  ),
+  dark: (
+    <path
+      d="M16 11.6A6.6 6.6 0 0 1 8.4 4a6.9 6.9 0 1 0 7.6 7.6Z"
+      fill="currentColor"
+    />
+  ),
+}
 
 const LINKS = [
   { to: '/', label: 'Home', end: true },
@@ -43,6 +64,7 @@ export default function Header({ city, onCityChange }) {
   const navigate = useNavigate()
   const { isSignedIn, session, logout, unreadCount, myNotifications, markRead, walletBalance } =
     useApp()
+  const { theme, setTheme, resolvedTheme } = usePrefs()
 
   const [menu, setMenu] = useState(null) // 'city' | 'bell' | 'account' | null
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -160,6 +182,58 @@ export default function Header({ city, onCityChange }) {
           ))}
 
           <div className="hdr__actions">
+            <div className="sel-wrap">
+              <button
+                type="button"
+                className="hdr__icon"
+                aria-haspopup="true"
+                aria-expanded={menu === 'theme'}
+                aria-label={`Theme: ${theme}. Change appearance`}
+                onClick={() => toggle('theme')}
+              >
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  {THEME_ICONS[resolvedTheme] ?? THEME_ICONS.light}
+                </svg>
+              </button>
+              <Panel open={menu === 'theme'} onClose={close} className="pop--theme">
+                <div className="pop__head">Appearance</div>
+                <ul role="listbox" aria-label="Appearance">
+                  {THEMES.map((t) => (
+                    <li key={t.id} role="none">
+                      <button
+                        type="button"
+                        role="option"
+                        aria-selected={theme === t.id}
+                        aria-label={t.label}
+                        className={`pop__link${theme === t.id ? ' is-selected' : ''}`}
+                        onClick={() => {
+                          setTheme(t.id)
+                          close()
+                        }}
+                      >
+                        <span>{t.label}</span>
+                        {t.id === 'system' && (
+                          <span className="pop__hint">
+                            Currently {resolvedTheme}
+                          </span>
+                        )}
+                        {theme === t.id && (
+                          <svg className="pop__tick" viewBox="0 0 14 14" aria-hidden="true">
+                            <path
+                              d="M2 7.5 5.5 11 12 3.5"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="1.8"
+                            />
+                          </svg>
+                        )}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </Panel>
+            </div>
+
             {isSignedIn && (
               <div className="sel-wrap hdr__bellWrap">
                 <button
@@ -229,6 +303,16 @@ export default function Header({ city, onCityChange }) {
                     <div className="pop__userName">{session.name}</div>
                     <div className="pop__userPhone">+91 {session.phone}</div>
                   </div>
+                  {session.role === 'founder' && (
+                    <Link to="/admin" className="pop__link" onClick={close}>
+                      Admin dashboard
+                    </Link>
+                  )}
+                  {session.role === 'owner' && (
+                    <Link to="/owner" className="pop__link" onClick={close}>
+                      Owner dashboard
+                    </Link>
+                  )}
                   <Link to="/appointments" className="pop__link" onClick={close}>
                     My bookings
                   </Link>

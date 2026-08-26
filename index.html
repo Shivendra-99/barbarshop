@@ -8,6 +8,28 @@
       name="description"
       content="Book men's salons, unisex salons and beauty parlours near you. At the salon or at home, pay online or cash."
     />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#fbf7f0" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#100f13" />
+
+    <!--
+      Applies a saved theme before first paint. Without this, a dark-mode user
+      sees a flash of the cream theme while the bundle boots. Kept inline and
+      dependency-free on purpose: it must run before any stylesheet paints.
+      Mirrors the effect in src/store/Prefs.jsx.
+    -->
+    <script>
+      (function () {
+        try {
+          var t = JSON.parse(localStorage.getItem('salonsathi:v1:prefs:theme'))
+          if (t === 'dark' || t === 'light') {
+            document.documentElement.setAttribute('data-theme', t)
+          }
+        } catch (e) {
+          /* private mode or corrupt value — fall back to the system theme */
+        }
+      })()
+    </script>
+
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link

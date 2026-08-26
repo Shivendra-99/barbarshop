@@ -1,0 +1,58 @@
+.cfm {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(10, 8, 4, 0.55);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  animation: ssFade 0.15s ease both;
+}
+
+.cfm__box {
+  width: 100%;
+  max-width: 420px;
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-lg);
+  padding: 28px;
+}
+
+.cfm__title {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 400;
+  color: var(--heading);
+  margin: 0 0 10px;
+}
+
+.cfm__message {
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--muted);
+  margin: 0 0 24px;
+}
+
+.cfm__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* The confirm button owns focus, so give it a clear ring even on danger. */
+.cfm__danger:focus-visible {
+  outline-color: var(--red);
+}
+
+@media (max-width: 480px) {
+  .cfm__actions {
+    flex-direction: column-reverse;
+  }
+  .cfm__actions .btn {
+    width: 100%;
+  }
+}

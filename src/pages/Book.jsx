@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useApp } from '../store/AppStore'
 import { useToast } from '../components/Toast'
-import { servicesFor } from '../data/seed'
+import { api } from '../lib/api'
 import { formatINR } from '../lib/money'
 import { PAYMENT_MODES, SERVICE_MODES, quote } from '../lib/pricing'
 import {
@@ -67,15 +67,36 @@ export default function Book() {
   const { salonId } = useParams()
   const [params] = useSearchParams()
   const navigate = useNavigate()
-  const { publicSalons, createBooking, isFirstBooking, session } = useApp()
+  const { publicSalons, salonsReady, createBooking, isFirstBooking, session } = useApp()
   const { push } = useToast()
 
   const salon = publicSalons.find((s) => s.id === salonId)
 
   const today = useMemo(() => startOfToday(), [])
-  const services = salon ? servicesFor(salon.category) : []
 
+  // The salon's own menu, loaded from the API.
+  const [services, setServices] = useState([])
   const [serviceId, setServiceId] = useState(params.get('service') || '')
+
+  useEffect(() => {
+    if (!salonId) return undefined
+    let alive = true
+    api
+      .salonServices(salonId)
+      .then((res) => {
+        if (!alive) return
+        setServices(res.services)
+        // Default to the requested service, else the first one.
+        setServiceId((cur) => {
+          if (cur && res.services.some((s) => s.id === cur)) return cur
+          return res.services[0]?.id ?? ''
+        })
+      })
+      .catch(() => alive && setServices([]))
+    return () => {
+      alive = false
+    }
+  }, [salonId])
   const [mode, setMode] = useState(salon?.serviceModes[0] ?? 'salon')
   const [address, setAddress] = useState('')
   const [staffId, setStaffId] = useState('')
@@ -84,6 +105,7 @@ export default function Book() {
   const [paymentMode, setPaymentMode] = useState('online')
   const [cursor, setCursor] = useState({ year: today.getFullYear(), month: today.getMonth() })
   const [touched, setTouched] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
 
   const service = services.find((s) => s.id === serviceId) ?? null
 
@@ -132,37 +154,50 @@ export default function Book() {
   if (needsAddress && address.trim().length < 10) missing.push('your address')
   const ready = missing.length === 0
 
+  if (!salon && !salonsReady) {
+    return (
+      <div className="route-loading" role="status" aria-live="polite">
+        <span className="route-loading__spinner" aria-hidden="true" />
+        <span className="sr-only">Loading…</span>
+      </div>
+    )
+  }
   if (!salon) return <Navigate to="/salons" replace />
 
-  const confirm = () => {
+  const confirm = async () => {
     setTouched(true)
-    if (!ready) return
+    if (!ready || submitting) return
 
     const staff = salon.staff.find((p) => p.id === staffId) ?? null
-    const booking = createBooking({
-      salonId: salon.id,
-      serviceId: service.id,
-      staffId: staff?.id ?? null,
-      staffName: staff?.name ?? null,
-      mode,
-      address: needsAddress ? address.trim() : null,
-      date,
-      dateLabel: formatDateLabel(date),
-      slot,
-      paymentMode,
-    })
+    setSubmitting(true)
+    try {
+      const booking = await createBooking({
+        salonId: salon.id,
+        serviceId: service.id,
+        staffName: staff?.name ?? null,
+        mode,
+        address: needsAddress ? address.trim() : null,
+        date,
+        dateLabel: formatDateLabel(date),
+        slot,
+        paymentMode,
+      })
 
-    push({
-      tone: 'success',
-      title: 'Booking confirmed',
-      body: `${service.name} · ${formatDateLabel(date)}, ${slot}`,
-      meta:
-        paymentMode === 'online'
-          ? `Paid online · ${formatINR(booking.total)}`
-          : `Pay ${formatINR(booking.total)} cash at the salon`,
-    })
+      push({
+        tone: 'success',
+        title: 'Booking confirmed',
+        body: `${service.name} · ${formatDateLabel(date)}, ${slot}`,
+        meta:
+          paymentMode === 'online'
+            ? `Paid online · ${formatINR(booking.total)}`
+            : `Pay ${formatINR(booking.total)} cash at the salon`,
+      })
 
-    navigate(`/confirmed/${booking.id}`, { replace: true })
+      navigate(`/confirmed/${booking.id}`, { replace: true })
+    } catch (err) {
+      push({ tone: 'warn', title: 'Could not confirm booking', body: err.message })
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -471,8 +506,17 @@ export default function Book() {
             </p>
           )}
 
-          <button type="button" className="btn btn--gold summary__cta" onClick={confirm}>
-            {paymentMode === 'online' ? `Pay ${formatINR(priced.total)}` : 'Confirm booking'}
+          <button
+            type="button"
+            className="btn btn--gold summary__cta"
+            onClick={confirm}
+            disabled={submitting}
+          >
+            {submitting
+              ? 'Confirming…'
+              : paymentMode === 'online'
+                ? `Pay ${formatINR(priced.total)}`
+                : 'Confirm booking'}
           </button>
 
           <p className="summary__fine">

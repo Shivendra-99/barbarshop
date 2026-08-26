@@ -332,3 +332,9 @@
     flex: none;
   }
 }
+
+.svcList__loading {
+  padding: 32px 4px;
+  color: var(--muted-3);
+  font-size: 15px;
+}

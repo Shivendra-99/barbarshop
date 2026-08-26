@@ -120,20 +120,23 @@ export default function Appointments() {
 
   const rows = tab === 'Upcoming' ? upcoming : past
 
-  const doCancel = (method) => {
+  const doCancel = async (method) => {
     const booking = pending
     setPending(null)
-    const refund = cancelBooking(booking, method)
-
-    push({
-      tone: refund.amount > 0 ? 'success' : 'info',
-      title: 'Booking cancelled',
-      body:
-        refund.amount > 0
-          ? `${formatINR(refund.amount)} refunded to ${REFUND_METHODS[refund.method].label}`
-          : 'Nothing to refund — this was a pay-at-salon booking.',
-      meta: refund.amount > 0 ? REFUND_METHODS[refund.method].eta : undefined,
-    })
+    try {
+      const refund = await cancelBooking(booking, method)
+      push({
+        tone: refund.amount > 0 ? 'success' : 'info',
+        title: 'Booking cancelled',
+        body:
+          refund.amount > 0
+            ? `${formatINR(refund.amount)} refunded to ${REFUND_METHODS[refund.method].label}`
+            : 'Nothing to refund — this was a pay-at-salon booking.',
+        meta: refund.amount > 0 ? REFUND_METHODS[refund.method].eta : undefined,
+      })
+    } catch (err) {
+      push({ tone: 'warn', title: 'Could not cancel', body: err.message })
+    }
   }
 
   return (

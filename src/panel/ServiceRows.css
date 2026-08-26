@@ -1,0 +1,101 @@
+.svcRows {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.svcRows__head {
+  display: grid;
+  grid-template-columns: 1fr 96px 76px 40px;
+  gap: 10px;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted-3);
+  padding: 0 2px;
+}
+
+.svcRows__row {
+  display: grid;
+  grid-template-columns: 1fr 96px 76px 40px;
+  gap: 10px;
+  align-items: start;
+}
+
+.svcRows__main {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.svcRows__name {
+  min-height: 44px;
+}
+
+.svcRows__desc {
+  min-height: 40px;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.svcRows__num {
+  min-height: 44px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.svcRows__remove {
+  width: 40px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted-3);
+  border-radius: var(--r-sm);
+  transition: color var(--dur-fast) ease, background var(--dur-fast) ease;
+}
+
+.svcRows__remove:hover:not(:disabled) {
+  color: var(--red);
+  background: var(--red-wash);
+}
+
+.svcRows__remove:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.svcRows__remove svg {
+  width: 18px;
+  height: 18px;
+}
+
+.svcRows__add {
+  align-self: flex-start;
+  margin-top: 4px;
+}
+
+@media (max-width: 620px) {
+  .svcRows__head {
+    display: none;
+  }
+  .svcRows__row {
+    grid-template-columns: 1fr 1fr 40px;
+    grid-template-areas:
+      'main main remove'
+      'price mins remove';
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--line);
+  }
+  .svcRows__main {
+    grid-area: main;
+  }
+  .svcRows__num:nth-of-type(1) {
+    grid-area: price;
+  }
+  .svcRows__remove {
+    grid-area: remove;
+    align-self: center;
+  }
+}

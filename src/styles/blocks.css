@@ -95,7 +95,7 @@
   top: 12px;
   left: 12px;
   padding: 6px 12px;
-  background: rgba(255, 255, 255, 0.94);
+  background: var(--overlay-surface);
   border-radius: var(--r-pill);
   font-size: 11px;
   font-weight: 500;

@@ -56,7 +56,7 @@
   align-items: center;
   gap: 28px;
   padding: 12px var(--gutter);
-  background: rgba(251, 247, 240, 0.92);
+  background: var(--header-bg);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   border-bottom: 1px solid var(--line);
@@ -516,4 +516,27 @@
 
 .hdr__brand {
   min-height: 44px;
+}
+
+/* ---------- Theme switcher ---------- */
+
+.pop--theme {
+  min-width: 210px;
+}
+
+.pop__link.is-selected {
+  color: var(--gold-deep);
+  font-weight: 500;
+}
+
+.pop__tick {
+  width: 13px;
+  height: 13px;
+  color: var(--gold-deep);
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.pop__link .pop__hint + .pop__tick {
+  margin-left: 0;
 }

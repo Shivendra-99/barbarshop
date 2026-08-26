@@ -1,0 +1,148 @@
+.svcMgr__salon {
+  max-width: 360px;
+}
+
+.svcMgr__loading {
+  color: var(--muted-3);
+  font-size: 15px;
+  padding: 24px 0;
+}
+
+.svcMgr__list {
+  list-style: none;
+  margin: 0 0 28px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.svcMgr__item {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 16px 18px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+}
+
+.svcMgr__item.is-editing {
+  display: block;
+  border-color: var(--gold-line);
+}
+
+.svcMgr__info {
+  flex: 1;
+  min-width: 0;
+}
+
+.svcMgr__name {
+  font-size: 15.5px;
+  font-weight: 500;
+  color: var(--heading);
+}
+
+.svcMgr__desc {
+  font-size: 13px;
+  color: var(--muted-3);
+  margin-top: 3px;
+}
+
+.svcMgr__meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.svcMgr__price {
+  font-family: var(--font-display);
+  font-size: 18px;
+  color: var(--heading);
+}
+
+.svcMgr__mins {
+  font-size: 12px;
+  color: var(--muted-3);
+}
+
+.svcMgr__actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* ---- Shared service form (add + edit) ---- */
+
+.svcForm {
+  display: grid;
+  grid-template-columns: 1fr 140px 140px;
+  gap: 14px 16px;
+  align-items: end;
+}
+
+.svcForm .field {
+  margin: 0;
+  min-width: 0;
+}
+
+.svcForm__name {
+  grid-column: 1 / -1;
+}
+
+.svcForm__desc {
+  grid-column: 1 / -1;
+}
+
+.svcForm__actions {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 10px;
+}
+
+/* ---- Add panel ---- */
+
+.svcMgr__add {
+  padding: 22px;
+  border: 1px dashed var(--gold-line);
+  border-radius: var(--r-lg);
+  background: var(--gold-wash);
+}
+
+.svcMgr__addTitle {
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--gold-deep);
+  margin-bottom: 16px;
+}
+
+@media (max-width: 640px) {
+  .svcForm {
+    grid-template-columns: 1fr 1fr;
+  }
+  .svcForm__name {
+    grid-column: 1 / -1;
+  }
+
+  .svcMgr__item {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .svcMgr__item.is-editing {
+    display: block;
+  }
+  .svcMgr__meta {
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+  }
+  .svcMgr__actions {
+    width: 100%;
+  }
+  .svcMgr__actions .btn {
+    flex: 1;
+  }
+}

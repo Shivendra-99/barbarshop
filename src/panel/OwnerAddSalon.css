@@ -1,0 +1,88 @@
+.addForm {
+  max-width: 720px;
+}
+
+.addForm__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 20px;
+}
+
+.addForm__full {
+  grid-column: 1 / -1;
+}
+
+.addForm__modes {
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  padding: 20px;
+  margin: 12px 0 24px;
+  background: var(--surface);
+}
+
+.addForm__modesHint {
+  font-size: 13.5px;
+  color: var(--muted-3);
+  margin: 4px 0 16px;
+}
+
+.modeToggle {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-md);
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: border-color var(--dur-fast) ease;
+}
+
+.modeToggle:hover {
+  border-color: var(--gold-line);
+}
+
+.modeToggle input {
+  margin-top: 3px;
+  width: 18px;
+  height: 18px;
+  accent-color: var(--gold);
+  flex-shrink: 0;
+}
+
+.modeToggle__name {
+  display: block;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--heading);
+}
+
+.modeToggle__note {
+  display: block;
+  font-size: 13px;
+  color: var(--muted-3);
+  margin-top: 2px;
+}
+
+.addForm__fee {
+  margin-top: 6px;
+  max-width: 280px;
+}
+
+.addForm__actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+@media (max-width: 620px) {
+  .addForm__grid {
+    grid-template-columns: 1fr;
+  }
+  .addForm__actions {
+    flex-direction: column-reverse;
+  }
+  .addForm__actions .btn {
+    width: 100%;
+  }
+}

@@ -90,6 +90,32 @@ export const OWNERS = [
   { id: 'own-4', name: 'Divya Raghav', phone: '9811100004', role: 'owner' },
 ]
 
+/**
+ * Maps a phone number to a seeded staff identity. The demo has no real user
+ * database, so the number itself decides the role: the founder and the four
+ * owners have fixed numbers, everyone else is a customer.
+ *
+ * Owners and the founder keep their *seeded* id (own-1, founder) as the session
+ * userId — that is what ties a logged-in owner to the salons they own and to the
+ * `owner:own-1` notification inbox the booking flow already writes to.
+ */
+export function identityForPhone(phone) {
+  if (phone === FOUNDER.phone) {
+    return { id: FOUNDER.id, role: 'founder', name: FOUNDER.name }
+  }
+  const owner = OWNERS.find((o) => o.phone === phone)
+  if (owner) {
+    return { id: owner.id, role: 'owner', name: owner.name }
+  }
+  return { role: 'customer' }
+}
+
+/** Demo accounts surfaced on the login screen so the roles are reachable. */
+export const DEMO_ACCOUNTS = [
+  { phone: FOUNDER.phone, role: 'founder', label: 'Founder / Admin' },
+  { phone: OWNERS[0].phone, role: 'owner', label: `Salon owner · ${OWNERS[0].name}` },
+]
+
 /* ------------------------------------------------------------------
    Salons
 
@@ -219,6 +245,50 @@ export const SALONS = rawSalons.map((s, i) => ({
 }))
 
 export const salonById = (id) => SALONS.find((s) => s.id === id) ?? null
+
+/**
+ * Fills the derived fields (image, service menu, starting price, staff) for a
+ * salon an owner submits at runtime, so it matches the shape of seed salons.
+ * The owner supplies identity + location + service modes; everything else is
+ * inferred from the chosen category.
+ */
+export function enrichOwnerSalon(draft) {
+  const services = servicesFor(draft.category)
+  return {
+    ...draft,
+    img: imageFor(draft.category, Math.floor(Math.random() * 3)),
+    services: services.map((x) => x.id),
+    from: Math.min(...services.map((x) => x.amount)),
+    staff: STAFF_NAMES[draft.category].map((p, k) => ({
+      ...p,
+      id: `${draft.id ?? 'new'}-staff-${k}`,
+      img: STAFF_IMAGES[k % STAFF_IMAGES.length],
+    })),
+    dist: '—',
+    badge: 'New',
+  }
+}
+
+/**
+ * Enriches a bare salon record from the API with the derived, presentation-only
+ * fields the UI expects — image, starting price, and staff. These are inferred
+ * from the category (the API stores only the salon's own data), so the same
+ * salon always renders with the same photo and team.
+ */
+export function enrichSalon(salon, index = 0) {
+  const services = servicesFor(salon.category)
+  const staffSeed = STAFF_NAMES[salon.category] ?? STAFF_NAMES.unisex
+  return {
+    ...salon,
+    img: imageFor(salon.category, index),
+    from: salon.from ?? Math.min(...services.map((x) => x.amount)),
+    staff: staffSeed.map((p, k) => ({
+      ...p,
+      id: `${salon.id}-staff-${k}`,
+      img: STAFF_IMAGES[(index + k) % STAFF_IMAGES.length],
+    })),
+  }
+}
 
 /* ------------------------------------------------------------------
    Marketing copy

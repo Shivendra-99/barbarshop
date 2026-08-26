@@ -13,12 +13,21 @@ import Account from './pages/Account'
 import Help from './pages/Help'
 import Login from './pages/Login'
 import NotFound from './pages/NotFound'
+import PanelLayout from './panel/PanelLayout'
+import FounderDashboard from './panel/FounderDashboard'
+import FounderSalons from './panel/FounderSalons'
+import FounderBookings from './panel/FounderBookings'
+import OwnerDashboard from './panel/OwnerDashboard'
+import OwnerAddSalon from './panel/OwnerAddSalon'
+import OwnerServices from './panel/OwnerServices'
+import OwnerBookings from './panel/OwnerBookings'
 
 export default function App() {
   return (
     <>
       <ScrollToTop />
       <Routes>
+        {/* ---------------- Customer app ---------------- */}
         <Route element={<Layout />}>
           <Route path="/" element={<Home />} />
           <Route path="/salons" element={<Salons />} />
@@ -68,6 +77,35 @@ export default function App() {
           />
 
           <Route path="*" element={<NotFound />} />
+        </Route>
+
+        {/* ---------------- Founder admin ---------------- */}
+        <Route
+          path="/admin"
+          element={
+            <Protected role="founder">
+              <PanelLayout role="founder" />
+            </Protected>
+          }
+        >
+          <Route index element={<FounderDashboard />} />
+          <Route path="salons" element={<FounderSalons />} />
+          <Route path="bookings" element={<FounderBookings />} />
+        </Route>
+
+        {/* ---------------- Owner dashboard ---------------- */}
+        <Route
+          path="/owner"
+          element={
+            <Protected role="owner">
+              <PanelLayout role="owner" />
+            </Protected>
+          }
+        >
+          <Route index element={<OwnerDashboard />} />
+          <Route path="add" element={<OwnerAddSalon />} />
+          <Route path="services" element={<OwnerServices />} />
+          <Route path="bookings" element={<OwnerBookings />} />
         </Route>
       </Routes>
     </>

@@ -1,368 +1,299 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useReducer } from 'react'
-import { SALONS, OWNERS, FOUNDER, salonById, findService } from '../data/seed'
-import { quote, refundFor, REFUND_METHODS } from '../lib/pricing'
-import { load, save, clearAll } from '../lib/storage'
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { api, getToken, setToken, clearToken } from '../lib/api'
+import { enrichSalon, OWNERS, FOUNDER } from '../data/seed'
 
 const AppContext = createContext(null)
 
-/** OTP sessions are remembered for 30 days, per spec. */
+/** Sessions last 30 days (enforced by the JWT the server issues). */
 export const SESSION_DAYS = 30
-const SESSION_MS = SESSION_DAYS * 24 * 60 * 60 * 1000
 
-const uid = (prefix) => `${prefix}-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`
+const enrichList = (salons = []) => salons.map((s, i) => enrichSalon(s, i))
 
-/* ------------------------------------------------------------------
-   Initial state
-   ------------------------------------------------------------------ */
-
-function seedState() {
-  return {
-    session: null,
-    users: {},
-    salons: SALONS.map((s) => ({ id: s.id, status: s.status })),
-    bookings: [],
-    wallet: {},
-    ledger: [],
-    notifications: [],
+/** Reads the `exp` claim from the current JWT → epoch ms, for display only. */
+function tokenExpiry() {
+  const token = getToken()
+  if (!token) return Date.now() + SESSION_DAYS * 86400000
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]))
+    return payload.exp ? payload.exp * 1000 : Date.now() + SESSION_DAYS * 86400000
+  } catch {
+    return Date.now() + SESSION_DAYS * 86400000
   }
 }
 
-/** Drops an expired session so a stale 30-day login can't resurrect. */
-function hydrate() {
-  const persisted = load('state', null)
-  if (!persisted) return seedState()
-
-  const base = { ...seedState(), ...persisted }
-  if (base.session && base.session.expiresAt <= Date.now()) {
-    base.session = null
-  }
-  return base
-}
-
-/* ------------------------------------------------------------------
-   Notifications — one booking event fans out to three inboxes
-   ------------------------------------------------------------------ */
-
-function notify(state, entries) {
-  const stamped = entries.map((e) => ({
-    id: uid('ntf'),
-    ts: Date.now(),
-    read: false,
-    ...e,
-  }))
-  return [...stamped, ...state.notifications].slice(0, 100)
-}
-
-/* ------------------------------------------------------------------
-   Reducer
-   ------------------------------------------------------------------ */
-
-function reducer(state, action) {
-  switch (action.type) {
-    case 'login': {
-      const { phone, name, role } = action
-      const existing = state.users[phone]
-      const user = existing ?? {
-        id: uid('usr'),
-        phone,
-        name: name || 'Guest',
-        role: role || 'customer',
-        createdAt: Date.now(),
-      }
-      return {
-        ...state,
-        users: { ...state.users, [phone]: user },
-        session: {
-          userId: user.id,
-          phone,
-          role: user.role,
-          name: user.name,
-          expiresAt: Date.now() + SESSION_MS,
-        },
-      }
-    }
-
-    case 'logout':
-      return { ...state, session: null }
-
-    case 'updateName': {
-      const { phone } = state.session ?? {}
-      if (!phone) return state
-      const user = { ...state.users[phone], name: action.name }
-      return {
-        ...state,
-        users: { ...state.users, [phone]: user },
-        session: { ...state.session, name: action.name },
-      }
-    }
-
-    case 'createBooking': {
-      const b = action.booking
-      const salon = salonById(b.salonId)
-      return {
-        ...state,
-        bookings: [b, ...state.bookings],
-        notifications: notify(state, [
-          {
-            audience: `user:${b.userId}`,
-            tone: 'success',
-            title: 'Booking confirmed',
-            body: `${b.serviceName} at ${salon?.name ?? 'salon'} · ${b.dateLabel}, ${b.slot}`,
-          },
-          {
-            audience: `owner:${salon?.ownerId ?? 'unknown'}`,
-            tone: 'info',
-            title: 'New booking received',
-            body: `${b.serviceName} · ${b.dateLabel}, ${b.slot} · ${b.modeLabel}`,
-          },
-          {
-            audience: 'founder',
-            tone: 'info',
-            title: 'New booking on platform',
-            body: `${salon?.name ?? 'Salon'} · ${b.paymentMode === 'online' ? 'Paid online' : 'Cash at salon'}`,
-          },
-        ]),
-      }
-    }
-
-    case 'cancelBooking': {
-      const { bookingId, refund } = action
-      const booking = state.bookings.find((x) => x.id === bookingId)
-      if (!booking || booking.status === 'cancelled') return state
-
-      const salon = salonById(booking.salonId)
-      const cancelled = { ...booking, status: 'cancelled', refund, cancelledAt: Date.now() }
-
-      // Wallet refunds land immediately; UPI is marked processing and settles offline.
-      const creditsWallet = refund.status === 'completed' && refund.amount > 0
-      const balance = state.wallet[booking.userId] ?? 0
-
-      return {
-        ...state,
-        bookings: state.bookings.map((x) => (x.id === bookingId ? cancelled : x)),
-        wallet: creditsWallet
-          ? { ...state.wallet, [booking.userId]: balance + refund.amount }
-          : state.wallet,
-        ledger: creditsWallet
-          ? [
-              {
-                id: uid('led'),
-                userId: booking.userId,
-                type: 'credit',
-                amount: refund.amount,
-                note: `Refund · ${booking.serviceName}`,
-                ts: Date.now(),
-              },
-              ...state.ledger,
-            ]
-          : state.ledger,
-        notifications: notify(state, [
-          {
-            audience: `user:${booking.userId}`,
-            tone: refund.amount > 0 ? 'success' : 'info',
-            title: 'Booking cancelled',
-            body:
-              refund.amount > 0
-                ? `₹${refund.amount} refund · ${REFUND_METHODS[refund.method]?.eta ?? ''}`
-                : 'Nothing to refund — this was a pay-at-salon booking.',
-          },
-          {
-            audience: `owner:${salon?.ownerId ?? 'unknown'}`,
-            tone: 'warn',
-            title: 'Booking cancelled',
-            body: `${booking.serviceName} · ${booking.dateLabel}, ${booking.slot}`,
-          },
-          {
-            audience: 'founder',
-            tone: 'warn',
-            title: 'Cancellation',
-            body: `${salon?.name ?? 'Salon'} · ${refund.amount > 0 ? `₹${refund.amount} refunded` : 'no refund due'}`,
-          },
-        ]),
-      }
-    }
-
-    case 'setSalonStatus': {
-      return {
-        ...state,
-        salons: state.salons.map((s) =>
-          s.id === action.salonId ? { ...s, status: action.status } : s,
-        ),
-      }
-    }
-
-    case 'readNotifications':
-      return {
-        ...state,
-        notifications: state.notifications.map((n) =>
-          action.audiences.includes(n.audience) ? { ...n, read: true } : n,
-        ),
-      }
-
-    case 'reset':
-      return seedState()
-
-    default:
-      return state
-  }
-}
-
-/* ------------------------------------------------------------------
-   Provider
-   ------------------------------------------------------------------ */
+/** The session object pages consume: the API user plus a display expiry. */
+const toSession = (user) => ({ ...user, userId: user.id, expiresAt: tokenExpiry() })
 
 export function AppProvider({ children }) {
-  const [state, dispatch] = useReducer(reducer, undefined, hydrate)
+  const [ready, setReady] = useState(false)
+  const [salonsReady, setSalonsReady] = useState(false)
+  const [session, setSession] = useState(null)
+
+  // Data slices, each populated from the API by role.
+  const [publicSalons, setPublicSalons] = useState([])
+  const [myBookings, setMyBookings] = useState([])
+  const [walletBalance, setWalletBalance] = useState(0)
+  const [myLedger, setMyLedger] = useState([])
+  const [mySalons, setMySalons] = useState([])
+  const [ownerBookings, setOwnerBookings] = useState([])
+  const [allSalons, setAllSalons] = useState([])
+  const [allBookings, setAllBookings] = useState([])
+  const [notifications, setNotifications] = useState([])
+  const [unreadCount, setUnreadCount] = useState(0)
+
+  const role = session?.role ?? null
+
+  /* ---- Loaders ---- */
+
+  const loadPublicSalons = useCallback(async () => {
+    try {
+      const { salons } = await api.publicSalons()
+      setPublicSalons(enrichList(salons))
+    } finally {
+      setSalonsReady(true)
+    }
+  }, [])
+
+  const loadNotifications = useCallback(async () => {
+    const { notifications: items, unread } = await api.notifications()
+    setNotifications(items)
+    setUnreadCount(unread)
+  }, [])
+
+  const loadCustomer = useCallback(async () => {
+    const [{ bookings }, wallet] = await Promise.all([api.myBookings(), api.wallet()])
+    setMyBookings(bookings)
+    setWalletBalance(wallet.balance)
+    setMyLedger(wallet.ledger)
+  }, [])
+
+  const loadOwner = useCallback(async () => {
+    const [{ salons }, { bookings }] = await Promise.all([api.mySalons(), api.ownerBookings()])
+    setMySalons(enrichList(salons))
+    setOwnerBookings(bookings)
+  }, [])
+
+  const loadFounder = useCallback(async () => {
+    const [{ salons }, { bookings }] = await Promise.all([api.allSalons(), api.allBookings()])
+    setAllSalons(enrichList(salons))
+    setAllBookings(bookings)
+  }, [])
+
+  const loadForRole = useCallback(
+    async (r) => {
+      if (r === 'customer') await loadCustomer()
+      else if (r === 'owner') await loadOwner()
+      else if (r === 'founder') await loadFounder()
+      if (r) await loadNotifications()
+    },
+    [loadCustomer, loadOwner, loadFounder, loadNotifications],
+  )
+
+  /* ---- Bootstrap: restore session + storefront data ---- */
 
   useEffect(() => {
-    save('state', state)
-  }, [state])
+    let alive = true
+    ;(async () => {
+      // Storefront salons load for everyone, signed in or not.
+      loadPublicSalons().catch(() => {})
 
-  const session = state.session
-  const userId = session?.userId ?? null
+      if (getToken()) {
+        try {
+          const { user } = await api.me()
+          if (!alive) return
+          setSession(toSession(user))
+          setWalletBalance(user.walletBalance ?? 0)
+          await loadForRole(user.role)
+        } catch {
+          clearToken() // token invalid/expired
+        }
+      }
+      if (alive) setReady(true)
+    })()
+    return () => {
+      alive = false
+    }
+  }, [loadPublicSalons, loadForRole])
 
-  /** Salons merged with their live approval status; only approved are public. */
-  const salons = useMemo(() => {
-    const statuses = Object.fromEntries(state.salons.map((s) => [s.id, s.status]))
-    return SALONS.map((s) => ({ ...s, status: statuses[s.id] ?? s.status }))
-  }, [state.salons])
+  /* ---- Auth actions ---- */
 
-  const publicSalons = useMemo(() => salons.filter((s) => s.status === 'approved'), [salons])
+  const requestOtp = useCallback((phone) => api.requestOtp(phone), [])
 
-  const myBookings = useMemo(
-    () => (userId ? state.bookings.filter((b) => b.userId === userId) : []),
-    [state.bookings, userId],
+  const verifyOtp = useCallback(
+    async (phone, code, name) => {
+      const { token, user } = await api.verifyOtp(phone, code, name)
+      setToken(token)
+      setSession(toSession(user))
+      setWalletBalance(user.walletBalance ?? 0)
+      await loadForRole(user.role)
+      return user
+    },
+    [loadForRole],
   )
 
-  /**
-   * The 10% offer is once per customer, counted at booking time. A cancelled
-   * first booking does not hand the discount back — otherwise it could be
-   * farmed by booking and cancelling repeatedly.
-   */
-  const isFirstBooking = myBookings.length === 0
-
-  const walletBalance = userId ? (state.wallet[userId] ?? 0) : 0
-  const myLedger = useMemo(
-    () => (userId ? state.ledger.filter((l) => l.userId === userId) : []),
-    [state.ledger, userId],
-  )
-
-  const audiences = useMemo(() => {
-    if (!session) return []
-    if (session.role === 'founder') return ['founder']
-    if (session.role === 'owner') return [`owner:${session.userId}`]
-    return [`user:${session.userId}`]
-  }, [session])
-
-  const myNotifications = useMemo(
-    () => state.notifications.filter((n) => audiences.includes(n.audience)),
-    [state.notifications, audiences],
-  )
-
-  const unreadCount = myNotifications.filter((n) => !n.read).length
-
-  /* ---- Actions ---- */
-
-  const login = useCallback((phone, opts = {}) => {
-    dispatch({ type: 'login', phone, ...opts })
+  const logout = useCallback(() => {
+    clearToken()
+    setSession(null)
+    setMyBookings([])
+    setWalletBalance(0)
+    setMyLedger([])
+    setMySalons([])
+    setOwnerBookings([])
+    setAllSalons([])
+    setAllBookings([])
+    setNotifications([])
+    setUnreadCount(0)
   }, [])
 
-  const logout = useCallback(() => dispatch({ type: 'logout' }), [])
+  /** No dedicated endpoint yet — updates the display name locally. */
+  const setName = useCallback((name) => {
+    setSession((s) => (s ? { ...s, name } : s))
+  }, [])
 
-  const setName = useCallback((name) => dispatch({ type: 'updateName', name }), [])
+  /* ---- Booking actions ---- */
 
   const createBooking = useCallback(
-    (draft) => {
-      const salon = salonById(draft.salonId)
-      const service = findService(draft.serviceId)
-      const homeServiceFee = draft.mode === 'home' ? (salon?.homeServiceFee ?? 0) : 0
-
-      const priced = quote({
-        amount: service?.amount ?? 0,
-        paymentMode: draft.paymentMode,
-        isFirstBooking,
-        homeServiceFee,
-      })
-
-      const booking = {
-        id: uid('bkg'),
-        ref: `SS${Math.floor(100000 + Math.random() * 899999)}`,
-        userId,
-        salonId: draft.salonId,
-        salonName: salon?.name ?? '',
-        serviceId: draft.serviceId,
-        serviceName: service?.name ?? '',
-        staffId: draft.staffId ?? null,
-        staffName: draft.staffName ?? null,
-        mode: draft.mode,
-        modeLabel: draft.mode === 'home' ? 'Home service' : 'At salon',
-        address: draft.address ?? null,
-        date: draft.date,
-        dateLabel: draft.dateLabel,
-        slot: draft.slot,
-        paymentMode: draft.paymentMode,
-        homeServiceFee,
-        ...priced,
-        status: 'confirmed',
-        createdAt: Date.now(),
-      }
-
-      dispatch({ type: 'createBooking', booking })
+    async (draft) => {
+      const { booking } = await api.createBooking(draft)
+      setMyBookings((prev) => [booking, ...prev])
+      loadNotifications().catch(() => {})
       return booking
     },
-    [userId, isFirstBooking],
+    [loadNotifications],
   )
 
-  const cancelBooking = useCallback((booking, method) => {
-    const refund = refundFor(booking, method)
-    dispatch({ type: 'cancelBooking', bookingId: booking.id, refund })
-    return refund
-  }, [])
+  const cancelBooking = useCallback(
+    async (booking, method) => {
+      const { booking: updated, walletBalance: bal } = await api.cancelBooking(booking.id, method)
+      setMyBookings((prev) => prev.map((b) => (b.id === updated.id ? updated : b)))
+      setWalletBalance(bal)
+      api.wallet().then((w) => setMyLedger(w.ledger)).catch(() => {})
+      loadNotifications().catch(() => {})
+      return updated.refund
+    },
+    [loadNotifications],
+  )
+
+  /* ---- Salon actions ---- */
+
+  const submitSalon = useCallback(
+    async (draft) => {
+      const { salon } = await api.submitSalon(draft)
+      await loadOwner()
+      loadNotifications().catch(() => {})
+      return salon
+    },
+    [loadOwner, loadNotifications],
+  )
 
   const setSalonStatus = useCallback(
-    (salonId, status) => dispatch({ type: 'setSalonStatus', salonId, status }),
-    [],
+    async (salon, status) => {
+      await api.setSalonStatus(salon.id, status)
+      await Promise.all([loadFounder(), loadPublicSalons()])
+      loadNotifications().catch(() => {})
+    },
+    [loadFounder, loadPublicSalons, loadNotifications],
   )
 
-  const markRead = useCallback(() => {
-    if (audiences.length) dispatch({ type: 'readNotifications', audiences })
-  }, [audiences])
+  const markRead = useCallback(async () => {
+    setUnreadCount(0)
+    try {
+      await api.readNotifications()
+      await loadNotifications()
+    } catch {
+      /* ignore */
+    }
+  }, [loadNotifications])
 
   const resetDemo = useCallback(() => {
-    clearAll()
-    dispatch({ type: 'reset' })
-  }, [])
+    // The database is server-side now; "reset" just signs out this device.
+    logout()
+  }, [logout])
+
+  /* ---- Derived ---- */
+
+  const pendingSalons = useMemo(
+    () => allSalons.filter((s) => s.status === 'pending'),
+    [allSalons],
+  )
+
+  const platformStats = useMemo(() => {
+    const live = allBookings.filter((b) => b.status !== 'cancelled')
+    const earnings = live
+      .filter((b) => b.paymentMode === 'online')
+      .reduce((sum, b) => sum + b.total, 0)
+    return {
+      totalBookings: allBookings.length,
+      liveBookings: live.length,
+      earnings,
+      activeSalons: allSalons.filter((s) => s.status === 'approved').length,
+      pendingCount: allSalons.filter((s) => s.status === 'pending').length,
+    }
+  }, [allBookings, allSalons])
+
+  const findSalon = useCallback(
+    (id) =>
+      publicSalons.find((s) => s.id === id) ||
+      mySalons.find((s) => s.id === id) ||
+      allSalons.find((s) => s.id === id) ||
+      null,
+    [publicSalons, mySalons, allSalons],
+  )
 
   const value = useMemo(
     () => ({
+      ready,
+      salonsReady,
       session,
-      userId,
+      userId: session?.userId ?? session?.id ?? null,
       isSignedIn: Boolean(session),
-      role: session?.role ?? null,
-      login,
+      role,
+      isOwner: role === 'owner',
+      isFounder: role === 'founder',
+
+      // auth
+      requestOtp,
+      verifyOtp,
       logout,
       setName,
-      salons,
+
+      // salons
+      salons: allSalons,
       publicSalons,
-      bookings: state.bookings,
+      findSalon,
+      mySalons,
+      pendingSalons,
+
+      // bookings
+      bookings: allBookings,
       myBookings,
-      isFirstBooking,
+      ownerBookings,
+      isFirstBooking: role === 'customer' && myBookings.length === 0,
       createBooking,
       cancelBooking,
+
+      // salon mutations
+      submitSalon,
+      setSalonStatus,
+
+      // wallet + notifications
       walletBalance,
       myLedger,
-      myNotifications,
+      myNotifications: notifications,
       unreadCount,
       markRead,
-      setSalonStatus,
+
+      // platform
+      platformStats,
       owners: OWNERS,
       founder: FOUNDER,
       resetDemo,
     }),
     [
-      session, userId, login, logout, setName, salons, publicSalons, state.bookings,
-      myBookings, isFirstBooking, createBooking, cancelBooking, walletBalance,
-      myLedger, myNotifications, unreadCount, markRead, setSalonStatus, resetDemo,
+      ready, salonsReady, session, role, requestOtp, verifyOtp, logout, setName, allSalons, publicSalons,
+      findSalon, mySalons, pendingSalons, allBookings, myBookings, ownerBookings, createBooking,
+      cancelBooking, submitSalon, setSalonStatus, walletBalance, myLedger, notifications,
+      unreadCount, markRead, platformStats, resetDemo,
     ],
   )
 

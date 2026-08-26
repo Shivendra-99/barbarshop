@@ -14,9 +14,9 @@ const COLUMNS = [
   {
     title: 'For salons',
     links: [
-      { label: 'List your salon', to: '/help' },
-      { label: 'Owner dashboard', to: '/help' },
-      { label: 'Pricing', to: '/help' },
+      { label: 'List your salon', to: '/owner/add' },
+      { label: 'Owner dashboard', to: '/owner' },
+      { label: 'Admin', to: '/admin' },
     ],
   },
   {

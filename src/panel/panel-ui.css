@@ -1,0 +1,308 @@
+/* Reusable building blocks for the admin & owner panels. */
+
+.p-head {
+  margin-bottom: 28px;
+}
+
+.p-head__title {
+  font-family: var(--font-display);
+  font-size: clamp(26px, 3vw, 34px);
+  font-weight: 400;
+  color: var(--heading);
+  margin: 0;
+}
+
+.p-head__sub {
+  font-size: 15px;
+  color: var(--muted-2);
+  margin-top: 8px;
+}
+
+.p-section {
+  margin-top: 32px;
+}
+
+.p-section__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.p-section__title {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 400;
+  color: var(--heading);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* ---------------- KPI tiles ---------------- */
+
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 18px;
+}
+
+.kpi {
+  position: relative;
+  padding: 22px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+}
+
+.kpi::after {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--gold), transparent);
+}
+
+.kpi__icon {
+  width: 42px;
+  height: 42px;
+  border-radius: var(--r-md);
+  background: var(--gold-wash);
+  color: var(--gold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.kpi__icon svg {
+  width: 22px;
+  height: 22px;
+}
+
+.kpi__label {
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted-3);
+}
+
+.kpi__value {
+  font-family: var(--font-display);
+  font-size: 34px;
+  color: var(--heading);
+  margin: 8px 0 6px;
+  line-height: 1;
+}
+
+.kpi__delta {
+  font-size: 13px;
+  color: var(--muted-3);
+}
+
+.kpi__delta--up {
+  color: var(--green);
+}
+
+/* ---------------- Panel card ---------------- */
+
+.pcard {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+}
+
+.pcard__body {
+  padding: 6px;
+}
+
+/* ---------------- Approval requests ---------------- */
+
+.reqList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.reqRow {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+}
+
+.reqRow__media {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--r-md);
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.reqRow__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.reqRow__name {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--heading);
+}
+
+.reqRow__meta {
+  font-size: 13px;
+  color: var(--muted-3);
+  margin-top: 3px;
+}
+
+.reqRow__actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* ---------------- Table ---------------- */
+
+.ptable-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+}
+
+.ptable {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 640px;
+}
+
+.ptable th {
+  text-align: left;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted-3);
+  font-weight: 500;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+
+.ptable td {
+  padding: 15px 18px;
+  font-size: 14px;
+  color: var(--text);
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+}
+
+.ptable tr:last-child td {
+  border-bottom: none;
+}
+
+.ptable tbody tr {
+  transition: background var(--dur-fast) ease;
+}
+
+.ptable tbody tr:hover {
+  background: var(--surface-alt);
+}
+
+.ptable__strong {
+  color: var(--heading);
+  font-weight: 500;
+}
+
+.ptable__sub {
+  font-size: 12.5px;
+  color: var(--muted-3);
+  margin-top: 2px;
+}
+
+.ptable__money {
+  font-variant-numeric: tabular-nums;
+  color: var(--heading);
+  font-weight: 500;
+}
+
+/* ---------------- Empty ---------------- */
+
+.p-empty {
+  padding: 48px 24px;
+  text-align: center;
+  border: 1px dashed var(--gold-line);
+  border-radius: var(--r-lg);
+  color: var(--muted-2);
+}
+
+.p-empty__title {
+  font-family: var(--font-display);
+  font-size: 20px;
+  color: var(--heading);
+  margin: 0 0 8px;
+}
+
+.p-empty__text {
+  font-size: 14.5px;
+  margin: 0 auto;
+  max-width: 380px;
+  line-height: 1.6;
+}
+
+/* ---------------- Two-column ---------------- */
+
+.p-cols {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+@media (max-width: 1180px) {
+  .kpis {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .p-cols {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .kpis {
+    grid-template-columns: 1fr;
+  }
+  .reqRow {
+    flex-wrap: wrap;
+  }
+  .reqRow__actions {
+    width: 100%;
+  }
+  .reqRow__actions .btn {
+    flex: 1;
+  }
+}
+
+/* ---------------- Filters row ---------------- */
+
+.fs-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.fs-actions {
+  display: flex;
+  gap: 8px;
+}

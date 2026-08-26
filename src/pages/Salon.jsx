@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { useApp } from '../store/AppStore'
-import { categoryById, servicesFor } from '../data/seed'
+import { categoryById } from '../data/seed'
+import { api } from '../lib/api'
 import { formatINR } from '../lib/money'
 import { SERVICE_MODES } from '../lib/pricing'
 import './Salon.css'
@@ -15,16 +16,48 @@ const TABS = [
 export default function Salon() {
   const { salonId } = useParams()
   const navigate = useNavigate()
-  const { publicSalons, isFirstBooking, isSignedIn } = useApp()
+  const { publicSalons, salonsReady, isFirstBooking, isSignedIn } = useApp()
   const [tab, setTab] = useState('services')
 
   const salon = publicSalons.find((s) => s.id === salonId)
 
+  // The salon's own menu, loaded from the API.
+  const [services, setServices] = useState([])
+  const [loadingSvc, setLoadingSvc] = useState(true)
+
+  useEffect(() => {
+    if (!salonId) return undefined
+    let alive = true
+    setLoadingSvc(true)
+    api
+      .salonServices(salonId)
+      .then((res) => alive && setServices(res.services))
+      .catch(() => alive && setServices([]))
+      .finally(() => alive && setLoadingSvc(false))
+    return () => {
+      alive = false
+    }
+  }, [salonId])
+
+  const fromPrice = useMemo(
+    () => (services.length ? Math.min(...services.map((s) => s.amount)) : salon?.from ?? 0),
+    [services, salon],
+  )
+
+  // Wait for the salon list before deciding — a direct link lands here before
+  // the fetch resolves, and redirecting early would bounce a valid URL.
+  if (!salon && !salonsReady) {
+    return (
+      <div className="route-loading" role="status" aria-live="polite">
+        <span className="route-loading__spinner" aria-hidden="true" />
+        <span className="sr-only">Loading…</span>
+      </div>
+    )
+  }
   // A salon can be un-listed by the founder while someone holds the link.
   if (!salon) return <Navigate to="/salons" replace />
 
   const category = categoryById(salon.category)
-  const services = servicesFor(salon.category)
   const offersHome = salon.serviceModes.includes('home')
 
   const book = (serviceId) => {
@@ -78,31 +111,36 @@ export default function Salon() {
             ))}
           </div>
 
-          {tab === 'services' && (
-            <ul className="svcList">
-              {services.map((s) => (
-                <li key={s.id} className="svc">
-                  <div className="svc__info">
-                    <h3 className="svc__name">{s.name}</h3>
-                    <p className="svc__desc">{s.desc}</p>
-                  </div>
-                  <div className="svc__right">
-                    <div className="svc__priceBlock">
-                      <div className="svc__price money">{formatINR(s.amount)}</div>
-                      <div className="svc__dur">{s.mins} min</div>
+          {tab === 'services' &&
+            (loadingSvc ? (
+              <p className="svcList__loading">Loading menu…</p>
+            ) : services.length === 0 ? (
+              <p className="svcList__loading">This salon hasn&rsquo;t listed any services yet.</p>
+            ) : (
+              <ul className="svcList">
+                {services.map((s) => (
+                  <li key={s.id} className="svc">
+                    <div className="svc__info">
+                      <h3 className="svc__name">{s.name}</h3>
+                      <p className="svc__desc">{s.desc}</p>
                     </div>
-                    <button
-                      type="button"
-                      className="btn btn--ghost-gold btn--sm"
-                      onClick={() => book(s.id)}
-                    >
-                      Book
-                    </button>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
+                    <div className="svc__right">
+                      <div className="svc__priceBlock">
+                        <div className="svc__price money">{formatINR(s.amount)}</div>
+                        <div className="svc__dur">{s.mins} min</div>
+                      </div>
+                      <button
+                        type="button"
+                        className="btn btn--ghost-gold btn--sm"
+                        onClick={() => book(s.id)}
+                      >
+                        Book
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ))}
 
           {tab === 'team' && (
             <div className="grid3 team">
@@ -161,7 +199,7 @@ export default function Salon() {
         <aside className="rail">
           <div className="eyebrow">Book an appointment</div>
           <div className="rail__price money">
-            From {formatINR(salon.from)}
+            From {formatINR(fromPrice)}
           </div>
 
           {isFirstBooking && (

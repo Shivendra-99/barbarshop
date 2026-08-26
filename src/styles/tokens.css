@@ -1,15 +1,24 @@
 /* ============================================================
    SalonSathi design tokens
 
-   Two themes on one set of semantic names:
-     :root                 → customer surfaces (cream / ivory + gold)
-     [data-theme="admin"]  → owner & founder panels (charcoal + gold)
+   One set of semantic names, three resolutions:
 
-   Components never reference a raw colour, so a surface changes
-   theme purely by which wrapper it sits inside.
+     :root                  cream / gold      customer, light
+     [data-theme="dark"]    charcoal / gold   customer, dark
+     [data-theme="admin"]   charcoal / gold   owner & founder panels
+
+   `dark` and `admin` share a palette, so the dark block is written
+   once as a selector list. It appears a second time inside the
+   prefers-color-scheme query because CSS has no way to reuse a
+   declaration block across a media boundary — keep the two in sync.
+
+   Components reference only these names, never a raw colour, so a
+   surface changes theme purely by which element carries data-theme.
    ============================================================ */
 
 :root {
+  color-scheme: light;
+
   /* Surfaces */
   --bg: #fbf7f0;
   --bg-tint: #f5eee1;
@@ -17,12 +26,14 @@
   --surface-alt: #f7f1e7;
   --surface-raised: #ffffff;
   --surface-sunken: #f0e8da;
+  --header-bg: rgba(251, 247, 240, 0.92);
+  --overlay-surface: rgba(255, 255, 255, 0.94);
 
   /* Brand gold.
-     --gold fills; --gold-deep is the only gold safe for text on cream
-     (5.4:1 on --bg, where --gold manages just 2.1:1). */
+     --gold fills (paired with --on-gold text); --gold-deep is the only
+     gold that passes contrast as text on the page background. */
   --gold: #c9a227;
-  --gold-deep: #8a6a15;
+  --gold-deep: #7d6013;
   --gold-light: #e3c77a;
   --gold-pale: #f2e3bd;
   --gold-dim: rgba(201, 162, 39, 0.22);
@@ -33,25 +44,25 @@
   /* Text */
   --heading-bright: #14110c;
   --heading: #1f1a13;
-  --text: #3a342b;
-  --text-soft: #554d41;
-  --muted: #6b6255;
-  --muted-2: #7a7164;
-  --muted-3: #8c8375;
-  --muted-4: #9d9486;
-  --muted-5: #b0a696;
-  --disabled: #c9c0b1;
+  --text: #322c24;
+  --text-soft: #4a4238;
+  --muted: #5b5346;
+  --muted-2: #675e50;
+  --muted-3: #736a5b;
+  --muted-4: #786f5f;
+  --muted-5: #948b7a;
+  --disabled: #b3aa9a;
 
   /* Status */
-  --green: #3f7d52;
-  --green-wash: rgba(63, 125, 82, 0.1);
-  --green-line: rgba(63, 125, 82, 0.35);
-  --amber: #9a6f14;
-  --amber-wash: rgba(154, 111, 20, 0.1);
-  --amber-line: rgba(154, 111, 20, 0.35);
-  --red: #a53f34;
-  --red-wash: rgba(165, 63, 52, 0.09);
-  --red-line: rgba(165, 63, 52, 0.32);
+  --green: #2f6b41;
+  --green-wash: rgba(47, 107, 65, 0.1);
+  --green-line: rgba(47, 107, 65, 0.35);
+  --amber: #8a6209;
+  --amber-wash: rgba(138, 98, 9, 0.1);
+  --amber-line: rgba(138, 98, 9, 0.35);
+  --red: #9a382d;
+  --red-wash: rgba(154, 56, 45, 0.09);
+  --red-line: rgba(154, 56, 45, 0.32);
 
   /* Hairlines */
   --line: rgba(31, 26, 19, 0.09);
@@ -72,7 +83,7 @@
   --max-w: 1280px;
   --header-h: 72px;
 
-  /* Radii — the cream identity is softer than the old dark one */
+  /* Radii */
   --r-sm: 6px;
   --r-md: 10px;
   --r-lg: 16px;
@@ -86,53 +97,113 @@
   --dur-slow: 0.6s;
 }
 
-/* ---------- Admin / owner theme ---------- */
+/* ---------- Dark palette: explicit choice, and admin panels ---------- */
 
+:root[data-theme='dark'],
 [data-theme='admin'] {
-  --bg: #0a0a0b;
-  --bg-tint: #101014;
-  --surface: #141416;
-  --surface-alt: #0d0d0f;
-  --surface-raised: #1a1a1e;
-  --surface-sunken: #08080a;
+  color-scheme: dark;
 
-  --gold: #c6a15b;
-  --gold-deep: #d9b978;
-  --gold-light: #e4c88a;
-  --gold-pale: #3a3018;
-  --gold-dim: rgba(198, 161, 91, 0.2);
-  --gold-wash: rgba(198, 161, 91, 0.08);
-  --gold-line: rgba(198, 161, 91, 0.34);
-  --on-gold: #0a0a0b;
+  --bg: #100f13;
+  --bg-tint: #16151a;
+  --surface: #191820;
+  --surface-alt: #1e1d26;
+  --surface-raised: #23222c;
+  --surface-sunken: #0b0a0e;
+  --header-bg: rgba(16, 15, 19, 0.92);
+  --overlay-surface: rgba(16, 15, 19, 0.86);
 
-  --heading-bright: #f6f1e7;
-  --heading: #f4efe6;
-  --text: #efeae1;
-  --text-soft: #c7c1b7;
-  --muted: #b0aa9f;
-  --muted-2: #a9a399;
-  --muted-3: #8e887e;
-  --muted-4: #7e786e;
-  --muted-5: #5f5a53;
-  --disabled: #3e3b37;
+  --gold: #c9a961;
+  --gold-deep: #dcbb72;
+  --gold-light: #e8cf90;
+  --gold-pale: #2e2718;
+  --gold-dim: rgba(201, 169, 97, 0.22);
+  --gold-wash: rgba(201, 169, 97, 0.1);
+  --gold-line: rgba(201, 169, 97, 0.36);
+  --on-gold: #14110c;
 
-  --green: #7bae8b;
-  --green-wash: rgba(123, 174, 139, 0.12);
-  --green-line: rgba(123, 174, 139, 0.4);
-  --amber: #d2a54a;
-  --amber-wash: rgba(210, 165, 74, 0.12);
-  --amber-line: rgba(210, 165, 74, 0.4);
-  --red: #c8837a;
-  --red-wash: rgba(200, 131, 122, 0.12);
-  --red-line: rgba(200, 131, 122, 0.4);
+  --heading-bright: #faf6ed;
+  --heading: #f1ebdf;
+  --text: #e2dbcd;
+  --text-soft: #cdc5b6;
+  --muted: #b6ad9d;
+  --muted-2: #a79e8d;
+  --muted-3: #988f7e;
+  --muted-4: #8a8170;
+  --muted-5: #6f6759;
+  --disabled: #4b453d;
 
-  --line: rgba(255, 255, 255, 0.07);
-  --line-strong: rgba(255, 255, 255, 0.11);
-  --line-soft: rgba(255, 255, 255, 0.16);
+  --green: #7fc094;
+  --green-wash: rgba(127, 192, 148, 0.12);
+  --green-line: rgba(127, 192, 148, 0.4);
+  --amber: #dcae55;
+  --amber-wash: rgba(220, 174, 85, 0.12);
+  --amber-line: rgba(220, 174, 85, 0.4);
+  --red: #e0897d;
+  --red-wash: rgba(224, 137, 125, 0.12);
+  --red-line: rgba(224, 137, 125, 0.4);
+
+  --line: rgba(255, 255, 255, 0.08);
+  --line-strong: rgba(255, 255, 255, 0.13);
+  --line-soft: rgba(255, 255, 255, 0.18);
 
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
   --shadow-md: 0 10px 30px rgba(0, 0, 0, 0.45);
   --shadow-lg: 0 24px 60px rgba(0, 0, 0, 0.6);
+}
+
+/* ---------- Dark palette: following the system, unless light was chosen ---------- */
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+
+    --bg: #100f13;
+    --bg-tint: #16151a;
+    --surface: #191820;
+    --surface-alt: #1e1d26;
+    --surface-raised: #23222c;
+    --surface-sunken: #0b0a0e;
+    --header-bg: rgba(16, 15, 19, 0.92);
+    --overlay-surface: rgba(16, 15, 19, 0.86);
+
+    --gold: #c9a961;
+    --gold-deep: #dcbb72;
+    --gold-light: #e8cf90;
+    --gold-pale: #2e2718;
+    --gold-dim: rgba(201, 169, 97, 0.22);
+    --gold-wash: rgba(201, 169, 97, 0.1);
+    --gold-line: rgba(201, 169, 97, 0.36);
+    --on-gold: #14110c;
+
+    --heading-bright: #faf6ed;
+    --heading: #f1ebdf;
+    --text: #e2dbcd;
+    --text-soft: #cdc5b6;
+    --muted: #b6ad9d;
+    --muted-2: #a79e8d;
+    --muted-3: #988f7e;
+    --muted-4: #8a8170;
+    --muted-5: #6f6759;
+    --disabled: #4b453d;
+
+    --green: #7fc094;
+    --green-wash: rgba(127, 192, 148, 0.12);
+    --green-line: rgba(127, 192, 148, 0.4);
+    --amber: #dcae55;
+    --amber-wash: rgba(220, 174, 85, 0.12);
+    --amber-line: rgba(220, 174, 85, 0.4);
+    --red: #e0897d;
+    --red-wash: rgba(224, 137, 125, 0.12);
+    --red-line: rgba(224, 137, 125, 0.4);
+
+    --line: rgba(255, 255, 255, 0.08);
+    --line-strong: rgba(255, 255, 255, 0.13);
+    --line-soft: rgba(255, 255, 255, 0.18);
+
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow-md: 0 10px 30px rgba(0, 0, 0, 0.45);
+    --shadow-lg: 0 24px 60px rgba(0, 0, 0, 0.6);
+  }
 }
 
 @media (max-width: 760px) {
