@@ -16,9 +16,9 @@ export function createApp() {
   const app = express()
 
   // Dev accepts any origin (localhost ports, hosts-file aliases, tunnels — the
-  // MSG91 widget forces us off "localhost"). Production uses the allow-list.
-  const corsOrigin = env.isProd ? env.corsOrigin : true
-  app.use(cors({ origin: corsOrigin, credentials: true }))
+  // MSG91 widget forces us off "localhost"). Production accepts the CORS_ORIGIN
+  // allow-list plus any of this app's Vercel deployments (see corsAllow).
+  app.use(cors({ origin: corsAllow, credentials: true }))
   app.use(express.json())
   if (!env.isProd) app.use(morgan('dev'))
 
@@ -52,6 +52,26 @@ export function createApp() {
   app.use(errorHandler)
 
   return app
+}
+
+/* ------------------------------ CORS ------------------------------ */
+
+/**
+ * Allow: non-browser requests (no Origin), everything in dev, the CORS_ORIGIN
+ * allow-list (your custom domains, e.g. https://salonsaathi.in), and any of
+ * this app's Vercel deployments — production, git-branch, and per-deploy
+ * preview URLs all live on *.vercel.app and change on every deploy, so match
+ * them by suffix instead of listing each one.
+ */
+function corsAllow(origin, cb) {
+  if (!origin || !env.isProd) return cb(null, true)
+  if (env.corsOrigin.includes(origin)) return cb(null, true)
+  try {
+    if (new URL(origin).hostname.endsWith('.vercel.app')) return cb(null, true)
+  } catch {
+    /* malformed origin — fall through to reject */
+  }
+  return cb(null, false)
 }
 
 /* ---- Lazy DB connection (shared across warm serverless invocations) ---- */
