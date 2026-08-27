@@ -11,6 +11,7 @@ const NAV = {
     items: [
       { to: '/admin', label: 'Dashboard', end: true, icon: 'grid' },
       { to: '/admin/salons', label: 'Salons', icon: 'store' },
+      { to: '/admin/owners', label: 'Owners', icon: 'users' },
       { to: '/admin/bookings', label: 'Bookings', icon: 'calendar' },
     ],
   },
@@ -30,6 +31,8 @@ const ICONS = {
   store: 'M4 9V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v3M4 9h16M4 9l1 11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1l1-11',
   calendar: 'M4 6a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1zM4 9h16M8 3v4M16 3v4',
   plus: 'M12 5v14M5 12h14',
+  users:
+    'M9 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7ZM2.5 20a6.5 6.5 0 0 1 13 0M17 4.5a3.5 3.5 0 0 1 0 6.9M18 14a6.5 6.5 0 0 1 3.5 6',
 }
 
 function Icon({ name }) {

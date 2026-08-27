@@ -14,6 +14,10 @@ export const env = {
 
   mongoUri: process.env.MONGODB_URI || '',
 
+  // The one phone number that gets the founder (super-admin) role on login.
+  // Set FOUNDER_PHONE to your real number in production.
+  founderPhone: process.env.FOUNDER_PHONE || '9000000000',
+
   jwtSecret: process.env.JWT_SECRET || 'dev-only-change-me',
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '30d',
 

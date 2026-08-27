@@ -306,3 +306,45 @@
   display: flex;
   gap: 8px;
 }
+
+/* ---------------- Add-owner form ---------------- */
+
+.fo-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 16px;
+}
+
+.fo-field {
+  flex: 1 1 220px;
+  margin-bottom: 0;
+}
+
+.fo-phone {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.fo-cc {
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-sm);
+  background: var(--surface-alt);
+  color: var(--muted-2);
+  font-size: 15px;
+  white-space: nowrap;
+}
+
+.fo-submit {
+  flex-shrink: 0;
+}
+
+@media (max-width: 560px) {
+  .fo-submit {
+    width: 100%;
+  }
+}

@@ -1,10 +1,13 @@
 /**
- * Demo identity map. With no real user database, the phone number decides the
- * role — the founder and the four owners have fixed numbers; everyone else who
- * signs in is a customer. Mirrors the frontend's identityForPhone.
+ * Role resolution for a fresh login. The founder is a single configured phone
+ * (FOUNDER_PHONE); owners are created in the database by the founder, so an
+ * existing owner keeps their stored role on login. The OWNERS list below only
+ * seeds the demo salons — it does not grant roles to real sign-ins.
  */
 
-export const FOUNDER = { name: 'Founder', phone: '9000000000', role: 'founder' }
+import { env } from './env.js'
+
+export const FOUNDER = { name: 'Founder', phone: env.founderPhone, role: 'founder' }
 
 export const OWNERS = [
   { code: 'own-1', name: 'Rakesh Verma', phone: '9811100001', role: 'owner' },

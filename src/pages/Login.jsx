@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams, Link } from 'react-router-dom'
 import { useApp, SESSION_DAYS } from '../store/AppStore'
 import { useToast } from '../components/Toast'
-import { BRAND, DEMO_ACCOUNTS } from '../data/seed'
+import { BRAND } from '../data/seed'
 import {
   widgetConfigured,
   initWidget,
@@ -176,12 +176,6 @@ export default function Login() {
     }
   }
 
-  const useDemo = (demoPhone) => {
-    setPhone(demoPhone)
-    setName('')
-    setError('')
-  }
-
   return (
     <div className="login">
       <div className="login__art" aria-hidden="true">
@@ -245,25 +239,6 @@ export default function Login() {
               <button type="submit" className="btn btn--gold btn--block" disabled={!phoneValid || busy}>
                 {busy ? 'Sending…' : 'Send OTP'}
               </button>
-
-              <div className="login__demoAccounts">
-                <span className="login__demoLabel">Try a demo role</span>
-                <div className="login__demoChips">
-                  {DEMO_ACCOUNTS.map((d) => (
-                    <button
-                      key={d.phone}
-                      type="button"
-                      className="chip"
-                      onClick={() => useDemo(d.phone)}
-                    >
-                      {d.label}
-                    </button>
-                  ))}
-                </div>
-                <span className="login__demoHint">
-                  Or use any other number to sign in as a customer.
-                </span>
-              </div>
 
               <p className="login__fine">
                 By continuing you agree to our Terms and Privacy Policy.

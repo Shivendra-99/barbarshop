@@ -64,6 +64,10 @@ export const api = {
     request('/auth/widget-login', { method: 'POST', body: { accessToken, phone, name }, auth: false }),
   me: () => request('/auth/me'),
 
+  // --- Owners (founder-managed) ---
+  owners: () => request('/users/owners'),
+  addOwner: (body) => request('/users/owners', { method: 'POST', body }),
+
   // --- Salons ---
   publicSalons: () => request('/salons', { auth: false }),
   salon: (id) => request(`/salons/${id}`, { auth: false }),

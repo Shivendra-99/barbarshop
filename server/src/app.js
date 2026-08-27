@@ -5,6 +5,7 @@ import { env } from './config/env.js'
 import { connectDB, isEphemeral } from './config/db.js'
 import { otpMode } from './lib/otp.js'
 import authRoutes from './routes/auth.routes.js'
+import userRoutes from './routes/users.routes.js'
 import salonRoutes from './routes/salons.routes.js'
 import serviceRoutes from './routes/services.routes.js'
 import bookingRoutes from './routes/bookings.routes.js'
@@ -42,6 +43,7 @@ export function createApp() {
   app.use(ensureDb)
 
   app.use('/api/auth', authRoutes)
+  app.use('/api/users', userRoutes)
   app.use('/api/salons', salonRoutes)
   app.use('/api/services', serviceRoutes)
   app.use('/api/bookings', bookingRoutes)

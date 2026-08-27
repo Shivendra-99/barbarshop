@@ -16,6 +16,7 @@ import NotFound from './pages/NotFound'
 import PanelLayout from './panel/PanelLayout'
 import FounderDashboard from './panel/FounderDashboard'
 import FounderSalons from './panel/FounderSalons'
+import FounderOwners from './panel/FounderOwners'
 import FounderBookings from './panel/FounderBookings'
 import OwnerDashboard from './panel/OwnerDashboard'
 import OwnerAddSalon from './panel/OwnerAddSalon'
@@ -90,6 +91,7 @@ export default function App() {
         >
           <Route index element={<FounderDashboard />} />
           <Route path="salons" element={<FounderSalons />} />
+          <Route path="owners" element={<FounderOwners />} />
           <Route path="bookings" element={<FounderBookings />} />
         </Route>
 
