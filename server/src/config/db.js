@@ -12,6 +12,10 @@ let memoryServer = null
  * throwaway dev database.
  */
 export async function connectDB() {
+  // Reuse an existing connection — critical on serverless (Vercel), where a warm
+  // instance must not open a new connection on every invocation.
+  if (mongoose.connection.readyState === 1) return { mode: 'atlas', reused: true }
+
   mongoose.set('strictQuery', true)
 
   let uri = env.mongoUri
