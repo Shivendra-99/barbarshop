@@ -37,6 +37,10 @@ export const msg91 = {
       headers: { authkey: env.msg91.authkey, 'Content-Type': 'application/json' },
       body: JSON.stringify({}),
     })
+    // Log MSG91's full reply so a non-delivery can be traced to its request_id
+    // in the MSG91 panel (Reports → Logs). Accepted here ≠ delivered.
+    // eslint-disable-next-line no-console
+    console.log(`[msg91:send] +91 ${phone} →`, JSON.stringify(data))
     if (data.type !== 'success') {
       throw new ApiError(502, data.message || 'Could not send the OTP.')
     }
@@ -54,6 +58,27 @@ export const msg91 = {
     const msg = (data.message || '').toLowerCase()
     const reason = msg.includes('expire') ? 'expired' : 'mismatch'
     return { ok: false, reason }
+  },
+
+  /**
+   * Widget flow: verifies the JWT access-token the browser OTP widget returns
+   * after the user completes verification. On success MSG91 echoes the verified
+   * identifier (the mobile number) — we trust that, not the client.
+   * Returns { ok, identifier }.
+   */
+  async verifyAccessToken(accessToken) {
+    const data = await call(`${BASE}/widget/verifyAccessToken`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ authkey: env.msg91.authkey, 'access-token': accessToken }),
+    })
+    // eslint-disable-next-line no-console
+    console.log('[msg91:verifyAccessToken] →', JSON.stringify(data))
+    if (data.type === 'success') {
+      // MSG91 returns the verified identifier in `message` (e.g. "919936120982").
+      return { ok: true, identifier: String(data.message ?? '') }
+    }
+    return { ok: false, reason: data.message || 'invalid_token' }
   },
 
   /** Resends the OTP (text channel). */

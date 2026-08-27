@@ -131,6 +131,19 @@ export function AppProvider({ children }) {
     [loadForRole],
   )
 
+  /** MSG91 widget flow: exchange the widget access-token for our session. */
+  const widgetLogin = useCallback(
+    async (accessToken, phone, name) => {
+      const { token, user } = await api.widgetLogin(accessToken, phone, name)
+      setToken(token)
+      setSession(toSession(user))
+      setWalletBalance(user.walletBalance ?? 0)
+      await loadForRole(user.role)
+      return user
+    },
+    [loadForRole],
+  )
+
   const logout = useCallback(() => {
     clearToken()
     setSession(null)
@@ -170,6 +183,16 @@ export function AppProvider({ children }) {
       api.wallet().then((w) => setMyLedger(w.ledger)).catch(() => {})
       loadNotifications().catch(() => {})
       return updated.refund
+    },
+    [loadNotifications],
+  )
+
+  const rescheduleBooking = useCallback(
+    async (booking, { date, dateLabel, slot }) => {
+      const { booking: updated } = await api.rescheduleBooking(booking.id, { date, dateLabel, slot })
+      setMyBookings((prev) => prev.map((b) => (b.id === updated.id ? updated : b)))
+      loadNotifications().catch(() => {})
+      return updated
     },
     [loadNotifications],
   )
@@ -254,6 +277,7 @@ export function AppProvider({ children }) {
       // auth
       requestOtp,
       verifyOtp,
+      widgetLogin,
       logout,
       setName,
 
@@ -271,6 +295,7 @@ export function AppProvider({ children }) {
       isFirstBooking: role === 'customer' && myBookings.length === 0,
       createBooking,
       cancelBooking,
+      rescheduleBooking,
 
       // salon mutations
       submitSalon,
@@ -290,9 +315,9 @@ export function AppProvider({ children }) {
       resetDemo,
     }),
     [
-      ready, salonsReady, session, role, requestOtp, verifyOtp, logout, setName, allSalons, publicSalons,
+      ready, salonsReady, session, role, requestOtp, verifyOtp, widgetLogin, logout, setName, allSalons, publicSalons,
       findSalon, mySalons, pendingSalons, allBookings, myBookings, ownerBookings, createBooking,
-      cancelBooking, submitSalon, setSalonStatus, walletBalance, myLedger, notifications,
+      cancelBooking, rescheduleBooking, submitSalon, setSalonStatus, walletBalance, myLedger, notifications,
       unreadCount, markRead, platformStats, resetDemo,
     ],
   )

@@ -123,6 +123,58 @@ router.post(
   }),
 )
 
+/* ---- Customer: reschedule a booking (change date/time only) ---- */
+
+const rescheduleSchema = z.object({
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date.'),
+  dateLabel: z.string().optional(),
+  slot: z.string().min(1),
+})
+
+router.patch(
+  '/:id/reschedule',
+  requireAuth,
+  requireRole('customer'),
+  validate(rescheduleSchema),
+  asyncHandler(async (req, res) => {
+    const booking = await Booking.findById(req.params.id).catch(() => null)
+    if (!booking) throw new ApiError(404, 'Booking not found.')
+    if (booking.customer.toString() !== req.user._id.toString()) {
+      throw new ApiError(403, 'That is not your booking.')
+    }
+    if (booking.status !== 'confirmed') {
+      throw new ApiError(400, 'Only a confirmed booking can be rescheduled.')
+    }
+
+    booking.date = req.body.date
+    booking.dateLabel = req.body.dateLabel ?? req.body.date
+    booking.slot = req.body.slot
+    await booking.save()
+
+    const salon = await Salon.findById(booking.salon).catch(() => null)
+    await notify([
+      {
+        audience: `user:${req.user._id.toString()}`,
+        tone: 'success',
+        title: 'Booking rescheduled',
+        body: `${booking.serviceName} · now ${booking.dateLabel}, ${booking.slot}`,
+      },
+      ...(salon
+        ? [
+            {
+              audience: `owner:${salon.owner.toString()}`,
+              tone: 'info',
+              title: 'Booking rescheduled',
+              body: `${booking.serviceName} · now ${booking.dateLabel}, ${booking.slot}`,
+            },
+          ]
+        : []),
+    ])
+
+    res.json({ booking: booking.toPublic() })
+  }),
+)
+
 /* ---- Customer: cancel a booking (refund → wallet instant / UPI 2-3 days) ---- */
 
 const cancelSchema = z.object({ method: z.enum(['wallet', 'upi']) })

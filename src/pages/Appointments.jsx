@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useApp } from '../store/AppStore'
 import { useToast } from '../components/Toast'
+import RescheduleDialog from '../components/RescheduleDialog'
 import { formatINR } from '../lib/money'
 import { REFUND_METHODS } from '../lib/pricing'
 import { fromISO, startOfToday } from '../lib/datetime'
@@ -98,10 +99,11 @@ function CancelDialog({ booking, onClose, onConfirm }) {
    ------------------------------------------------------------------ */
 
 export default function Appointments() {
-  const { myBookings, cancelBooking } = useApp()
+  const { myBookings, cancelBooking, rescheduleBooking } = useApp()
   const { push } = useToast()
   const [tab, setTab] = useState('Upcoming')
   const [pending, setPending] = useState(null)
+  const [rescheduling, setRescheduling] = useState(null)
 
   const today = useMemo(() => startOfToday(), [])
 
@@ -119,6 +121,21 @@ export default function Appointments() {
   }, [myBookings, today])
 
   const rows = tab === 'Upcoming' ? upcoming : past
+
+  const doReschedule = async ({ date, dateLabel, slot }) => {
+    const booking = rescheduling
+    try {
+      await rescheduleBooking(booking, { date, dateLabel, slot })
+      setRescheduling(null)
+      push({
+        tone: 'success',
+        title: 'Booking rescheduled',
+        body: `${booking.serviceName} · now ${dateLabel}, ${slot}`,
+      })
+    } catch (err) {
+      push({ tone: 'warn', title: 'Could not reschedule', body: err.message })
+    }
+  }
 
   const doCancel = async (method) => {
     const booking = pending
@@ -216,13 +233,22 @@ export default function Appointments() {
                   <div className="appt__price money">{formatINR(b.total)}</div>
                   <div className="appt__ref">#{b.ref}</div>
                   {!cancelled && tab === 'Upcoming' && (
-                    <button
-                      type="button"
-                      className="appt__cancel"
-                      onClick={() => setPending(b)}
-                    >
-                      Cancel
-                    </button>
+                    <div className="appt__actions">
+                      <button
+                        type="button"
+                        className="appt__reschedule"
+                        onClick={() => setRescheduling(b)}
+                      >
+                        Reschedule
+                      </button>
+                      <button
+                        type="button"
+                        className="appt__cancel"
+                        onClick={() => setPending(b)}
+                      >
+                        Cancel
+                      </button>
+                    </div>
                   )}
                 </div>
               </li>
@@ -236,6 +262,14 @@ export default function Appointments() {
           booking={pending}
           onClose={() => setPending(null)}
           onConfirm={doCancel}
+        />
+      )}
+
+      {rescheduling && (
+        <RescheduleDialog
+          booking={rescheduling}
+          onClose={() => setRescheduling(null)}
+          onConfirm={doReschedule}
         />
       )}
     </div>

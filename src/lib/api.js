@@ -60,6 +60,8 @@ export const api = {
   requestOtp: (phone) => request('/auth/request-otp', { method: 'POST', body: { phone }, auth: false }),
   verifyOtp: (phone, code, name) =>
     request('/auth/verify-otp', { method: 'POST', body: { phone, code, name }, auth: false }),
+  widgetLogin: (accessToken, phone, name) =>
+    request('/auth/widget-login', { method: 'POST', body: { accessToken, phone, name }, auth: false }),
   me: () => request('/auth/me'),
 
   // --- Salons ---
@@ -85,6 +87,8 @@ export const api = {
   allBookings: () => request('/bookings/all'),
   cancelBooking: (id, method) =>
     request(`/bookings/${id}/cancel`, { method: 'POST', body: { method } }),
+  rescheduleBooking: (id, body) =>
+    request(`/bookings/${id}/reschedule`, { method: 'PATCH', body }),
 
   // --- Wallet & notifications ---
   wallet: () => request('/wallet'),

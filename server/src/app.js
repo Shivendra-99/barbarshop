@@ -15,16 +15,9 @@ import { notFound, errorHandler } from './middleware/error.js'
 export function createApp() {
   const app = express()
 
-  // In dev the Vite preview can land on any localhost port, so allow all
-  // localhost origins; in production, restrict to the configured allow-list.
-  const corsOrigin = env.isProd
-    ? env.corsOrigin
-    : (origin, cb) => {
-        if (!origin || /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
-          return cb(null, true)
-        }
-        return cb(null, env.corsOrigin.includes(origin))
-      }
+  // Dev accepts any origin (localhost ports, hosts-file aliases, tunnels — the
+  // MSG91 widget forces us off "localhost"). Production uses the allow-list.
+  const corsOrigin = env.isProd ? env.corsOrigin : true
   app.use(cors({ origin: corsOrigin, credentials: true }))
   app.use(express.json())
   if (!env.isProd) app.use(morgan('dev'))

@@ -17,7 +17,7 @@ export const env = {
   jwtSecret: process.env.JWT_SECRET || 'dev-only-change-me',
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '30d',
 
-  otpTtlMinutes: int(process.env.OTP_TTL_MINUTES, 10),
+  otpTtlMinutes: int(process.env.OTP_TTL_MINUTES, 15),
   otpMaxAttempts: int(process.env.OTP_MAX_ATTEMPTS, 5),
   otpDevReturn: bool(process.env.OTP_DEV_RETURN, true),
 
@@ -27,7 +27,7 @@ export const env = {
     authkey: process.env.MSG91_AUTHKEY || '',
     templateId: process.env.MSG91_TEMPLATE_ID || '',
     senderId: process.env.MSG91_SENDER_ID || '',
-    otpExpiryMinutes: int(process.env.MSG91_OTP_EXPIRY_MINUTES, 10),
+    otpExpiryMinutes: int(process.env.MSG91_OTP_EXPIRY_MINUTES, 15),
   },
 
   isProd: process.env.NODE_ENV === 'production',

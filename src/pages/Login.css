@@ -211,3 +211,16 @@
   font-size: 13px;
   color: var(--muted-3);
 }
+
+/* ---------- Resend ---------- */
+
+.login__resend {
+  margin-top: 16px;
+  text-align: center;
+  min-height: 20px;
+}
+
+.login__resendNote {
+  font-size: 14px;
+  color: var(--muted-3);
+}

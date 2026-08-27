@@ -328,3 +328,22 @@
     animation: none;
   }
 }
+
+/* ---------- Row actions (reschedule + cancel) ---------- */
+
+.appt__actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.appt__reschedule {
+  font-size: 13px;
+  color: var(--gold-deep);
+  transition: color var(--dur-fast) ease;
+}
+
+.appt__reschedule:hover {
+  color: var(--gold);
+  text-decoration: underline;
+}

@@ -1,0 +1,134 @@
+.rsx {
+  max-width: 440px;
+}
+
+.rsx__cal {
+  margin: 20px 0 8px;
+}
+
+.rsx__calHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.rsx__month {
+  font-family: var(--font-display);
+  font-size: 17px;
+  color: var(--heading);
+}
+
+.rsx__nav {
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-sm);
+  color: var(--text);
+  font-size: 18px;
+  line-height: 1;
+  transition: border-color var(--dur-fast) ease, color var(--dur-fast) ease;
+}
+
+.rsx__nav:hover:not(:disabled) {
+  border-color: var(--gold);
+  color: var(--gold-deep);
+}
+
+.rsx__nav:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.rsx__grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.rsx__dow {
+  margin-bottom: 4px;
+}
+
+.rsx__dowCell {
+  text-align: center;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--muted-3);
+  padding: 4px 0;
+}
+
+.rsx__day {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--r-sm);
+  font-size: 14px;
+  color: var(--text);
+  transition: background var(--dur-fast) ease, color var(--dur-fast) ease;
+}
+
+.rsx__day:hover:not(:disabled):not(.is-blank) {
+  background: var(--gold-wash);
+  color: var(--gold-deep);
+}
+
+.rsx__day.is-active {
+  background: var(--gold);
+  color: var(--on-gold);
+  font-weight: 600;
+}
+
+.rsx__day:disabled {
+  color: var(--muted-4);
+  cursor: not-allowed;
+}
+
+.rsx__day.is-blank {
+  cursor: default;
+}
+
+.rsx__slots {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin: 12px 0 4px;
+  max-height: 160px;
+  overflow-y: auto;
+}
+
+.rsx__slot {
+  padding: 9px 0;
+  text-align: center;
+  font-size: 13px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-sm);
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  transition: all var(--dur-fast) ease;
+}
+
+.rsx__slot:hover:not(:disabled) {
+  border-color: var(--gold);
+  color: var(--gold-deep);
+}
+
+.rsx__slot.is-active {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: var(--on-gold);
+  font-weight: 600;
+}
+
+.rsx__slot:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  text-decoration: line-through;
+}
+
+@media (max-width: 480px) {
+  .rsx__slots {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}

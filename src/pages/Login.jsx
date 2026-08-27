@@ -1,10 +1,23 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams, Link } from 'react-router-dom'
 import { useApp, SESSION_DAYS } from '../store/AppStore'
 import { useToast } from '../components/Toast'
 import { BRAND, DEMO_ACCOUNTS } from '../data/seed'
+import {
+  widgetConfigured,
+  initWidget,
+  widgetSendOtp,
+  widgetVerifyOtp,
+  widgetRetryOtp,
+} from '../lib/msg91Widget'
 import { IMG_UNISEX } from '../assets'
 import './Login.css'
+
+const WIDGET = widgetConfigured()
+
+// Mirrors the MSG91 widget's Resend Configuration.
+const RESEND_AFTER = 10 // seconds
+const MAX_RESENDS = 2
 
 /** Where each role lands after signing in, unless a specific page was requested. */
 const HOME_FOR_ROLE = { founder: '/admin', owner: '/owner', customer: '/' }
@@ -15,8 +28,13 @@ const PHONE_LENGTH = 10
 export default function Login() {
   const navigate = useNavigate()
   const [params] = useSearchParams()
-  const { requestOtp, verifyOtp } = useApp()
+  const { requestOtp, verifyOtp, widgetLogin } = useApp()
   const { push } = useToast()
+
+  // Warm up the MSG91 widget once, if it's configured.
+  useEffect(() => {
+    if (WIDGET) initWidget().catch(() => {})
+  }, [])
 
   const next = params.get('next') || '/'
   const [step, setStep] = useState('phone')
@@ -26,11 +44,42 @@ export default function Login() {
   const [digits, setDigits] = useState(Array(OTP_LENGTH).fill(''))
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+  const [cooldown, setCooldown] = useState(0)
+  const [resends, setResends] = useState(0)
   const inputs = useRef([])
 
   const phoneValid = /^[6-9]\d{9}$/.test(phone)
   const otpComplete = digits.every((d) => d !== '')
   const entered = useMemo(() => digits.join(''), [digits])
+
+  // Count the resend cooldown down to zero.
+  useEffect(() => {
+    if (cooldown <= 0) return undefined
+    const id = window.setTimeout(() => setCooldown((c) => c - 1), 1000)
+    return () => window.clearTimeout(id)
+  }, [cooldown])
+
+  const resend = async () => {
+    if (cooldown > 0 || busy || resends >= MAX_RESENDS) return
+    setBusy(true)
+    try {
+      if (WIDGET) await widgetRetryOtp()
+      else {
+        const res = await requestOtp(phone)
+        setCode(res.devCode || '')
+      }
+      setResends((n) => n + 1)
+      setCooldown(RESEND_AFTER)
+      setDigits(Array(OTP_LENGTH).fill(''))
+      setError('')
+      push({ title: 'Code resent', body: `New code sent to +91 ${phone}`, tone: 'info' })
+      focusCell(0)
+    } catch (err) {
+      setError(err.message || 'Could not resend. Try again.')
+    } finally {
+      setBusy(false)
+    }
+  }
 
   const sendCode = async (e) => {
     e.preventDefault()
@@ -40,11 +89,18 @@ export default function Login() {
     }
     setBusy(true)
     try {
-      const res = await requestOtp(phone)
-      setCode(res.devCode || '') // present only while SMS is stubbed
+      if (WIDGET) {
+        await widgetSendOtp(phone)
+        setCode('') // real SMS — no code to echo
+      } else {
+        const res = await requestOtp(phone)
+        setCode(res.devCode || '') // present only in the dev flow
+      }
       setDigits(Array(OTP_LENGTH).fill(''))
       setError('')
       setStep('otp')
+      setResends(0)
+      setCooldown(RESEND_AFTER)
       push({ title: 'OTP sent', body: `Code sent to +91 ${phone}`, tone: 'info' })
       window.setTimeout(() => inputs.current[0]?.focus(), 60)
     } catch (err) {
@@ -95,7 +151,11 @@ export default function Login() {
     if (!otpComplete || busy) return
     setBusy(true)
     try {
-      const user = await verifyOtp(phone, entered, name.trim() || undefined)
+      const user = WIDGET
+        ? await widgetVerifyOtp(entered).then((accessToken) =>
+            widgetLogin(accessToken, phone, name.trim() || undefined),
+          )
+        : await verifyOtp(phone, entered, name.trim() || undefined)
       push({
         title: `Welcome to ${BRAND.name}`,
         body:
@@ -220,10 +280,14 @@ export default function Login() {
                 </button>
               </p>
 
-              <div className="login__demo">
-                Demo code: <strong>{code}</strong>
-                <span>No SMS is actually sent in this prototype.</span>
-              </div>
+              {/* Dev flow only — the API echoes the code when no SMS is sent.
+                  With MSG91 live, `code` is empty and this hint disappears. */}
+              {code && (
+                <div className="login__demo">
+                  Demo code: <strong>{code}</strong>
+                  <span>No SMS is sent in the dev flow.</span>
+                </div>
+              )}
 
               <div
                 className="login__cells"
@@ -262,6 +326,30 @@ export default function Login() {
               <button type="submit" className="btn btn--gold btn--block" disabled={!otpComplete || busy}>
                 Verify &amp; continue
               </button>
+
+              <div className="login__resend">
+                {resends >= MAX_RESENDS ? (
+                  <span className="login__resendNote">
+                    Didn&rsquo;t get it?{' '}
+                    <button type="button" className="login__link" onClick={() => setStep('phone')}>
+                      Change number
+                    </button>
+                  </span>
+                ) : cooldown > 0 ? (
+                  <span className="login__resendNote">
+                    Resend code in 0:{String(cooldown).padStart(2, '0')}
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    className="login__link"
+                    onClick={resend}
+                    disabled={busy}
+                  >
+                    Resend code
+                  </button>
+                )}
+              </div>
 
               <p className="login__fine">
                 Stays signed in on this device for {SESSION_DAYS} days.
