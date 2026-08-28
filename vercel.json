@@ -1,9 +1,8 @@
 {
-  "$schema": "https://openapi.vercel.sh/vercel.json",
   "rewrites": [
     {
-      "source": "/api/:path*",
-      "destination": "https://server-eta-eight-74.vercel.app/api/:path*"
+      "source": "/api/(.*)",
+      "destination": "https://server-eta-eight-74.vercel.app/api/$1"
     },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
