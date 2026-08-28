@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { useApp } from '../store/AppStore'
 import { useToast } from '../components/Toast'
 import { useConfirm } from '../components/Confirm'
-import { cityById, categoryById, OWNERS } from '../data/seed'
+import { cityById, categoryById } from '../data/seed'
 import { formatINR } from '../lib/money'
 import './panel-ui.css'
 
@@ -13,8 +13,6 @@ const STATUS_BADGE = {
   pending: 'badge--amber',
   rejected: 'badge--red',
 }
-
-const ownerName = (id) => OWNERS.find((o) => o.id === id)?.name ?? '—'
 
 export default function FounderSalons() {
   const { salons, setSalonStatus } = useApp()
@@ -96,7 +94,7 @@ export default function FounderSalons() {
                 </td>
                 <td>{categoryById(s.category).label}</td>
                 <td>{cityById(s.city).label}</td>
-                <td>{ownerName(s.ownerId)}</td>
+                <td>{s.ownerName ?? '—'}</td>
                 <td className="ptable__money">{s.from ? formatINR(s.from) : '—'}</td>
                 <td>
                   <span className={`badge ${STATUS_BADGE[s.status] ?? 'badge--neutral'}`}>

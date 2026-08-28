@@ -2,6 +2,7 @@ import { Router } from 'express'
 import { z } from 'zod'
 import { Salon } from '../models/Salon.js'
 import { Service } from '../models/Service.js'
+import { User } from '../models/User.js'
 import { validate } from '../middleware/validate.js'
 import { requireAuth, requireRole } from '../middleware/auth.js'
 import { asyncHandler, ApiError } from '../middleware/error.js'
@@ -46,6 +47,18 @@ async function withFrom(salons) {
   return salons.map((s) => ({ ...s.toPublic(), from: minBy.get(s._id.toString()) ?? null }))
 }
 
+/**
+ * Attaches each salon's owner name — for the founder's views, where salons can
+ * belong to any owner the founder has added (not just the seed list). One query
+ * for the whole set.
+ */
+async function withOwnerNames(salons) {
+  const ids = [...new Set(salons.map((s) => s.ownerId).filter(Boolean))]
+  const owners = await User.find({ _id: { $in: ids } }).select('name')
+  const nameBy = new Map(owners.map((o) => [o._id.toString(), o.name]))
+  return salons.map((s) => ({ ...s, ownerName: nameBy.get(s.ownerId) ?? null }))
+}
+
 /* ---- Founder: full list & pending queue (declared before ":id") ---- */
 
 router.get(
@@ -54,7 +67,7 @@ router.get(
   requireRole('founder'),
   asyncHandler(async (req, res) => {
     const salons = await Salon.find().sort({ createdAt: -1 })
-    res.json({ salons: await withFrom(salons) })
+    res.json({ salons: await withOwnerNames(await withFrom(salons)) })
   }),
 )
 
@@ -64,7 +77,7 @@ router.get(
   requireRole('founder'),
   asyncHandler(async (req, res) => {
     const salons = await Salon.find({ status: 'pending' }).sort({ createdAt: -1 })
-    res.json({ salons: await withFrom(salons) })
+    res.json({ salons: await withOwnerNames(await withFrom(salons)) })
   }),
 )
 
