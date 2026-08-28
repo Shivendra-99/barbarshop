@@ -1,10 +1,12 @@
 /**
- * Thin API client. Reads the base URL from VITE_API_URL (falls back to the
- * local server), attaches the stored JWT, and unwraps errors into thrown
- * Error objects carrying the server's message + any field details.
+ * Thin API client. Calls a same-origin `/api` by default, so the real backend
+ * host is never exposed in the browser — in production a Vercel rewrite proxies
+ * `/api/*` to the backend, and in local dev Vite proxies it to localhost:4000
+ * (see vite.config.js). VITE_API_URL can still override the base if needed.
+ * Attaches the stored JWT and unwraps errors into thrown Error objects.
  */
 
-const BASE = (import.meta.env.VITE_API_URL || 'http://localhost:4000/api').replace(/\/$/, '')
+const BASE = (import.meta.env.VITE_API_URL || '/api').replace(/\/$/, '')
 
 const TOKEN_KEY = 'salonsathi:token'
 

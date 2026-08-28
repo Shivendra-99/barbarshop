@@ -11,5 +11,14 @@ export default defineConfig({
     // uses hCaptcha, which refuses to run on "localhost".
     host: true,
     allowedHosts: true,
+    // Same-origin API in dev: the app calls "/api/*" and Vite forwards it to the
+    // local backend, mirroring the production Vercel proxy so the backend host
+    // is never referenced by the browser. Override the target with VITE_DEV_API.
+    proxy: {
+      '/api': {
+        target: process.env.VITE_DEV_API || 'http://localhost:4000',
+        changeOrigin: true,
+      },
+    },
   },
 })
