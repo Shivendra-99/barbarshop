@@ -201,6 +201,43 @@
   flex-wrap: wrap;
 }
 
+/* Locked, OTP-verified mobile number — read-only, not editable. */
+.acc-lock {
+  position: relative;
+}
+
+.acc-lock__input {
+  padding-right: 116px;
+  background: var(--surface-alt);
+  color: var(--muted);
+  cursor: default;
+}
+
+.acc-lock__badge {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--green-line);
+  background: var(--green-wash);
+  color: var(--green);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  pointer-events: none;
+}
+
+.acc-lock__badge svg {
+  width: 13px;
+  height: 13px;
+}
+
 /* ---------------- Help ---------------- */
 
 .payGrid {

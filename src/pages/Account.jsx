@@ -78,19 +78,36 @@ export default function Account() {
           />
         </label>
 
-        <label className="field" htmlFor="acc-phone">
+        <div className="field">
           <span className="field__label">Mobile number</span>
-          <input
-            id="acc-phone"
-            className="field__input"
-            value={`+91 ${session.phone}`}
-            readOnly
-            aria-readonly="true"
-          />
+          <div className="acc-lock">
+            <input
+              id="acc-phone"
+              className="field__input acc-lock__input"
+              value={`+91 ${session.phone}`}
+              readOnly
+              aria-readonly="true"
+              tabIndex={-1}
+            />
+            <span className="acc-lock__badge">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="M7 10V7a5 5 0 0 1 10 0v3M6 10h12a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-8a1 1 0 0 1 1-1Z"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.6"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              Verified
+            </span>
+          </div>
           <span className="field__hint">
-            Signed in with OTP. Stays signed in until {expires} ({SESSION_DAYS}-day session).
+            Your number is verified by OTP and can’t be changed. Signed in until {expires} (
+            {SESSION_DAYS}-day session).
           </span>
-        </label>
+        </div>
 
         <button type="submit" className="btn btn--gold" disabled={!changed || saving}>
           {saving ? 'Saving…' : 'Save changes'}
