@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { useApp } from '../store/AppStore'
 import { useToast } from '../components/Toast'
 import { useConfirm } from '../components/Confirm'
-import { CATEGORIES, CITIES } from '../data/seed'
+import AddressAutocomplete from '../components/AddressAutocomplete'
+import { CATEGORIES, CITIES, cityById } from '../data/seed'
 import { formatINR } from '../lib/money'
 import ServiceRows from './ServiceRows'
 import './panel-ui.css'
@@ -168,13 +169,16 @@ export default function OwnerAddSalon() {
 
           <label className="field addForm__full" htmlFor="s-address">
             <span className="field__label">Full address</span>
-            <input
+            <AddressAutocomplete
               id="s-address"
-              className="field__input"
               value={form.address}
-              onChange={set('address')}
-              placeholder="Shop 4, Vibhuti Khand, Gomti Nagar"
-              aria-invalid={Boolean(err('address'))}
+              onChange={(v) => setForm((f) => ({ ...f, address: v }))}
+              onSelect={(item) =>
+                setForm((f) => (f.area.trim() ? f : { ...f, area: item.name }))
+              }
+              near={cityById(form.city).near}
+              placeholder="Start typing your salon address…"
+              ariaInvalid={Boolean(err('address'))}
             />
             {err('address') && <span className="field__error">{errors.address}</span>}
           </label>

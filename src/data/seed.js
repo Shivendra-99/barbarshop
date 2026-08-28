@@ -32,9 +32,10 @@ export const categoryById = (id) => CATEGORIES.find((c) => c.id === id) ?? CATEG
    ------------------------------------------------------------------ */
 
 export const CITIES = [
-  { id: 'lucknow', label: 'Lucknow', areas: 'Gomti Nagar · Hazratganj · Aliganj', pin: '226030' },
-  { id: 'mumbai', label: 'Mumbai', areas: 'Bandra · Lower Parel · Andheri', pin: '400050' },
-  { id: 'delhi', label: 'Delhi NCR', areas: 'Khan Market · CP · Hauz Khas', pin: '110003' },
+  // `near` is the city centre ("lat,lng"), used to bias address suggestions.
+  { id: 'lucknow', label: 'Lucknow', areas: 'Gomti Nagar · Hazratganj · Aliganj', pin: '226030', near: '26.8467,80.9462' },
+  { id: 'mumbai', label: 'Mumbai', areas: 'Bandra · Lower Parel · Andheri', pin: '400050', near: '19.0760,72.8777' },
+  { id: 'delhi', label: 'Delhi NCR', areas: 'Khan Market · CP · Hauz Khas', pin: '110003', near: '28.6139,77.2090' },
 ]
 
 export const cityById = (id) => CITIES.find((c) => c.id === id) ?? CITIES[0]

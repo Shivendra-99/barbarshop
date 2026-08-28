@@ -6,6 +6,7 @@ import AddressAutocomplete from '../components/AddressAutocomplete'
 import { api } from '../lib/api'
 import { formatINR } from '../lib/money'
 import { PAYMENT_MODES, SERVICE_MODES, quote } from '../lib/pricing'
+import { cityById } from '../data/seed'
 import {
   buildCalendar,
   formatDateLabel,
@@ -232,6 +233,7 @@ export default function Book() {
                   id="book-address"
                   value={address}
                   onChange={setAddress}
+                  near={salon ? cityById(salon.city).near : undefined}
                   placeholder="Start typing your address…"
                   ariaInvalid={touched && needsAddress && address.trim().length < 10}
                 />
