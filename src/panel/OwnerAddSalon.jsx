@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useApp } from '../store/AppStore'
 import { useToast } from '../components/Toast'
 import { useConfirm } from '../components/Confirm'
 import AddressAutocomplete from '../components/AddressAutocomplete'
 import { CATEGORIES, CITIES, cityById } from '../data/seed'
+import { api } from '../lib/api'
 import { formatINR } from '../lib/money'
 import ServiceRows from './ServiceRows'
 import './panel-ui.css'
@@ -14,6 +15,7 @@ const EMPTY = {
   name: '',
   category: 'mens',
   city: 'lucknow',
+  ownerId: '',
   area: '',
   address: '',
   addressELoc: null,
@@ -27,7 +29,7 @@ const EMPTY = {
 /** A single blank service row — the owner decides what to add. */
 const blankRow = () => ({ name: '', amount: '', mins: '', desc: '' })
 
-export default function OwnerAddSalon() {
+export default function OwnerAddSalon({ asFounder = false }) {
   const navigate = useNavigate()
   const { submitSalon } = useApp()
   const { push } = useToast()
@@ -35,6 +37,18 @@ export default function OwnerAddSalon() {
   const [form, setForm] = useState(EMPTY)
   const [services, setServices] = useState(() => [blankRow()])
   const [touched, setTouched] = useState(false)
+  const [owners, setOwners] = useState([])
+
+  // Founder view: load the owners a salon can be assigned to.
+  useEffect(() => {
+    if (!asFounder) return
+    api
+      .owners()
+      .then(({ owners: list }) => setOwners(list))
+      .catch(() => {})
+  }, [asFounder])
+
+  const homeBase = asFounder ? '/admin/salons' : '/owner'
 
   const set = (key) => (e) => {
     const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value
@@ -51,6 +65,7 @@ export default function OwnerAddSalon() {
     .filter((s) => s.name && s.amount >= 0 && s.mins >= 5)
 
   const errors = {
+    ownerId: asFounder && !form.ownerId ? 'Choose the owner this salon belongs to.' : '',
     name: form.name.trim().length < 3 ? 'Enter the salon name.' : '',
     area: form.area.trim().length < 2 ? 'Enter the area or locality.' : '',
     address: form.address.trim().length < 8 ? 'Enter the full address.' : '',
@@ -68,12 +83,14 @@ export default function OwnerAddSalon() {
 
     const serviceModes = [form.atSalon && 'salon', form.home && 'home'].filter(Boolean)
 
+    const count = `${cleanServices.length} service${cleanServices.length === 1 ? '' : 's'}`
+    const ownerName = owners.find((o) => o.id === form.ownerId)?.name
     const ok = await confirm({
-      title: 'Submit for review?',
-      message: `${form.name.trim()} and its ${cleanServices.length} service${
-        cleanServices.length === 1 ? '' : 's'
-      } will be sent to the SalonSathi team for approval. You can edit the menu anytime after it's approved.`,
-      confirmLabel: 'Submit',
+      title: asFounder ? 'Add this salon?' : 'Submit for review?',
+      message: asFounder
+        ? `${form.name.trim()} and its ${count} will be added to ${ownerName ?? 'the owner'} and go live immediately.`
+        : `${form.name.trim()} and its ${count} will be sent to the SalonSathi team for approval. You can edit the menu anytime after it's approved.`,
+      confirmLabel: asFounder ? 'Add salon' : 'Submit',
     })
     if (!ok) return
 
@@ -83,6 +100,7 @@ export default function OwnerAddSalon() {
         name: form.name.trim(),
         category: form.category,
         city: form.city,
+        ownerId: asFounder ? form.ownerId : undefined,
         area: form.area.trim(),
         address: form.address.trim(),
         addressELoc: form.addressELoc || undefined,
@@ -95,13 +113,15 @@ export default function OwnerAddSalon() {
 
       push({
         tone: 'success',
-        title: 'Salon submitted',
-        body: `${salon.name} is now awaiting approval.`,
-        meta: 'The founder has been notified',
+        title: asFounder ? 'Salon added' : 'Salon submitted',
+        body: asFounder
+          ? `${salon.name} is now live and taking bookings.`
+          : `${salon.name} is now awaiting approval.`,
+        meta: asFounder ? 'The owner has been notified' : 'The founder has been notified',
       })
-      navigate('/owner')
+      navigate(homeBase)
     } catch (err) {
-      push({ tone: 'warn', title: 'Could not submit', body: err.message })
+      push({ tone: 'warn', title: asFounder ? 'Could not add salon' : 'Could not submit', body: err.message })
       setSubmitting(false)
     }
   }
@@ -113,13 +133,41 @@ export default function OwnerAddSalon() {
       <div className="p-head">
         <h2 className="p-head__title">Add a salon</h2>
         <p className="p-head__sub">
-          Submit your salon for review. Our team approves it, usually within a day, and then it
-          goes live.
+          {asFounder
+            ? 'Add a salon on behalf of an owner. It goes live immediately — no approval needed.'
+            : 'Submit your salon for review. Our team approves it, usually within a day, and then it goes live.'}
         </p>
       </div>
 
       <form className="addForm" onSubmit={submit} noValidate>
         <div className="addForm__grid">
+          {asFounder && (
+            <label className="field addForm__full" htmlFor="s-owner">
+              <span className="field__label">Owner</span>
+              <select
+                id="s-owner"
+                className="field__input"
+                value={form.ownerId}
+                onChange={set('ownerId')}
+                aria-invalid={Boolean(err('ownerId'))}
+              >
+                <option value="">Select an owner…</option>
+                {owners.map((o) => (
+                  <option key={o.id} value={o.id}>
+                    {o.name} · +91 {o.phone}
+                  </option>
+                ))}
+              </select>
+              {err('ownerId') ? (
+                <span className="field__error">{errors.ownerId}</span>
+              ) : (
+                <span className="field__hint">
+                  Don&rsquo;t see them? Add the owner first under Owners.
+                </span>
+              )}
+            </label>
+          )}
+
           <label className="field" htmlFor="s-name">
             <span className="field__label">Salon name</span>
             <input
@@ -253,11 +301,17 @@ export default function OwnerAddSalon() {
         </fieldset>
 
         <div className="addForm__actions">
-          <button type="button" className="btn btn--outline" onClick={() => navigate('/owner')}>
+          <button type="button" className="btn btn--outline" onClick={() => navigate(homeBase)}>
             Cancel
           </button>
           <button type="submit" className="btn btn--gold" disabled={submitting}>
-            {submitting ? 'Submitting…' : 'Submit for review'}
+            {submitting
+              ? asFounder
+                ? 'Adding…'
+                : 'Submitting…'
+              : asFounder
+                ? 'Add salon'
+                : 'Submit for review'}
           </button>
         </div>
       </form>

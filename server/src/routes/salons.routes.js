@@ -30,6 +30,8 @@ const createSchema = z.object({
   closes: z.string().default('20:00'),
   // Mappls eLoc for the address, when picked from autosuggest.
   addressELoc: z.string().trim().max(40).optional(),
+  // Founder only — the owner this salon belongs to.
+  ownerId: z.string().trim().optional(),
   // The owner's initial menu, reviewed together with the salon.
   services: z.array(serviceItem).min(1, 'Add at least one service.'),
 })
@@ -121,15 +123,28 @@ router.get(
   }),
 )
 
-/* ---- Owner: submit a new salon (enters the approval queue) ---- */
+/* ---- Add a new salon ----
+   Owner: submits their own salon, which enters the approval queue.
+   Founder: adds a salon on behalf of an owner (ownerId), auto-approved. */
 
 router.post(
   '/',
   requireAuth,
-  requireRole('owner'),
+  requireRole('owner', 'founder'),
   validate(createSchema),
   asyncHandler(async (req, res) => {
-    const { services, addressELoc, ...salonBody } = req.body
+    const { services, addressELoc, ownerId, ...salonBody } = req.body
+
+    // Resolve who owns the salon and whether it's auto-approved.
+    let ownerObjectId = req.user._id
+    let status = 'pending'
+    if (req.user.role === 'founder') {
+      if (!ownerId) throw new ApiError(400, 'Choose which owner this salon belongs to.')
+      const owner = await User.findById(ownerId).catch(() => null)
+      if (!owner || owner.role !== 'owner') throw new ApiError(400, 'Selected owner not found.')
+      ownerObjectId = owner._id
+      status = 'approved' // the founder is the approver
+    }
 
     // Resolve the address to a geo reference: eLoc from the pick, lat/lng from
     // the geocoder (null if unavailable — never blocks salon submission).
@@ -139,8 +154,8 @@ router.post(
     const salon = await Salon.create({
       ...salonBody,
       location,
-      owner: req.user._id,
-      status: 'pending',
+      owner: ownerObjectId,
+      status,
       badge: 'New',
     })
 
@@ -149,25 +164,36 @@ router.post(
       services.map((s) => ({
         ...s,
         salon: salon._id,
-        owner: req.user._id,
+        owner: ownerObjectId,
         category: salon.category,
       })),
     )
 
-    await notify([
-      {
-        audience: `owner:${req.user._id.toString()}`,
-        tone: 'info',
-        title: 'Salon submitted for review',
-        body: `${salon.name} · ${salon.area} — awaiting approval`,
-      },
-      {
-        audience: 'founder',
-        tone: 'warn',
-        title: 'New salon approval request',
-        body: `${salon.name} · ${salon.area}, ${salon.city}`,
-      },
-    ])
+    if (req.user.role === 'founder') {
+      await notify([
+        {
+          audience: `owner:${ownerObjectId.toString()}`,
+          tone: 'success',
+          title: 'A salon was added to your account',
+          body: `${salon.name} · ${salon.area} is live and taking bookings.`,
+        },
+      ])
+    } else {
+      await notify([
+        {
+          audience: `owner:${ownerObjectId.toString()}`,
+          tone: 'info',
+          title: 'Salon submitted for review',
+          body: `${salon.name} · ${salon.area} — awaiting approval`,
+        },
+        {
+          audience: 'founder',
+          tone: 'warn',
+          title: 'New salon approval request',
+          body: `${salon.name} · ${salon.area}, ${salon.city}`,
+        },
+      ])
+    }
 
     res.status(201).json({ salon: salon.toPublic() })
   }),

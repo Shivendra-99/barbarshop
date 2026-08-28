@@ -204,11 +204,13 @@ export function AppProvider({ children }) {
   const submitSalon = useCallback(
     async (draft) => {
       const { salon } = await api.submitSalon(draft)
-      await loadOwner()
+      // Refresh the caller's own view: founder-added salons are live immediately.
+      if (role === 'founder') await Promise.all([loadFounder(), loadPublicSalons()])
+      else await loadOwner()
       loadNotifications().catch(() => {})
       return salon
     },
-    [loadOwner, loadNotifications],
+    [role, loadOwner, loadFounder, loadPublicSalons, loadNotifications],
   )
 
   const setSalonStatus = useCallback(

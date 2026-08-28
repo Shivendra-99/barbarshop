@@ -10,7 +10,8 @@ const NAV = {
     label: 'Super Admin',
     items: [
       { to: '/admin', label: 'Dashboard', end: true, icon: 'grid' },
-      { to: '/admin/salons', label: 'Salons', icon: 'store' },
+      { to: '/admin/salons', label: 'Salons', icon: 'store', end: true },
+      { to: '/admin/salons/new', label: 'Add salon', icon: 'plus', end: true },
       { to: '/admin/owners', label: 'Owners', icon: 'users' },
       { to: '/admin/bookings', label: 'Bookings', icon: 'calendar' },
     ],

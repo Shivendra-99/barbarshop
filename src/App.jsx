@@ -91,6 +91,7 @@ export default function App() {
         >
           <Route index element={<FounderDashboard />} />
           <Route path="salons" element={<FounderSalons />} />
+          <Route path="salons/new" element={<OwnerAddSalon asFounder />} />
           <Route path="owners" element={<FounderOwners />} />
           <Route path="bookings" element={<FounderBookings />} />
         </Route>
