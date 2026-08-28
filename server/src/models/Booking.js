@@ -15,6 +15,12 @@ const bookingSchema = new mongoose.Schema(
     mode: { type: String, enum: ['salon', 'home'], required: true },
     modeLabel: String,
     address: { type: String, default: null }, // captured for home service
+    // Mappls geo reference for the home-service address.
+    location: {
+      eLoc: { type: String, default: null },
+      lat: { type: Number, default: null },
+      lng: { type: Number, default: null },
+    },
 
     date: { type: String, required: true }, // ISO yyyy-mm-dd
     dateLabel: String,
@@ -62,6 +68,7 @@ bookingSchema.methods.toPublic = function toPublic() {
     mode: this.mode,
     modeLabel: this.modeLabel,
     address: this.address,
+    location: this.location ?? { eLoc: null, lat: null, lng: null },
     date: this.date,
     dateLabel: this.dateLabel,
     slot: this.slot,

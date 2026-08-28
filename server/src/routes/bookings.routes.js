@@ -11,6 +11,7 @@ import { requireAuth, requireRole } from '../middleware/auth.js'
 import { asyncHandler, ApiError } from '../middleware/error.js'
 import { notify } from '../lib/notify.js'
 import { formatINR } from '../lib/money.js'
+import { geocode } from '../lib/geo/mappls.js'
 
 const router = Router()
 
@@ -22,6 +23,8 @@ const createSchema = z.object({
   mode: z.enum(['salon', 'home']),
   // null/omitted for at-salon; required (checked below) for home service.
   address: z.string().trim().min(6).max(200).nullish(),
+  // Mappls eLoc for the address, when picked from autosuggest.
+  addressELoc: z.string().trim().max(40).nullish(),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date.'),
   dateLabel: z.string().optional(),
   slot: z.string().min(1),
@@ -67,6 +70,14 @@ router.post(
     const priorCount = await Booking.countDocuments({ customer: req.user._id })
     const isFirstBooking = priorCount === 0
 
+    // Geo reference for a home address: eLoc from the pick + lat/lng if the
+    // geocoder can resolve them (null otherwise; never blocks the booking).
+    let location = { eLoc: null, lat: null, lng: null }
+    if (body.mode === 'home' && body.address) {
+      const coords = await geocode({ eLoc: body.addressELoc, address: body.address })
+      location = { eLoc: body.addressELoc ?? null, lat: coords?.lat ?? null, lng: coords?.lng ?? null }
+    }
+
     const homeServiceFee = body.mode === 'home' ? salon.homeServiceFee : 0
     const priced = quote({
       amount: service.amount,
@@ -86,6 +97,7 @@ router.post(
       mode: body.mode,
       modeLabel: body.mode === 'home' ? 'Home service' : 'At salon',
       address: body.mode === 'home' ? body.address : null,
+      location,
       date: body.date,
       dateLabel: body.dateLabel ?? body.date,
       slot: body.slot,

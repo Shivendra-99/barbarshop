@@ -55,6 +55,7 @@ export default function Book() {
   }, [salonId])
   const [mode, setMode] = useState(salon?.serviceModes[0] ?? 'salon')
   const [address, setAddress] = useState('')
+  const [addressELoc, setAddressELoc] = useState(null)
   const [staffId, setStaffId] = useState('')
   const [date, setDate] = useState(() => (salon ? firstBookableDate(salon, today) : toISO(today)))
   const [slot, setSlot] = useState('')
@@ -133,6 +134,7 @@ export default function Book() {
         staffName: staff?.name ?? null,
         mode,
         address: needsAddress ? address.trim() : null,
+        addressELoc: needsAddress ? addressELoc || undefined : undefined,
         date,
         dateLabel: formatDateLabel(date),
         slot,
@@ -232,7 +234,11 @@ export default function Book() {
                 <AddressAutocomplete
                   id="book-address"
                   value={address}
-                  onChange={setAddress}
+                  onChange={(v) => {
+                    setAddress(v)
+                    setAddressELoc(null)
+                  }}
+                  onSelect={(item) => setAddressELoc(item.eLoc ?? null)}
                   near={salon ? cityById(salon.city).near : undefined}
                   placeholder="Start typing your address…"
                   ariaInvalid={touched && needsAddress && address.trim().length < 10}

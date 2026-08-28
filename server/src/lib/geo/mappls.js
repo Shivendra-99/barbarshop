@@ -60,3 +60,28 @@ export async function autosuggest(query, { near } = {}) {
     eLoc: s.eLoc,
   }))
 }
+
+/**
+ * Resolves an address (or eLoc) to { lat, lng } via the REST-key geocoder.
+ * Returns null when the REST key is absent or the provider can't geocode it —
+ * callers store the eLoc regardless and just leave coordinates null.
+ */
+export async function geocode({ address, eLoc } = {}) {
+  if (!env.mappls.restKey) return null
+  const query = eLoc || address
+  if (!query) return null
+
+  try {
+    const url = `https://apis.mappls.com/advancedmaps/v1/${env.mappls.restKey}/geo_code?addr=${encodeURIComponent(query)}`
+    const res = await fetch(url, { headers: { Referer: 'https://salonsaathi.in' } })
+    if (!res.ok) return null
+    const data = await res.json()
+    const hit = data?.results?.[0] ?? data?.copResults
+    const lat = Number(hit?.lat ?? hit?.latitude)
+    const lng = Number(hit?.lng ?? hit?.longitude)
+    if (Number.isFinite(lat) && Number.isFinite(lng)) return { lat, lng }
+    return null
+  } catch {
+    return null
+  }
+}

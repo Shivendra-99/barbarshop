@@ -16,6 +16,7 @@ const EMPTY = {
   city: 'lucknow',
   area: '',
   address: '',
+  addressELoc: null,
   opens: '10:00',
   closes: '20:00',
   atSalon: true,
@@ -84,6 +85,7 @@ export default function OwnerAddSalon() {
         city: form.city,
         area: form.area.trim(),
         address: form.address.trim(),
+        addressELoc: form.addressELoc || undefined,
         opens: form.opens,
         closes: form.closes,
         serviceModes,
@@ -172,9 +174,13 @@ export default function OwnerAddSalon() {
             <AddressAutocomplete
               id="s-address"
               value={form.address}
-              onChange={(v) => setForm((f) => ({ ...f, address: v }))}
+              onChange={(v) => setForm((f) => ({ ...f, address: v, addressELoc: null }))}
               onSelect={(item) =>
-                setForm((f) => (f.area.trim() ? f : { ...f, area: item.name }))
+                setForm((f) => ({
+                  ...f,
+                  addressELoc: item.eLoc ?? null,
+                  area: f.area.trim() ? f.area : item.name,
+                }))
               }
               near={cityById(form.city).near}
               placeholder="Start typing your salon address…"

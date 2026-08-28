@@ -7,6 +7,13 @@ const salonSchema = new mongoose.Schema(
     city: { type: String, required: true, index: true },
     area: { type: String, required: true },
     address: { type: String, required: true },
+    // Mappls geo reference for the address: compact eLoc always; lat/lng when
+    // the geocoder can resolve them.
+    location: {
+      eLoc: { type: String, default: null },
+      lat: { type: Number, default: null },
+      lng: { type: Number, default: null },
+    },
     owner: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
 
     serviceModes: { type: [String], default: ['salon'] }, // 'salon' | 'home'
@@ -37,6 +44,7 @@ salonSchema.methods.toPublic = function toPublic() {
     city: this.city,
     area: this.area,
     address: this.address,
+    location: this.location ?? { eLoc: null, lat: null, lng: null },
     ownerId: this.owner?.toString?.() ?? this.owner,
     serviceModes: this.serviceModes,
     homeServiceFee: this.homeServiceFee,

@@ -7,6 +7,7 @@ import { validate } from '../middleware/validate.js'
 import { requireAuth, requireRole } from '../middleware/auth.js'
 import { asyncHandler, ApiError } from '../middleware/error.js'
 import { notify } from '../lib/notify.js'
+import { geocode } from '../lib/geo/mappls.js'
 
 const router = Router()
 
@@ -27,6 +28,8 @@ const createSchema = z.object({
   homeServiceFee: z.number().int().min(0).max(5000).default(0),
   opens: z.string().default('10:00'),
   closes: z.string().default('20:00'),
+  // Mappls eLoc for the address, when picked from autosuggest.
+  addressELoc: z.string().trim().max(40).optional(),
   // The owner's initial menu, reviewed together with the salon.
   services: z.array(serviceItem).min(1, 'Add at least one service.'),
 })
@@ -126,9 +129,16 @@ router.post(
   requireRole('owner'),
   validate(createSchema),
   asyncHandler(async (req, res) => {
-    const { services, ...salonBody } = req.body
+    const { services, addressELoc, ...salonBody } = req.body
+
+    // Resolve the address to a geo reference: eLoc from the pick, lat/lng from
+    // the geocoder (null if unavailable — never blocks salon submission).
+    const coords = await geocode({ eLoc: addressELoc, address: salonBody.address })
+    const location = { eLoc: addressELoc ?? null, lat: coords?.lat ?? null, lng: coords?.lng ?? null }
+
     const salon = await Salon.create({
       ...salonBody,
+      location,
       owner: req.user._id,
       status: 'pending',
       badge: 'New',

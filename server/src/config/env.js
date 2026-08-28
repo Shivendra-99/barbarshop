@@ -39,6 +39,8 @@ export const env = {
   mappls: {
     clientId: process.env.MAPPLS_CLIENT_ID || '',
     clientSecret: process.env.MAPPLS_CLIENT_SECRET || '',
+    // REST API key — used for geocoding (address/eLoc -> lat,lng).
+    restKey: process.env.MAPPLS_REST_KEY || '',
   },
 
   isProd: process.env.NODE_ENV === 'production',
