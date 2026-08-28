@@ -97,6 +97,10 @@ export const api = {
   rescheduleBooking: (id, body) =>
     request(`/bookings/${id}/reschedule`, { method: 'PATCH', body }),
 
+  // --- Address autosuggest (Mappls, via our proxy) ---
+  autosuggestAddress: (q, near) =>
+    request(`/geo/autosuggest?q=${encodeURIComponent(q)}${near ? `&near=${encodeURIComponent(near)}` : ''}`),
+
   // --- Wallet & notifications ---
   wallet: () => request('/wallet'),
   notifications: () => request('/notifications'),

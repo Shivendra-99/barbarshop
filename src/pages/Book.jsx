@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useApp } from '../store/AppStore'
 import { useToast } from '../components/Toast'
+import AddressAutocomplete from '../components/AddressAutocomplete'
 import { api } from '../lib/api'
 import { formatINR } from '../lib/money'
 import { PAYMENT_MODES, SERVICE_MODES, quote } from '../lib/pricing'
@@ -227,17 +228,16 @@ export default function Book() {
             {needsAddress && (
               <label className="field book__address" htmlFor="book-address">
                 <span className="field__label">Your address</span>
-                <textarea
+                <AddressAutocomplete
                   id="book-address"
-                  className="field__input book__textarea"
-                  rows={3}
                   value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  placeholder="Flat / house, street, landmark, pin code"
-                  aria-invalid={touched && needsAddress && address.trim().length < 10}
+                  onChange={setAddress}
+                  placeholder="Start typing your address…"
+                  ariaInvalid={touched && needsAddress && address.trim().length < 10}
                 />
                 <span className="field__hint">
-                  The professional will travel to this address at your slot time.
+                  Search and pick your address, then add your flat / house number. The professional
+                  travels here at your slot time.
                 </span>
               </label>
             )}

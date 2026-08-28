@@ -34,8 +34,18 @@ export const env = {
     otpExpiryMinutes: int(process.env.MSG91_OTP_EXPIRY_MINUTES, 15),
   },
 
+  // Mappls (MapmyIndia) address autosuggest. Server-side OAuth credentials —
+  // when both are set, /api/geo/* proxies address suggestions to Mappls.
+  mappls: {
+    clientId: process.env.MAPPLS_CLIENT_ID || '',
+    clientSecret: process.env.MAPPLS_CLIENT_SECRET || '',
+  },
+
   isProd: process.env.NODE_ENV === 'production',
 }
+
+/** True when Mappls address autosuggest is configured. */
+export const mapplsEnabled = () => Boolean(env.mappls.clientId && env.mappls.clientSecret)
 
 /** True when MSG91 is fully configured — real SMS instead of the dev flow. */
 export const msg91Enabled = () => Boolean(env.msg91.authkey && env.msg91.templateId)

@@ -1,0 +1,70 @@
+.addr {
+  position: relative;
+}
+
+.addr__menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 40;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-lg);
+  max-height: 288px;
+  overflow-y: auto;
+}
+
+.addr__item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+}
+
+.addr__item.is-active {
+  background: var(--gold-wash);
+}
+
+.addr__name {
+  font-size: 14.5px;
+  font-weight: 500;
+  color: var(--heading);
+}
+
+.addr__sub {
+  font-size: 12.5px;
+  color: var(--muted-3);
+  line-height: 1.4;
+}
+
+.addr__spin {
+  position: absolute;
+  top: 15px;
+  right: 14px;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--line-strong);
+  border-top-color: var(--gold);
+  border-radius: 50%;
+  animation: addrSpin 0.7s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes addrSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .addr__spin {
+    animation: none;
+  }
+}
