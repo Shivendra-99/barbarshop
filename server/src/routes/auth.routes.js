@@ -124,4 +124,17 @@ router.get(
   }),
 )
 
+/** Updates the signed-in user's display name. */
+const updateMeSchema = z.object({ name: z.string().trim().min(1, 'Enter your name.').max(60) })
+router.patch(
+  '/me',
+  requireAuth,
+  validate(updateMeSchema),
+  asyncHandler(async (req, res) => {
+    req.user.name = req.body.name
+    await req.user.save()
+    res.json({ user: req.user.toPublic() })
+  }),
+)
+
 export default router

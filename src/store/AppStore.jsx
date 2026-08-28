@@ -158,9 +158,11 @@ export function AppProvider({ children }) {
     setUnreadCount(0)
   }, [])
 
-  /** No dedicated endpoint yet — updates the display name locally. */
-  const setName = useCallback((name) => {
-    setSession((s) => (s ? { ...s, name } : s))
+  /** Persists the display name to the backend, then updates the session. */
+  const setName = useCallback(async (name) => {
+    const { user } = await api.updateName(name)
+    setSession((s) => (s ? { ...s, name: user.name } : s))
+    return user
   }, [])
 
   /* ---- Booking actions ---- */
@@ -227,11 +229,6 @@ export function AppProvider({ children }) {
       /* ignore */
     }
   }, [loadNotifications])
-
-  const resetDemo = useCallback(() => {
-    // The database is server-side now; "reset" just signs out this device.
-    logout()
-  }, [logout])
 
   /* ---- Derived ---- */
 
@@ -312,13 +309,12 @@ export function AppProvider({ children }) {
       platformStats,
       owners: OWNERS,
       founder: FOUNDER,
-      resetDemo,
     }),
     [
       ready, salonsReady, session, role, requestOtp, verifyOtp, widgetLogin, logout, setName, allSalons, publicSalons,
       findSalon, mySalons, pendingSalons, allBookings, myBookings, ownerBookings, createBooking,
       cancelBooking, rescheduleBooking, submitSalon, setSalonStatus, walletBalance, myLedger, notifications,
-      unreadCount, markRead, platformStats, resetDemo,
+      unreadCount, markRead, platformStats,
     ],
   )
 

@@ -65,6 +65,7 @@ export const api = {
   widgetLogin: (accessToken, phone, name) =>
     request('/auth/widget-login', { method: 'POST', body: { accessToken, phone, name }, auth: false }),
   me: () => request('/auth/me'),
+  updateName: (name) => request('/auth/me', { method: 'PATCH', body: { name } }),
 
   // --- Owners (founder-managed) ---
   owners: () => request('/users/owners'),

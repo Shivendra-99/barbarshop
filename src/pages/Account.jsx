@@ -9,11 +9,14 @@ import './Simple.css'
 
 export default function Account() {
   const navigate = useNavigate()
-  const { session, setName, logout, myBookings, walletBalance, isFirstBooking, resetDemo } =
-    useApp()
+  const { session, setName, logout, myBookings, walletBalance, isFirstBooking } = useApp()
   const { city, setCity } = usePrefs()
   const { push } = useToast()
   const [draft, setDraft] = useState(session?.name ?? '')
+  const [saving, setSaving] = useState(false)
+
+  const trimmed = draft.trim()
+  const changed = trimmed.length > 0 && trimmed !== session?.name
 
   const expires = new Date(session.expiresAt).toLocaleDateString('en-IN', {
     day: 'numeric',
@@ -21,10 +24,18 @@ export default function Account() {
     year: 'numeric',
   })
 
-  const saveName = (e) => {
+  const saveName = async (e) => {
     e.preventDefault()
-    setName(draft.trim() || 'Guest')
-    push({ tone: 'success', title: 'Profile updated' })
+    if (!changed || saving) return
+    setSaving(true)
+    try {
+      await setName(trimmed)
+      push({ tone: 'success', title: 'Profile updated' })
+    } catch (err) {
+      push({ tone: 'warn', title: 'Could not update name', body: err.message })
+    } finally {
+      setSaving(false)
+    }
   }
 
   const signOut = () => {
@@ -81,8 +92,8 @@ export default function Account() {
           </span>
         </label>
 
-        <button type="submit" className="btn btn--gold">
-          Save changes
+        <button type="submit" className="btn btn--gold" disabled={!changed || saving}>
+          {saving ? 'Saving…' : 'Save changes'}
         </button>
       </form>
 
@@ -107,27 +118,13 @@ export default function Account() {
         <h2 className="simple__heading">Session</h2>
         <p className="panel__text">
           Logging out ends the {SESSION_DAYS}-day session on this device. Your bookings stay
-          saved.
+          saved to your account.
         </p>
         <div className="panel__actions">
           <button type="button" className="btn btn--outline" onClick={signOut}>
             Log out
           </button>
-          <button
-            type="button"
-            className="btn btn--danger"
-            onClick={() => {
-              resetDemo()
-              navigate('/')
-            }}
-          >
-            Reset demo data
-          </button>
         </div>
-        <p className="panel__text panel__text--fine">
-          Reset clears all locally stored bookings, wallet balance and notifications for this
-          prototype.
-        </p>
       </div>
     </div>
   )
