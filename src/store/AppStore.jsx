@@ -121,12 +121,12 @@ export function AppProvider({ children }) {
 
   const verifyOtp = useCallback(
     async (phone, code, name) => {
-      const { token, user } = await api.verifyOtp(phone, code, name)
+      const { token, user, isNew } = await api.verifyOtp(phone, code, name)
       setToken(token)
       setSession(toSession(user))
       setWalletBalance(user.walletBalance ?? 0)
       await loadForRole(user.role)
-      return user
+      return { user, isNew }
     },
     [loadForRole],
   )
@@ -134,12 +134,12 @@ export function AppProvider({ children }) {
   /** MSG91 widget flow: exchange the widget access-token for our session. */
   const widgetLogin = useCallback(
     async (accessToken, phone, name) => {
-      const { token, user } = await api.widgetLogin(accessToken, phone, name)
+      const { token, user, isNew } = await api.widgetLogin(accessToken, phone, name)
       setToken(token)
       setSession(toSession(user))
       setWalletBalance(user.walletBalance ?? 0)
       await loadForRole(user.role)
-      return user
+      return { user, isNew }
     },
     [loadForRole],
   )

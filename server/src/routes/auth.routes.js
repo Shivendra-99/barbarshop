@@ -32,7 +32,7 @@ async function issueSession(phone, name) {
   // The phone decides the role; seeded staff keep their name.
   // Atomic upsert so two concurrent logins can't both insert (E11000).
   const identity = identityForPhone(phone)
-  const user = await User.findOneAndUpdate(
+  const result = await User.findOneAndUpdate(
     { phone },
     {
       $setOnInsert: {
@@ -42,13 +42,17 @@ async function issueSession(phone, name) {
         code: identity.code ?? null,
       },
     },
-    { upsert: true, new: true },
+    { upsert: true, new: true, includeResultMetadata: true },
   )
+  const user = result.value
+  // No prior document ⇒ this login just created the account.
+  const isNew = !result.lastErrorObject?.updatedExisting
+
   if (name && user.role === 'customer' && user.name !== name) {
     user.name = name
     await user.save()
   }
-  return { token: signToken(user), user: user.toPublic() }
+  return { token: signToken(user), user: user.toPublic(), isNew }
 }
 
 /** Step 1 — send an OTP. */

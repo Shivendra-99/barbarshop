@@ -28,7 +28,7 @@ const PHONE_LENGTH = 10
 export default function Login() {
   const navigate = useNavigate()
   const [params] = useSearchParams()
-  const { requestOtp, verifyOtp, widgetLogin } = useApp()
+  const { requestOtp, verifyOtp, widgetLogin, setName: saveName } = useApp()
   const { push } = useToast()
 
   // Warm up the MSG91 widget once, if it's configured.
@@ -39,7 +39,8 @@ export default function Login() {
   const next = params.get('next') || '/'
   const [step, setStep] = useState('phone')
   const [phone, setPhone] = useState('')
-  const [name, setName] = useState('')
+  const [name, setName] = useState('') // only collected for a brand-new customer
+  const [newUser, setNewUser] = useState(null) // set when a first-time user needs a name
   const [code, setCode] = useState('') // dev code echoed by the API
   const [digits, setDigits] = useState(Array(OTP_LENGTH).fill(''))
   const [error, setError] = useState('')
@@ -47,6 +48,7 @@ export default function Login() {
   const [cooldown, setCooldown] = useState(0)
   const [resends, setResends] = useState(0)
   const inputs = useRef([])
+  const nameRef = useRef(null)
 
   const phoneValid = /^[6-9]\d{9}$/.test(phone)
   const otpComplete = digits.every((d) => d !== '')
@@ -146,32 +148,57 @@ export default function Login() {
     if (e.key === 'ArrowRight' && i < OTP_LENGTH - 1) focusCell(i + 1)
   }
 
+  const finishLogin = (user) => {
+    push({
+      title: `Welcome to ${BRAND.name}`,
+      body:
+        user.role === 'customer'
+          ? `Signed in as +91 ${phone}`
+          : `Signed in as ${user.name} · ${user.role}`,
+      meta: `Stays signed in for ${SESSION_DAYS} days`,
+      tone: 'success',
+    })
+    // Staff go to their dashboard; a requested `next` only applies to customers.
+    const dest = user.role === 'customer' ? next : HOME_FOR_ROLE[user.role]
+    navigate(dest, { replace: true })
+  }
+
   const verify = async (e) => {
     e.preventDefault()
     if (!otpComplete || busy) return
     setBusy(true)
     try {
-      const user = WIDGET
-        ? await widgetVerifyOtp(entered).then((accessToken) =>
-            widgetLogin(accessToken, phone, name.trim() || undefined),
-          )
-        : await verifyOtp(phone, entered, name.trim() || undefined)
-      push({
-        title: `Welcome to ${BRAND.name}`,
-        body:
-          user.role === 'customer'
-            ? `Signed in as +91 ${phone}`
-            : `Signed in as ${user.name} · ${user.role}`,
-        meta: `Stays signed in for ${SESSION_DAYS} days`,
-        tone: 'success',
-      })
-      // Staff go to their dashboard; a requested `next` only applies to customers.
-      const dest = user.role === 'customer' ? next : HOME_FOR_ROLE[user.role]
-      navigate(dest, { replace: true })
+      const { user, isNew } = WIDGET
+        ? await widgetVerifyOtp(entered).then((accessToken) => widgetLogin(accessToken, phone))
+        : await verifyOtp(phone, entered)
+
+      // Only a brand-new customer is asked for a name — everyone else goes straight in.
+      if (isNew && user.role === 'customer') {
+        setNewUser(user)
+        setStep('name')
+        setBusy(false)
+        window.setTimeout(() => nameRef.current?.focus(), 60)
+        return
+      }
+      finishLogin(user)
     } catch (err) {
       setError(err.message || 'That code is incorrect.')
       setDigits(Array(OTP_LENGTH).fill(''))
       focusCell(0)
+      setBusy(false)
+    }
+  }
+
+  const submitName = async (e) => {
+    e.preventDefault()
+    if (busy) return
+    setBusy(true)
+    try {
+      const finalName = name.trim()
+      const user = finalName ? await saveName(finalName) : newUser
+      finishLogin(user ?? newUser)
+    } catch (err) {
+      setError(err.message || 'Could not save your name.')
       setBusy(false)
     }
   }
@@ -197,18 +224,6 @@ export default function Login() {
               <p className="lede login__lede">
                 We&rsquo;ll text you a one-time code. No password to remember.
               </p>
-
-              <label className="field" htmlFor="login-name">
-                <span className="field__label">Your name</span>
-                <input
-                  id="login-name"
-                  className="field__input"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Aarav Sharma"
-                  autoComplete="name"
-                />
-              </label>
 
               <label className="field" htmlFor="login-phone">
                 <span className="field__label">Mobile number</span>
@@ -244,7 +259,7 @@ export default function Login() {
                 By continuing you agree to our Terms and Privacy Policy.
               </p>
             </form>
-          ) : (
+          ) : step === 'otp' ? (
             <form onSubmit={verify} noValidate>
               <div className="eyebrow">Step 02 — Verify</div>
               <h1 className="display login__title">Enter your code</h1>
@@ -329,6 +344,53 @@ export default function Login() {
               <p className="login__fine">
                 Stays signed in on this device for {SESSION_DAYS} days.
               </p>
+            </form>
+          ) : (
+            <form onSubmit={submitName} noValidate>
+              <div className="eyebrow">One last thing</div>
+              <h1 className="display login__title">What should we call you?</h1>
+              <p className="lede login__lede">
+                You&rsquo;re signed in. Add your name so salons know who&rsquo;s booking.
+              </p>
+
+              <label className="field" htmlFor="login-name">
+                <span className="field__label">Your name</span>
+                <input
+                  id="login-name"
+                  ref={nameRef}
+                  className="field__input"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Aarav Sharma"
+                  autoComplete="name"
+                  maxLength={60}
+                />
+              </label>
+
+              {error && (
+                <p className="field__error" role="alert">
+                  {error}
+                </p>
+              )}
+
+              <button
+                type="submit"
+                className="btn btn--gold btn--block"
+                disabled={busy || !name.trim()}
+              >
+                {busy ? 'Saving…' : 'Continue'}
+              </button>
+
+              <div className="login__resend">
+                <button
+                  type="button"
+                  className="login__link"
+                  onClick={() => finishLogin(newUser)}
+                  disabled={busy}
+                >
+                  Skip for now
+                </button>
+              </div>
             </form>
           )}
         </div>
