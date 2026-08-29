@@ -16,7 +16,9 @@ export default defineConfig({
     // is never referenced by the browser. Override the target with VITE_DEV_API.
     proxy: {
       '/api': {
-        target: process.env.VITE_DEV_API || 'http://localhost:4000',
+        // 127.0.0.1 (not localhost) to avoid Node resolving to ::1 (IPv6) while
+        // the backend listens on IPv4 — the classic ECONNREFUSED in dev.
+        target: process.env.VITE_DEV_API || 'http://127.0.0.1:4000',
         changeOrigin: true,
         // Clear message when the backend isn't running (instead of a raw 500).
         configure: (proxy) => {
