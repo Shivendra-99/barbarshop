@@ -1,7 +1,7 @@
 import { Router } from 'express'
 import { mapplsEnabled } from '../config/env.js'
 import { autosuggest, reverseGeocode } from '../lib/geo/mappls.js'
-import { lookupPincode } from '../lib/geo/pincode.js'
+import { lookupPincode, reverseViaOsm } from '../lib/geo/pincode.js'
 import { requireAuth } from '../middleware/auth.js'
 import { asyncHandler, ApiError } from '../middleware/error.js'
 
@@ -34,9 +34,30 @@ router.get(
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
       throw new ApiError(400, 'Valid lat and lng are required.')
     }
-    const result = await reverseGeocode(lat, lng)
-    if (!result) throw new ApiError(404, 'Could not resolve that location.')
-    res.json(result)
+
+    // Keyless primary path: OSM gives the PIN, India Post gives city/state/district.
+    const osm = await reverseViaOsm(lat, lng)
+    if (osm) {
+      if (osm.postcode) {
+        const ip = await lookupPincode(osm.postcode)
+        if (ip) return res.json({ ...ip, source: 'indiapost' })
+      }
+      if (osm.city) {
+        return res.json({
+          city: osm.city,
+          district: osm.district,
+          state: osm.state,
+          pincode: osm.postcode,
+          source: 'osm',
+        })
+      }
+    }
+
+    // Fallback: Mappls reverse geocode (needs Mappls credentials).
+    const mappls = await reverseGeocode(lat, lng)
+    if (mappls) return res.json({ ...mappls, source: 'mappls' })
+
+    throw new ApiError(404, 'Could not resolve that location.')
   }),
 )
 

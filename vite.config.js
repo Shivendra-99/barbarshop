@@ -18,6 +18,19 @@ export default defineConfig({
       '/api': {
         target: process.env.VITE_DEV_API || 'http://localhost:4000',
         changeOrigin: true,
+        // Clear message when the backend isn't running (instead of a raw 500).
+        configure: (proxy) => {
+          proxy.on('error', (_err, _req, res) => {
+            if (res.writeHead && !res.headersSent) {
+              res.writeHead(502, { 'Content-Type': 'application/json' })
+            }
+            res.end?.(
+              JSON.stringify({
+                error: 'Backend not reachable. Start it: cd server && npm run dev',
+              }),
+            )
+          })
+        },
       },
     },
   },
