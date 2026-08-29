@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { useApp } from '../store/AppStore'
 import { usePrefs, THEMES } from '../store/Prefs'
-import { BRAND, CITIES } from '../data/seed'
+import { BRAND } from '../data/seed'
+import { api } from '../lib/api'
 import { formatINR } from '../lib/money'
 import './Header.css'
 
@@ -64,7 +65,26 @@ export default function Header({ city, onCityChange }) {
   const navigate = useNavigate()
   const { isSignedIn, session, logout, unreadCount, myNotifications, markRead, walletBalance } =
     useApp()
-  const { theme, setTheme, resolvedTheme } = usePrefs()
+  const { theme, setTheme, resolvedTheme, cities, setCityFromPincode } = usePrefs()
+  const [pin, setPin] = useState('')
+  const [pinBusy, setPinBusy] = useState(false)
+  const [pinErr, setPinErr] = useState('')
+
+  const lookupPin = async () => {
+    if (!/^\d{6}$/.test(pin) || pinBusy) return
+    setPinBusy(true)
+    setPinErr('')
+    try {
+      const result = await api.pincode(pin)
+      onCityChange(setCityFromPincode(result))
+      setPin('')
+      close()
+    } catch (err) {
+      setPinErr(err.message || 'PIN not found.')
+    } finally {
+      setPinBusy(false)
+    }
+  }
 
   const [menu, setMenu] = useState(null) // 'city' | 'bell' | 'account' | null
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -114,8 +134,31 @@ export default function Header({ city, onCityChange }) {
               </span>
             </button>
             <Panel open={menu === 'city'} onClose={close} className="pop--city">
+              <div className="pop__pin">
+                <input
+                  className="field__input"
+                  value={pin}
+                  onChange={(e) => {
+                    setPin(e.target.value.replace(/\D/g, '').slice(0, 6))
+                    setPinErr('')
+                  }}
+                  onKeyDown={(e) => e.key === 'Enter' && lookupPin()}
+                  placeholder="Enter PIN code (any city)"
+                  inputMode="numeric"
+                  aria-label="PIN code"
+                />
+                <button
+                  type="button"
+                  className="btn btn--gold btn--sm"
+                  onClick={lookupPin}
+                  disabled={pin.length !== 6 || pinBusy}
+                >
+                  {pinBusy ? '…' : 'Go'}
+                </button>
+              </div>
+              {pinErr && <p className="pop__pinErr">{pinErr}</p>}
               <ul role="listbox" aria-label="Choose city">
-                {CITIES.map((c) => (
+                {cities.map((c) => (
                   <li key={c.id} role="none">
                     <button
                       type="button"
@@ -129,7 +172,7 @@ export default function Header({ city, onCityChange }) {
                       }}
                     >
                       <span>{c.label}</span>
-                      <span className="pop__hint">{c.areas}</span>
+                      <span className="pop__hint">{c.areas ?? c.state ?? ''}</span>
                     </button>
                   </li>
                 ))}

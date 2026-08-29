@@ -1,10 +1,26 @@
 import { Router } from 'express'
 import { mapplsEnabled } from '../config/env.js'
 import { autosuggest } from '../lib/geo/mappls.js'
+import { lookupPincode } from '../lib/geo/pincode.js'
 import { requireAuth } from '../middleware/auth.js'
-import { asyncHandler } from '../middleware/error.js'
+import { asyncHandler, ApiError } from '../middleware/error.js'
 
 const router = Router()
+
+/**
+ * India Post PIN lookup → { pincode, state, district, city, areas }. Public
+ * (public data, and used by the anonymous location picker). 404 for unknown pins.
+ */
+router.get(
+  '/pincode/:pin',
+  asyncHandler(async (req, res) => {
+    const pin = String(req.params.pin || '')
+    if (!/^\d{6}$/.test(pin)) throw new ApiError(400, 'Enter a valid 6-digit PIN code.')
+    const result = await lookupPincode(pin)
+    if (!result) throw new ApiError(404, 'No location found for that PIN code.')
+    res.json(result)
+  }),
+)
 
 /**
  * Address autosuggest proxy. Signed-in users only (keeps our Mappls quota from

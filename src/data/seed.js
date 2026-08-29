@@ -40,6 +40,37 @@ export const CITIES = [
 
 export const cityById = (id) => CITIES.find((c) => c.id === id) ?? CITIES[0]
 
+// Postal districts that split a metro into many — map them to one catalog city
+// so a PIN anywhere in the metro resolves to the same city.
+const CITY_ALIASES = {
+  'new delhi': 'delhi',
+  'south delhi': 'delhi',
+  'north delhi': 'delhi',
+  'central delhi': 'delhi',
+  'east delhi': 'delhi',
+  'west delhi': 'delhi',
+  'north west delhi': 'delhi',
+  'north east delhi': 'delhi',
+  'south west delhi': 'delhi',
+  'south east delhi': 'delhi',
+  'shahdara': 'delhi',
+  'mumbai suburban': 'mumbai',
+}
+
+/** Normalises a district name to a catalog city id (metro aliases applied). */
+export const normalizeCityId = (name) => {
+  const key = (name || '').trim().toLowerCase()
+  return CITY_ALIASES[key] || key
+}
+
+/** Builds a city object { id, label, pin, state, near } from a PIN lookup. */
+export function cityFromPincode({ district, state, pincode } = {}) {
+  const id = normalizeCityId(district)
+  const known = CITIES.find((c) => c.id === id)
+  if (known) return { ...known, pin: pincode || known.pin, state: state || 'India' }
+  return { id, label: district || 'Your area', pin: pincode || '', state: state || '', near: '' }
+}
+
 /* ------------------------------------------------------------------
    Service menus, per category
    ------------------------------------------------------------------ */

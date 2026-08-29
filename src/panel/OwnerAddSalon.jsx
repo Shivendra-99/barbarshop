@@ -4,7 +4,7 @@ import { useApp } from '../store/AppStore'
 import { useToast } from '../components/Toast'
 import { useConfirm } from '../components/Confirm'
 import AddressAutocomplete from '../components/AddressAutocomplete'
-import { CATEGORIES, CITIES, cityById } from '../data/seed'
+import { CATEGORIES, CITIES, normalizeCityId } from '../data/seed'
 import { api } from '../lib/api'
 import { formatINR } from '../lib/money'
 import ServiceRows from './ServiceRows'
@@ -14,7 +14,11 @@ import './OwnerAddSalon.css'
 const EMPTY = {
   name: '',
   category: 'mens',
-  city: 'lucknow',
+  city: '',
+  cityLabel: '',
+  state: '',
+  district: '',
+  pin: '',
   ownerId: '',
   area: '',
   address: '',
@@ -50,6 +54,35 @@ export default function OwnerAddSalon({ asFounder = false }) {
 
   const homeBase = asFounder ? '/admin/salons' : '/owner'
 
+  // PIN → city/state/district/area (India Post), so salons work in any city.
+  const [pinBusy, setPinBusy] = useState(false)
+  const [pinErr, setPinErr] = useState('')
+  const [areaOptions, setAreaOptions] = useState([])
+
+  const lookupPin = async (pin) => {
+    setPinErr('')
+    if (!/^\d{6}$/.test(pin)) return
+    setPinBusy(true)
+    try {
+      const r = await api.pincode(pin)
+      setAreaOptions(r.areas ?? [])
+      setForm((f) => ({
+        ...f,
+        pin: r.pincode,
+        state: r.state,
+        district: r.district,
+        city: normalizeCityId(r.district),
+        cityLabel: r.district,
+        area: f.area.trim() ? f.area : (r.areas?.[0] ?? ''),
+      }))
+    } catch (err) {
+      setForm((f) => ({ ...f, city: '', cityLabel: '', state: '', district: '' }))
+      setPinErr(err.message || 'PIN not found.')
+    } finally {
+      setPinBusy(false)
+    }
+  }
+
   const set = (key) => (e) => {
     const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value
     setForm((f) => ({ ...f, [key]: value }))
@@ -67,6 +100,7 @@ export default function OwnerAddSalon({ asFounder = false }) {
   const errors = {
     ownerId: asFounder && !form.ownerId ? 'Choose the owner this salon belongs to.' : '',
     name: form.name.trim().length < 3 ? 'Enter the salon name.' : '',
+    pin: !/^\d{6}$/.test(form.pin) || !form.city ? 'Enter a valid PIN code to set the city.' : '',
     area: form.area.trim().length < 2 ? 'Enter the area or locality.' : '',
     address: form.address.trim().length < 8 ? 'Enter the full address.' : '',
     modes: !form.atSalon && !form.home ? 'Choose at least one service option.' : '',
@@ -100,6 +134,9 @@ export default function OwnerAddSalon({ asFounder = false }) {
         name: form.name.trim(),
         category: form.category,
         city: form.city,
+        state: form.state || undefined,
+        district: form.district || undefined,
+        pin: form.pin || undefined,
         ownerId: asFounder ? form.ownerId : undefined,
         area: form.area.trim(),
         address: form.address.trim(),
@@ -193,15 +230,33 @@ export default function OwnerAddSalon({ asFounder = false }) {
             <span className="field__hint">Service menu and pricing follow the type.</span>
           </label>
 
-          <label className="field" htmlFor="s-city">
-            <span className="field__label">City</span>
-            <select id="s-city" className="field__input" value={form.city} onChange={set('city')}>
-              {CITIES.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.label}
-                </option>
-              ))}
-            </select>
+          <label className="field" htmlFor="s-pin">
+            <span className="field__label">PIN code</span>
+            <input
+              id="s-pin"
+              className="field__input"
+              value={form.pin}
+              onChange={(e) => {
+                const pin = e.target.value.replace(/\D/g, '').slice(0, 6)
+                setForm((f) => ({ ...f, pin }))
+                if (pin.length === 6) lookupPin(pin)
+              }}
+              placeholder="226010"
+              inputMode="numeric"
+              aria-invalid={Boolean(err('pin'))}
+            />
+            {pinBusy ? (
+              <span className="field__hint">Looking up…</span>
+            ) : form.city ? (
+              <span className="field__hint">
+                {form.district}
+                {form.state ? `, ${form.state}` : ''}
+              </span>
+            ) : (
+              (err('pin') || pinErr) && (
+                <span className="field__error">{pinErr || errors.pin}</span>
+              )
+            )}
           </label>
 
           <label className="field" htmlFor="s-area">
@@ -212,8 +267,14 @@ export default function OwnerAddSalon({ asFounder = false }) {
               value={form.area}
               onChange={set('area')}
               placeholder="Gomti Nagar"
+              list="s-area-options"
               aria-invalid={Boolean(err('area'))}
             />
+            <datalist id="s-area-options">
+              {areaOptions.map((a) => (
+                <option key={a} value={a} />
+              ))}
+            </datalist>
             {err('area') && <span className="field__error">{errors.area}</span>}
           </label>
 
@@ -230,7 +291,7 @@ export default function OwnerAddSalon({ asFounder = false }) {
                   area: f.area.trim() ? f.area : item.name,
                 }))
               }
-              near={cityById(form.city).near}
+              near={CITIES.find((c) => c.id === form.city)?.near}
               placeholder="Start typing your salon address…"
               ariaInvalid={Boolean(err('address'))}
             />

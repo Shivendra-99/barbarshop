@@ -100,6 +100,8 @@ export const api = {
   // --- Address autosuggest (Mappls, via our proxy) ---
   autosuggestAddress: (q, near) =>
     request(`/geo/autosuggest?q=${encodeURIComponent(q)}${near ? `&near=${encodeURIComponent(near)}` : ''}`),
+  // India Post PIN lookup → { pincode, state, district, city, areas }
+  pincode: (pin) => request(`/geo/pincode/${encodeURIComponent(pin)}`, { auth: false }),
 
   // --- Wallet & notifications ---
   wallet: () => request('/wallet'),

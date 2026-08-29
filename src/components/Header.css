@@ -242,6 +242,30 @@
   width: 320px;
 }
 
+.pop__pin {
+  display: flex;
+  gap: 8px;
+  padding: 4px 4px 8px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 6px;
+}
+
+.pop__pin .field__input {
+  min-height: 40px;
+  font-size: 14px;
+}
+
+.pop__pin .btn {
+  flex-shrink: 0;
+}
+
+.pop__pinErr {
+  margin: 0 0 6px;
+  padding: 0 4px;
+  font-size: 12.5px;
+  color: var(--red);
+}
+
 .pop ul {
   list-style: none;
   margin: 0;

@@ -5,6 +5,9 @@ const salonSchema = new mongoose.Schema(
     name: { type: String, required: true, trim: true },
     category: { type: String, required: true, index: true }, // mens | unisex | parlour
     city: { type: String, required: true, index: true },
+    state: { type: String, default: '' },
+    district: { type: String, default: '' },
+    pin: { type: String, default: '' },
     area: { type: String, required: true },
     address: { type: String, required: true },
     // Mappls geo reference for the address: compact eLoc always; lat/lng when
@@ -42,6 +45,9 @@ salonSchema.methods.toPublic = function toPublic() {
     name: this.name,
     category: this.category,
     city: this.city,
+    state: this.state,
+    district: this.district,
+    pin: this.pin,
     area: this.area,
     address: this.address,
     location: this.location ?? { eLoc: null, lat: null, lng: null },

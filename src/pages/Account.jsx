@@ -3,14 +3,13 @@ import { useNavigate } from 'react-router-dom'
 import { useApp, SESSION_DAYS } from '../store/AppStore'
 import { usePrefs } from '../store/Prefs'
 import { useToast } from '../components/Toast'
-import { CITIES } from '../data/seed'
 import { formatINR } from '../lib/money'
 import './Simple.css'
 
 export default function Account() {
   const navigate = useNavigate()
   const { session, setName, logout, myBookings, walletBalance, isFirstBooking } = useApp()
-  const { city, setCity } = usePrefs()
+  const { city, setCity, cities } = usePrefs()
   const { push } = useToast()
   const [draft, setDraft] = useState(session?.name ?? '')
   const [saving, setSaving] = useState(false)
@@ -117,7 +116,7 @@ export default function Account() {
       <div className="panel">
         <h2 className="simple__heading">Default city</h2>
         <div className="cityRow">
-          {CITIES.map((c) => (
+          {cities.map((c) => (
             <button
               key={c.id}
               type="button"
@@ -129,6 +128,9 @@ export default function Account() {
             </button>
           ))}
         </div>
+        <p className="panel__text panel__text--fine">
+          Set your city from any PIN code using the location menu in the header.
+        </p>
       </div>
 
       <div className="panel panel--danger">
