@@ -102,6 +102,8 @@ export const api = {
     request(`/geo/autosuggest?q=${encodeURIComponent(q)}${near ? `&near=${encodeURIComponent(near)}` : ''}`),
   // India Post PIN lookup → { pincode, state, district, city, areas }
   pincode: (pin) => request(`/geo/pincode/${encodeURIComponent(pin)}`, { auth: false }),
+  // Reverse geocode (browser coords) → { city, district, state, pincode }
+  reverseGeocode: (lat, lng) => request(`/geo/reverse?lat=${lat}&lng=${lng}`, { auth: false }),
 
   // --- Wallet & notifications ---
   wallet: () => request('/wallet'),

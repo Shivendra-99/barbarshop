@@ -62,6 +62,32 @@ export async function autosuggest(query, { near } = {}) {
 }
 
 /**
+ * Reverse geocode: { lat, lng } → { city, district, state, pincode, locality }.
+ * Uses the advancedmaps endpoint with the OAuth token in the path (the only
+ * variant that works for this account). Returns null on failure.
+ */
+export async function reverseGeocode(lat, lng) {
+  try {
+    const token = await getToken()
+    const url = `https://apis.mappls.com/advancedmaps/v1/${token}/rev_geocode?lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(lng)}`
+    const res = await fetch(url)
+    if (!res.ok) return null
+    const data = await res.json()
+    const r = data?.results?.[0]
+    if (!r) return null
+    return {
+      city: r.city || r.district || '',
+      district: r.district || r.city || '',
+      state: r.state || '',
+      pincode: r.pincode || '',
+      locality: r.locality || r.subLocality || '',
+    }
+  } catch {
+    return null
+  }
+}
+
+/**
  * Resolves an address (or eLoc) to { lat, lng } via the REST-key geocoder.
  * Returns null when the REST key is absent or the provider can't geocode it —
  * callers store the eLoc regardless and just leave coordinates null.

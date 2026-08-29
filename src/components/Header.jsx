@@ -65,7 +65,8 @@ export default function Header({ city, onCityChange }) {
   const navigate = useNavigate()
   const { isSignedIn, session, logout, unreadCount, myNotifications, markRead, walletBalance } =
     useApp()
-  const { theme, setTheme, resolvedTheme, cities, setCityFromPincode } = usePrefs()
+  const { theme, setTheme, resolvedTheme, cities, setCityFromPincode, detectLocation, detecting } =
+    usePrefs()
   const [pin, setPin] = useState('')
   const [pinBusy, setPinBusy] = useState(false)
   const [pinErr, setPinErr] = useState('')
@@ -83,6 +84,16 @@ export default function Header({ city, onCityChange }) {
       setPinErr(err.message || 'PIN not found.')
     } finally {
       setPinBusy(false)
+    }
+  }
+
+  const useMyLocation = async () => {
+    setPinErr('')
+    try {
+      onCityChange(await detectLocation())
+      close()
+    } catch (err) {
+      setPinErr(err.message || 'Could not get your location.')
     }
   }
 
@@ -157,6 +168,19 @@ export default function Header({ city, onCityChange }) {
                 </button>
               </div>
               {pinErr && <p className="pop__pinErr">{pinErr}</p>}
+              <button
+                type="button"
+                className="pop__locate"
+                onClick={useMyLocation}
+                disabled={detecting}
+              >
+                <svg viewBox="0 0 16 16" aria-hidden="true">
+                  <circle cx="8" cy="8" r="2.4" fill="currentColor" />
+                  <circle cx="8" cy="8" r="5.4" fill="none" stroke="currentColor" strokeWidth="1.2" />
+                  <path d="M8 .8v2M8 13.2v2M.8 8h2M13.2 8h2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+                </svg>
+                {detecting ? 'Detecting…' : 'Use my current location'}
+              </button>
               <ul role="listbox" aria-label="Choose city">
                 {cities.map((c) => (
                   <li key={c.id} role="none">

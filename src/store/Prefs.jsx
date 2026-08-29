@@ -1,5 +1,6 @@
 import { createContext, useContext, useCallback, useEffect, useMemo, useState } from 'react'
 import { CITIES, cityById, cityFromPincode } from '../data/seed'
+import { api } from '../lib/api'
 import { load, save } from '../lib/storage'
 
 const PrefsContext = createContext(null)
@@ -40,6 +41,7 @@ export function PrefsProvider({ children }) {
 
   const setCity = useCallback(
     (idOrObj) => {
+      save('prefs:located', true) // an explicit pick means don't auto-prompt again
       if (typeof idOrObj !== 'string') return setCityObj(idOrObj)
       const found = [...CITIES, ...recentCities].find((c) => c.id === idOrObj)
       return setCityObj(found ?? cityById(idOrObj))
@@ -49,6 +51,7 @@ export function PrefsProvider({ children }) {
 
   /** Resolve an India Post lookup into the current city (and remember it). */
   const setCityFromPincode = useCallback((result) => {
+    save('prefs:located', true)
     const c = cityFromPincode(result)
     setCityObj(c)
     setRecentCities((list) => {
@@ -57,6 +60,30 @@ export function PrefsProvider({ children }) {
     })
     return c
   }, [])
+
+  const [detecting, setDetecting] = useState(false)
+
+  /** Ask the browser for location → reverse-geocode → set the city. */
+  const detectLocation = useCallback(async () => {
+    if (!navigator.geolocation) throw new Error('Location not supported on this device.')
+    setDetecting(true)
+    try {
+      const pos = await new Promise((res, rej) =>
+        navigator.geolocation.getCurrentPosition(res, rej, { timeout: 8000, maximumAge: 600000 }),
+      )
+      const { latitude, longitude } = pos.coords
+      const r = await api.reverseGeocode(latitude, longitude)
+      return setCityFromPincode({ district: r.city || r.district, state: r.state, pincode: r.pincode })
+    } finally {
+      setDetecting(false)
+    }
+  }, [setCityFromPincode])
+
+  // First visit (no location chosen yet): try to auto-detect the city.
+  useEffect(() => {
+    if (load('prefs:located', false)) return
+    detectLocation().catch(() => {}) // denied/unavailable → keep the default
+  }, [detectLocation])
 
   /**
    * `system` removes the attribute entirely so the prefers-color-scheme query
@@ -93,13 +120,15 @@ export function PrefsProvider({ children }) {
       cities,
       setCity,
       setCityFromPincode,
+      detectLocation,
+      detecting,
       category,
       setCategory,
       theme,
       setTheme,
       resolvedTheme,
     }),
-    [city, cities, setCity, setCityFromPincode, category, theme, resolvedTheme],
+    [city, cities, setCity, setCityFromPincode, detectLocation, detecting, category, theme, resolvedTheme],
   )
 
   return <PrefsContext.Provider value={value}>{children}</PrefsContext.Provider>
