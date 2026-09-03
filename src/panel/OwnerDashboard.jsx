@@ -1,8 +1,11 @@
 import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { useApp } from '../store/AppStore'
-import { cityById, categoryById } from '../data/seed'
+import { CITIES, categoryById } from '../data/seed'
 import { formatINR, formatCompactINR } from '../lib/money'
+
+/** Salon city label — district for PIN-added cities, else the seeded label. */
+const cityLabel = (s) => s.district || CITIES.find((c) => c.id === s.city)?.label || s.city
 import './panel-ui.css'
 
 const STATUS_BADGE = {
@@ -26,19 +29,24 @@ export default function OwnerDashboard() {
 
   const stats = useMemo(() => {
     const live = ownerBookings.filter((b) => b.status !== 'cancelled')
-    const earnings = live
+    const online = live
       .filter((b) => b.paymentMode === 'online')
       .reduce((s, b) => s + b.total, 0)
-    const cash = live
-      .filter((b) => b.paymentMode === 'offline')
+    // Offline counts only once the owner has marked payment complete.
+    const offlinePaid = live
+      .filter((b) => b.paymentMode === 'offline' && b.paymentStatus === 'paid')
+      .reduce((s, b) => s + b.total, 0)
+    const offlinePending = live
+      .filter((b) => b.paymentMode === 'offline' && b.paymentStatus !== 'paid')
       .reduce((s, b) => s + b.total, 0)
     return {
       salons: mySalons.length,
       approved: mySalons.filter((s) => s.status === 'approved').length,
       pending: mySalons.filter((s) => s.status === 'pending').length,
       bookings: live.length,
-      earnings,
-      cash,
+      online,
+      offlinePaid,
+      offlinePending,
     }
   }, [mySalons, ownerBookings])
 
@@ -52,10 +60,14 @@ export default function OwnerDashboard() {
       </div>
 
       <div className="kpis">
-        <Kpi label="Your salons" value={stats.salons} delta={`${stats.approved} live`} />
-        <Kpi label="Bookings" value={stats.bookings} delta="Confirmed" />
-        <Kpi label="Online earnings" value={formatCompactINR(stats.earnings)} delta="Via platform" />
-        <Kpi label="Cash at salon" value={formatCompactINR(stats.cash)} delta="Collected direct" />
+        <Kpi label="Online earnings" value={formatCompactINR(stats.online)} delta="Paid via app" />
+        <Kpi label="Offline earnings" value={formatCompactINR(stats.offlinePaid)} delta="Cash collected" />
+        <Kpi
+          label="Pending collection"
+          value={formatCompactINR(stats.offlinePending)}
+          delta="Cash to collect"
+        />
+        <Kpi label="Bookings" value={stats.bookings} delta={`${stats.salons} salons`} />
       </div>
 
       <div className="p-section">
@@ -97,7 +109,7 @@ export default function OwnerDashboard() {
                       <div className="ptable__sub">{s.area}</div>
                     </td>
                     <td>{categoryById(s.category).label}</td>
-                    <td>{cityById(s.city).label}</td>
+                    <td>{cityLabel(s)}</td>
                     <td className="ptable__money">{s.from ? formatINR(s.from) : '—'}</td>
                     <td>{s.serviceModes.map((m) => (m === 'home' ? 'Home' : 'Salon')).join(' · ')}</td>
                     <td>

@@ -2,11 +2,13 @@ import { useMemo, useState } from 'react'
 import { useApp } from '../store/AppStore'
 import { useToast } from '../components/Toast'
 import { useConfirm } from '../components/Confirm'
-import { cityById, categoryById } from '../data/seed'
+import { CITIES, categoryById } from '../data/seed'
 import { formatINR } from '../lib/money'
 import './panel-ui.css'
 
 const FILTERS = ['All', 'Pending', 'Approved', 'Rejected']
+
+const cityLabel = (s) => s.district || CITIES.find((c) => c.id === s.city)?.label || s.city
 
 const STATUS_BADGE = {
   approved: 'badge--green',
@@ -93,7 +95,7 @@ export default function FounderSalons() {
                   <div className="ptable__sub">{s.area}</div>
                 </td>
                 <td>{categoryById(s.category).label}</td>
-                <td>{cityById(s.city).label}</td>
+                <td>{cityLabel(s)}</td>
                 <td>{s.ownerName ?? '—'}</td>
                 <td className="ptable__money">{s.from ? formatINR(s.from) : '—'}</td>
                 <td>

@@ -102,6 +102,9 @@ router.post(
       dateLabel: body.dateLabel ?? body.date,
       slot: body.slot,
       paymentMode: body.paymentMode,
+      // Online is paid via the app upfront; cash is collected at the salon later.
+      paymentStatus: body.paymentMode === 'online' ? 'paid' : 'pending',
+      paidAt: body.paymentMode === 'online' ? new Date() : null,
       homeServiceFee,
       ...priced,
       status: 'confirmed',
@@ -181,6 +184,49 @@ router.patch(
             },
           ]
         : []),
+    ])
+
+    res.json({ booking: booking.toPublic() })
+  }),
+)
+
+/* ---- Owner: mark a pay-at-salon booking as paid (after the service) ---- */
+
+router.patch(
+  '/:id/complete',
+  requireAuth,
+  requireRole('owner'),
+  asyncHandler(async (req, res) => {
+    const booking = await Booking.findById(req.params.id).catch(() => null)
+    if (!booking) throw new ApiError(404, 'Booking not found.')
+
+    const owns = await Salon.exists({ _id: booking.salon, owner: req.user._id })
+    if (!owns) throw new ApiError(403, 'That booking is not for your salon.')
+
+    if (booking.status === 'cancelled') throw new ApiError(400, 'This booking was cancelled.')
+    if (booking.paymentMode !== 'offline') {
+      throw new ApiError(400, 'Only pay-at-salon bookings are completed here.')
+    }
+    if (booking.paymentStatus === 'paid') throw new ApiError(400, 'Payment is already marked complete.')
+
+    booking.paymentStatus = 'paid'
+    booking.paidAt = new Date()
+    booking.status = 'completed'
+    await booking.save()
+
+    await notify([
+      {
+        audience: `user:${booking.customer.toString()}`,
+        tone: 'success',
+        title: 'Payment received',
+        body: `${booking.serviceName} at ${booking.salonName} — ${formatINR(booking.total)} paid at the salon.`,
+      },
+      {
+        audience: `owner:${req.user._id.toString()}`,
+        tone: 'success',
+        title: 'Payment marked complete',
+        body: `${booking.serviceName} · ${formatINR(booking.total)} collected.`,
+      },
     ])
 
     res.json({ booking: booking.toPublic() })

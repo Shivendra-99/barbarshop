@@ -1,14 +1,37 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useApp } from '../store/AppStore'
+import { useToast } from '../components/Toast'
+import { useConfirm } from '../components/Confirm'
 import { formatINR } from '../lib/money'
 import './panel-ui.css'
 
 const FILTERS = ['All', 'Upcoming', 'Cancelled']
 
 export default function OwnerBookings() {
-  const { ownerBookings, mySalons } = useApp()
+  const { ownerBookings, mySalons, completeBooking } = useApp()
+  const { push } = useToast()
+  const confirm = useConfirm()
   const [filter, setFilter] = useState('All')
+  const [busyId, setBusyId] = useState(null)
+
+  const markPaid = async (b) => {
+    const ok = await confirm({
+      title: 'Payment complete?',
+      message: `Confirm you collected ${formatINR(b.total)} in cash for ${b.serviceName} (#${b.ref}). This marks the booking completed.`,
+      confirmLabel: 'Payment complete',
+    })
+    if (!ok) return
+    setBusyId(b.id)
+    try {
+      await completeBooking(b)
+      push({ tone: 'success', title: 'Payment marked complete', body: `#${b.ref} · ${formatINR(b.total)}` })
+    } catch (err) {
+      push({ tone: 'warn', title: 'Could not update', body: err.message })
+    } finally {
+      setBusyId(null)
+    }
+  }
 
   const rows = useMemo(() => {
     switch (filter) {
@@ -71,34 +94,61 @@ export default function OwnerBookings() {
                     <th>Payment</th>
                     <th>Amount</th>
                     <th>Status</th>
+                    <th>Action</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.map((b) => (
-                    <tr key={b.id}>
-                      <td>
-                        <div className="ptable__strong">#{b.ref}</div>
-                        <div className="ptable__sub">{b.serviceName}</div>
-                      </td>
-                      <td>{b.salonName}</td>
-                      <td>
-                        {b.dateLabel}
-                        <div className="ptable__sub">{b.slot}</div>
-                      </td>
-                      <td>{b.modeLabel}</td>
-                      <td>
-                        <span className={`badge ${b.paymentMode === 'online' ? 'badge--gold' : 'badge--neutral'}`}>
-                          {b.paymentMode === 'online' ? 'Online' : 'Cash'}
-                        </span>
-                      </td>
-                      <td className="ptable__money">{formatINR(b.total)}</td>
-                      <td>
-                        <span className={`badge ${b.status === 'cancelled' ? 'badge--red' : 'badge--green'}`}>
-                          {b.status === 'cancelled' ? 'Cancelled' : 'Confirmed'}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
+                  {rows.map((b) => {
+                    const cancelled = b.status === 'cancelled'
+                    const paid = b.paymentStatus === 'paid'
+                    const cashPending = b.paymentMode === 'offline' && !paid && !cancelled
+                    return (
+                      <tr key={b.id}>
+                        <td>
+                          <div className="ptable__strong">#{b.ref}</div>
+                          <div className="ptable__sub">{b.serviceName}</div>
+                        </td>
+                        <td>{b.salonName}</td>
+                        <td>
+                          {b.dateLabel}
+                          <div className="ptable__sub">{b.slot}</div>
+                        </td>
+                        <td>{b.modeLabel}</td>
+                        <td>
+                          <span className={`badge ${b.paymentMode === 'online' ? 'badge--gold' : 'badge--neutral'}`}>
+                            {b.paymentMode === 'online' ? 'Online' : 'Cash'}
+                          </span>
+                          <div className="ptable__sub">
+                            {paid ? 'Paid' : b.paymentMode === 'online' ? 'Paid' : 'Awaiting cash'}
+                          </div>
+                        </td>
+                        <td className="ptable__money">{formatINR(b.total)}</td>
+                        <td>
+                          <span
+                            className={`badge ${
+                              cancelled ? 'badge--red' : b.status === 'completed' ? 'badge--gold' : 'badge--green'
+                            }`}
+                          >
+                            {cancelled ? 'Cancelled' : b.status === 'completed' ? 'Completed' : 'Confirmed'}
+                          </span>
+                        </td>
+                        <td>
+                          {cashPending ? (
+                            <button
+                              type="button"
+                              className="btn btn--gold btn--sm"
+                              onClick={() => markPaid(b)}
+                              disabled={busyId === b.id}
+                            >
+                              {busyId === b.id ? '…' : 'Payment complete'}
+                            </button>
+                          ) : (
+                            <span className="ptable__sub">—</span>
+                          )}
+                        </td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
             </div>

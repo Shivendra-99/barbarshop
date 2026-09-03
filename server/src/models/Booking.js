@@ -27,6 +27,10 @@ const bookingSchema = new mongoose.Schema(
     slot: { type: String, required: true },
 
     paymentMode: { type: String, enum: ['online', 'offline'], required: true },
+    // online = paid via app upfront; offline = cash, 'pending' until the owner
+    // marks "Payment Complete" after the service.
+    paymentStatus: { type: String, enum: ['pending', 'paid'], default: 'pending' },
+    paidAt: { type: Date, default: null },
 
     // Pricing snapshot (server-computed; the client never sets these).
     base: Number,
@@ -73,6 +77,8 @@ bookingSchema.methods.toPublic = function toPublic() {
     dateLabel: this.dateLabel,
     slot: this.slot,
     paymentMode: this.paymentMode,
+    paymentStatus: this.paymentStatus,
+    paidAt: this.paidAt,
     base: this.base,
     discount: this.discount,
     discountEligible: this.discountEligible,
