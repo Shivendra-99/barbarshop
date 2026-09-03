@@ -1,7 +1,7 @@
 import { Router } from 'express'
 import { mapplsEnabled } from '../config/env.js'
 import { autosuggest, reverseGeocode } from '../lib/geo/mappls.js'
-import { lookupPincode, reverseViaOsm } from '../lib/geo/pincode.js'
+import { lookupPincode, reverseViaOsm, searchPlaces } from '../lib/geo/pincode.js'
 import { requireAuth } from '../middleware/auth.js'
 import { asyncHandler, ApiError } from '../middleware/error.js'
 
@@ -19,6 +19,19 @@ router.get(
     const result = await lookupPincode(pin)
     if (!result) throw new ApiError(404, 'No location found for that PIN code.')
     res.json(result)
+  }),
+)
+
+/**
+ * City-name search (keyless, India). Returns [{ label, city, state, pincode }].
+ * Public — used by the location picker's search box.
+ */
+router.get(
+  '/search',
+  asyncHandler(async (req, res) => {
+    const q = (req.query.q ?? '').toString().trim()
+    if (q.length < 3) return res.json({ results: [] })
+    res.json({ results: await searchPlaces(q) })
   }),
 )
 

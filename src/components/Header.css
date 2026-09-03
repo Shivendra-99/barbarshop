@@ -266,6 +266,12 @@
   color: var(--red);
 }
 
+.pop__note {
+  padding: 10px 12px;
+  font-size: 13px;
+  color: var(--muted-3);
+}
+
 .pop__locate {
   display: flex;
   align-items: center;

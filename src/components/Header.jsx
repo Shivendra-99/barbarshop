@@ -67,33 +67,57 @@ export default function Header({ city, onCityChange }) {
     useApp()
   const { theme, setTheme, resolvedTheme, cities, setCityFromPincode, detectLocation, detecting } =
     usePrefs()
-  const [pin, setPin] = useState('')
-  const [pinBusy, setPinBusy] = useState(false)
-  const [pinErr, setPinErr] = useState('')
+  // Combined location search: type a city name OR a 6-digit PIN.
+  const [query, setQuery] = useState('')
+  const [results, setResults] = useState([])
+  const [searching, setSearching] = useState(false)
+  const [locErr, setLocErr] = useState('')
 
-  const lookupPin = async () => {
-    if (!/^\d{6}$/.test(pin) || pinBusy) return
-    setPinBusy(true)
-    setPinErr('')
-    try {
-      const result = await api.pincode(pin)
-      onCityChange(setCityFromPincode(result))
-      setPin('')
-      close()
-    } catch (err) {
-      setPinErr(err.message || 'PIN not found.')
-    } finally {
-      setPinBusy(false)
+  useEffect(() => {
+    const q = query.trim()
+    if (!q) {
+      setResults([])
+      return undefined
     }
+    setSearching(true)
+    const t = setTimeout(async () => {
+      try {
+        if (/^\d{6}$/.test(q)) {
+          const r = await api.pincode(q)
+          setResults([
+            { label: `${r.district}, ${r.state}`, city: r.district, state: r.state, pincode: r.pincode },
+          ])
+        } else if (q.length >= 3) {
+          const { results: found } = await api.searchLocations(q)
+          setResults(found)
+        } else {
+          setResults([])
+        }
+        setLocErr('')
+      } catch (err) {
+        setResults([])
+        setLocErr(err.message || 'Nothing found.')
+      } finally {
+        setSearching(false)
+      }
+    }, 350)
+    return () => clearTimeout(t)
+  }, [query])
+
+  const pick = (r) => {
+    onCityChange(setCityFromPincode({ district: r.city, state: r.state, pincode: r.pincode }))
+    setQuery('')
+    setResults([])
+    close()
   }
 
   const useMyLocation = async () => {
-    setPinErr('')
+    setLocErr('')
     try {
       onCityChange(await detectLocation())
       close()
     } catch (err) {
-      setPinErr(err.message || 'Could not get your location.')
+      setLocErr(err.message || 'Could not get your location.')
     }
   }
 
@@ -148,26 +172,17 @@ export default function Header({ city, onCityChange }) {
               <div className="pop__pin">
                 <input
                   className="field__input"
-                  value={pin}
+                  value={query}
                   onChange={(e) => {
-                    setPin(e.target.value.replace(/\D/g, '').slice(0, 6))
-                    setPinErr('')
+                    setQuery(e.target.value)
+                    setLocErr('')
                   }}
-                  onKeyDown={(e) => e.key === 'Enter' && lookupPin()}
-                  placeholder="Enter PIN code (any city)"
-                  inputMode="numeric"
-                  aria-label="PIN code"
+                  placeholder="Search city or PIN code"
+                  aria-label="Search city or PIN code"
+                  autoComplete="off"
                 />
-                <button
-                  type="button"
-                  className="btn btn--gold btn--sm"
-                  onClick={lookupPin}
-                  disabled={pin.length !== 6 || pinBusy}
-                >
-                  {pinBusy ? '…' : 'Go'}
-                </button>
               </div>
-              {pinErr && <p className="pop__pinErr">{pinErr}</p>}
+              {locErr && <p className="pop__pinErr">{locErr}</p>}
               <button
                 type="button"
                 className="pop__locate"
@@ -181,26 +196,44 @@ export default function Header({ city, onCityChange }) {
                 </svg>
                 {detecting ? 'Detecting…' : 'Use my current location'}
               </button>
-              <ul role="listbox" aria-label="Choose city">
-                {cities.map((c) => (
-                  <li key={c.id} role="none">
-                    <button
-                      type="button"
-                      role="option"
-                      aria-selected={c.id === city.id}
-                      aria-label={c.label}
-                      className={`pop__opt${c.id === city.id ? ' is-selected' : ''}`}
-                      onClick={() => {
-                        onCityChange(c.id)
-                        close()
-                      }}
-                    >
-                      <span>{c.label}</span>
-                      <span className="pop__hint">{c.areas ?? c.state ?? ''}</span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
+
+              {query.trim() ? (
+                <ul role="listbox" aria-label="Search results">
+                  {searching && <li className="pop__note">Searching…</li>}
+                  {!searching && results.length === 0 && <li className="pop__note">No matches</li>}
+                  {results.map((r, i) => (
+                    <li key={`${r.city}-${r.pincode || i}`} role="none">
+                      <button type="button" role="option" className="pop__opt" onClick={() => pick(r)}>
+                        <span>{r.city}</span>
+                        <span className="pop__hint">
+                          {[r.state, r.pincode].filter(Boolean).join(' · ')}
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <ul role="listbox" aria-label="Choose city">
+                  {cities.map((c) => (
+                    <li key={c.id} role="none">
+                      <button
+                        type="button"
+                        role="option"
+                        aria-selected={c.id === city.id}
+                        aria-label={c.label}
+                        className={`pop__opt${c.id === city.id ? ' is-selected' : ''}`}
+                        onClick={() => {
+                          onCityChange(c.id)
+                          close()
+                        }}
+                      >
+                        <span>{c.label}</span>
+                        <span className="pop__hint">{c.areas ?? c.state ?? ''}</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </Panel>
           </div>
         </div>

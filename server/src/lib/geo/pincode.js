@@ -59,3 +59,43 @@ export async function reverseViaOsm(lat, lng) {
     state: a.state || '',
   }
 }
+
+/**
+ * Keyless city-name search via OpenStreetMap Nominatim (India only). Returns a
+ * de-duplicated list of { label, city, district, state, pincode }.
+ */
+export async function searchPlaces(q) {
+  let res
+  try {
+    res = await fetch(
+      `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&countrycodes=in&format=json&addressdetails=1&limit=6`,
+      { headers: { 'User-Agent': 'SalonSathi/1.0 (support@salonsaathi.in)' } },
+    )
+  } catch {
+    return []
+  }
+  if (!res.ok) return []
+
+  const data = await res.json().catch(() => null)
+  if (!Array.isArray(data)) return []
+
+  const seen = new Set()
+  const out = []
+  for (const r of data) {
+    const a = r.address || {}
+    const city = a.city || a.town || a.village || a.municipality || a.state_district || a.county || ''
+    const state = a.state || ''
+    if (!city) continue
+    const key = `${city}|${state}`.toLowerCase()
+    if (seen.has(key)) continue
+    seen.add(key)
+    out.push({
+      label: state ? `${city}, ${state}` : city,
+      city,
+      district: a.state_district || a.county || city,
+      state,
+      pincode: a.postcode || '',
+    })
+  }
+  return out
+}

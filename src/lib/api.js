@@ -104,6 +104,8 @@ export const api = {
   pincode: (pin) => request(`/geo/pincode/${encodeURIComponent(pin)}`, { auth: false }),
   // Reverse geocode (browser coords) → { city, district, state, pincode }
   reverseGeocode: (lat, lng) => request(`/geo/reverse?lat=${lat}&lng=${lng}`, { auth: false }),
+  // City-name search → { results: [{ label, city, state, pincode }] }
+  searchLocations: (q) => request(`/geo/search?q=${encodeURIComponent(q)}`, { auth: false }),
 
   // --- Wallet & notifications ---
   wallet: () => request('/wallet'),
