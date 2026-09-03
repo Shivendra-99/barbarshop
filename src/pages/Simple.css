@@ -201,6 +201,26 @@
   flex-wrap: wrap;
 }
 
+/* WhatsApp support panel */
+.wa-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.wa-btn {
+  background: #25d366;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.wa-btn:hover:not(:disabled) {
+  background: #1ebe5b;
+  color: #fff;
+}
+
 /* Locked, OTP-verified mobile number — read-only, not editable. */
 .acc-lock {
   position: relative;

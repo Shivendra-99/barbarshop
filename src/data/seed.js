@@ -331,6 +331,14 @@ export const BRAND = {
   tagline: 'Book Your Appointment, Skip The Wait',
 }
 
+// Support WhatsApp: display + wa.me (digits only, with country code).
+export const SUPPORT = {
+  whatsappDisplay: '+91 70811 26623',
+  whatsappNumber: '917081126623',
+  whatsappUrl: (msg = 'Hi SalonSathi, I need help with') =>
+    `https://wa.me/917081126623?text=${encodeURIComponent(msg)}`,
+}
+
 export const TRUST_POINTS = [
   'Certified professionals',
   'Premium products',

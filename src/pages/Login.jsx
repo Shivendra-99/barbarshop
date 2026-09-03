@@ -10,7 +10,7 @@ import {
   widgetVerifyOtp,
   widgetRetryOtp,
 } from '../lib/msg91Widget'
-import { IMG_UNISEX } from '../assets'
+import { IMG_UNISEX, STAFF_IMAGES } from '../assets'
 import './Login.css'
 
 const WIDGET = widgetConfigured()
@@ -209,6 +209,15 @@ export default function Login() {
         <img src={IMG_UNISEX} alt="" />
         <div className="login__artScrim" />
         <blockquote className="login__quote">{BRAND.tagline}</blockquote>
+        <div className="login__staff">
+          <div className="login__staffRow">
+            {STAFF_IMAGES.map((src, i) => (
+              // eslint-disable-next-line react/no-array-index-key
+              <img key={i} src={src} alt="" />
+            ))}
+          </div>
+          <span>Trusted salon professionals near you</span>
+        </div>
       </div>
 
       <div className="login__panel">
