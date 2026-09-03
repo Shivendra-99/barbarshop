@@ -190,6 +190,46 @@ router.patch(
   }),
 )
 
+/* ---- Customer: rate the salon for a booking ---- */
+
+const rateSchema = z.object({
+  rating: z.number().int().min(1).max(5),
+  review: z.string().trim().max(500).optional().default(''),
+})
+
+router.post(
+  '/:id/rate',
+  requireAuth,
+  requireRole('customer'),
+  validate(rateSchema),
+  asyncHandler(async (req, res) => {
+    const booking = await Booking.findById(req.params.id).catch(() => null)
+    if (!booking) throw new ApiError(404, 'Booking not found.')
+    if (booking.customer.toString() !== req.user._id.toString()) {
+      throw new ApiError(403, 'That is not your booking.')
+    }
+    if (booking.status === 'cancelled') throw new ApiError(400, 'You can’t rate a cancelled booking.')
+
+    booking.rating = req.body.rating
+    booking.review = req.body.review ?? ''
+    await booking.save()
+
+    // Recompute the salon's average rating from all rated bookings.
+    const [agg] = await Booking.aggregate([
+      { $match: { salon: booking.salon, rating: { $ne: null } } },
+      { $group: { _id: '$salon', avg: { $avg: '$rating' }, count: { $sum: 1 } } },
+    ])
+    if (agg) {
+      await Salon.updateOne(
+        { _id: booking.salon },
+        { rating: Math.round(agg.avg * 10) / 10, reviews: agg.count },
+      )
+    }
+
+    res.json({ booking: booking.toPublic() })
+  }),
+)
+
 /* ---- Owner: mark a pay-at-salon booking as paid (after the service) ---- */
 
 router.patch(

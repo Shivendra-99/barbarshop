@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useApp } from '../store/AppStore'
 import { useToast } from '../components/Toast'
 import RescheduleDialog from '../components/RescheduleDialog'
+import RatingDialog from '../components/RatingDialog'
 import { formatINR } from '../lib/money'
 import { REFUND_METHODS } from '../lib/pricing'
 import { fromISO, startOfToday } from '../lib/datetime'
@@ -99,11 +100,23 @@ function CancelDialog({ booking, onClose, onConfirm }) {
    ------------------------------------------------------------------ */
 
 export default function Appointments() {
-  const { myBookings, cancelBooking, rescheduleBooking } = useApp()
+  const { myBookings, cancelBooking, rescheduleBooking, rateBooking } = useApp()
   const { push } = useToast()
   const [tab, setTab] = useState('Upcoming')
   const [pending, setPending] = useState(null)
   const [rescheduling, setRescheduling] = useState(null)
+  const [rating, setRating] = useState(null)
+
+  const doRate = async ({ rating: stars, review }) => {
+    const booking = rating
+    try {
+      await rateBooking(booking, { rating: stars, review })
+      setRating(null)
+      push({ tone: 'success', title: 'Thanks for rating!', body: `${booking.salonName} · ${stars}★` })
+    } catch (err) {
+      push({ tone: 'warn', title: 'Could not submit rating', body: err.message })
+    }
+  }
 
   const today = useMemo(() => startOfToday(), [])
 
@@ -250,6 +263,14 @@ export default function Appointments() {
                       </button>
                     </div>
                   )}
+                  {!cancelled && (b.status === 'completed' || fromISO(b.date) < today) &&
+                    (b.rating ? (
+                      <div className="appt__rated">You rated {b.rating}★</div>
+                    ) : (
+                      <button type="button" className="appt__rate" onClick={() => setRating(b)}>
+                        Rate salon
+                      </button>
+                    ))}
                 </div>
               </li>
             )
@@ -271,6 +292,10 @@ export default function Appointments() {
           onClose={() => setRescheduling(null)}
           onConfirm={doReschedule}
         />
+      )}
+
+      {rating && (
+        <RatingDialog booking={rating} onClose={() => setRating(null)} onSubmit={doRate} />
       )}
     </div>
   )

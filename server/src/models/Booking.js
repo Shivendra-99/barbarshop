@@ -54,6 +54,9 @@ const bookingSchema = new mongoose.Schema(
       method: String,
       status: String,
     },
+    // Customer's rating of the salon for this booking (1–5) + optional review.
+    rating: { type: Number, min: 1, max: 5, default: null },
+    review: { type: String, default: '' },
     cancelledAt: Date,
   },
   { timestamps: true },
@@ -90,6 +93,8 @@ bookingSchema.methods.toPublic = function toPublic() {
     homeServiceFee: this.homeServiceFee,
     status: this.status,
     refund: this.refund,
+    rating: this.rating,
+    review: this.review,
     createdAt: this.createdAt,
   }
 }

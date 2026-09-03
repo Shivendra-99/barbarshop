@@ -97,6 +97,7 @@ export const api = {
   rescheduleBooking: (id, body) =>
     request(`/bookings/${id}/reschedule`, { method: 'PATCH', body }),
   completeBooking: (id) => request(`/bookings/${id}/complete`, { method: 'PATCH' }),
+  rateBooking: (id, body) => request(`/bookings/${id}/rate`, { method: 'POST', body }),
 
   // --- Address autosuggest (Mappls, via our proxy) ---
   autosuggestAddress: (q, near) =>
