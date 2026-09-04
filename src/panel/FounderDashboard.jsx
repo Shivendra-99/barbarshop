@@ -63,7 +63,7 @@ export default function FounderDashboard() {
         <p className="p-head__sub">Welcome back — here&rsquo;s the platform performance overview.</p>
       </div>
 
-      <div className="kpis">
+      <div className="kpis kpis--sm">
         <Kpi
           icon="bookings"
           label="Total bookings"
@@ -73,9 +73,21 @@ export default function FounderDashboard() {
         />
         <Kpi
           icon="earnings"
+          label="Total earnings"
+          value={formatCompactINR(platformStats.totalEarnings)}
+          delta="Online + offline"
+        />
+        <Kpi
+          icon="earnings"
           label="Online earnings"
-          value={formatCompactINR(platformStats.earnings)}
+          value={formatCompactINR(platformStats.onlineEarnings)}
           delta="Paid to platform"
+        />
+        <Kpi
+          icon="earnings"
+          label="Offline earnings"
+          value={formatCompactINR(platformStats.offlineEarnings)}
+          delta="Cash at salons"
         />
         <Kpi
           icon="salons"

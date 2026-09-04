@@ -58,6 +58,43 @@
   overflow: hidden;
 }
 
+/* Compact KPI row — fits more tiles (e.g. earnings breakdown), smaller. */
+.kpis--sm {
+  grid-template-columns: repeat(6, 1fr);
+  gap: 14px;
+}
+
+.kpis--sm .kpi {
+  padding: 16px;
+}
+
+.kpis--sm .kpi__icon {
+  width: 34px;
+  height: 34px;
+  margin-bottom: 12px;
+}
+
+.kpis--sm .kpi__icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.kpis--sm .kpi__value {
+  font-size: 26px;
+}
+
+@media (max-width: 1180px) {
+  .kpis--sm {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 560px) {
+  .kpis--sm {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
 .kpi::after {
   content: '';
   position: absolute;

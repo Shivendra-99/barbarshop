@@ -283,13 +283,19 @@ export function AppProvider({ children }) {
 
   const platformStats = useMemo(() => {
     const live = allBookings.filter((b) => b.status !== 'cancelled')
-    const earnings = live
+    const online = live
       .filter((b) => b.paymentMode === 'online')
+      .reduce((sum, b) => sum + b.total, 0)
+    const offline = live
+      .filter((b) => b.paymentMode === 'offline' && b.paymentStatus === 'paid')
       .reduce((sum, b) => sum + b.total, 0)
     return {
       totalBookings: allBookings.length,
       liveBookings: live.length,
-      earnings,
+      earnings: online, // online = paid to platform (kept for compatibility)
+      onlineEarnings: online,
+      offlineEarnings: offline,
+      totalEarnings: online + offline,
       activeSalons: allSalons.filter((s) => s.status === 'approved').length,
       pendingCount: allSalons.filter((s) => s.status === 'pending').length,
     }
