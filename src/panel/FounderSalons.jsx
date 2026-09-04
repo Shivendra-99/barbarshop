@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { useApp } from '../store/AppStore'
 import { useToast } from '../components/Toast'
 import { useConfirm } from '../components/Confirm'
-import { CITIES, categoryById } from '../data/seed'
+import { CITIES, CATEGORIES, categoryById } from '../data/seed'
 import { formatINR } from '../lib/money'
 import './panel-ui.css'
 
@@ -16,11 +16,142 @@ const STATUS_BADGE = {
   rejected: 'badge--red',
 }
 
+/* Edit dialog for a salon's live details. */
+function SalonEditDialog({ salon, onClose, onSave }) {
+  const [form, setForm] = useState({
+    name: salon.name,
+    category: salon.category,
+    area: salon.area,
+    address: salon.address,
+    opens: salon.opens,
+    closes: salon.closes,
+    homeServiceFee: salon.homeServiceFee ?? 0,
+    atSalon: salon.serviceModes.includes('salon'),
+    home: salon.serviceModes.includes('home'),
+  })
+  const [busy, setBusy] = useState(false)
+  const set = (k) => (e) =>
+    setForm((f) => ({ ...f, [k]: e.target.type === 'checkbox' ? e.target.checked : e.target.value }))
+
+  const save = async () => {
+    const serviceModes = [form.atSalon && 'salon', form.home && 'home'].filter(Boolean)
+    if (!serviceModes.length || busy) return
+    setBusy(true)
+    try {
+      await onSave({
+        name: form.name.trim(),
+        category: form.category,
+        area: form.area.trim(),
+        address: form.address.trim(),
+        opens: form.opens,
+        closes: form.closes,
+        homeServiceFee: Number(form.homeServiceFee) || 0,
+        serviceModes,
+      })
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="pmodal" role="presentation" onMouseDown={onClose}>
+      <div className="pmodal__box" role="dialog" aria-modal="true" onMouseDown={(e) => e.stopPropagation()}>
+        <h3 className="pmodal__title">Edit {salon.name}</h3>
+        <div className="pmodal__grid">
+          <label className="field pmodal__full">
+            <span className="field__label">Salon name</span>
+            <input className="field__input" value={form.name} onChange={set('name')} />
+          </label>
+          <label className="field">
+            <span className="field__label">Type</span>
+            <select className="field__input" value={form.category} onChange={set('category')}>
+              {CATEGORIES.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="field">
+            <span className="field__label">Area / locality</span>
+            <input className="field__input" value={form.area} onChange={set('area')} />
+          </label>
+          <label className="field pmodal__full">
+            <span className="field__label">Address</span>
+            <input className="field__input" value={form.address} onChange={set('address')} />
+          </label>
+          <label className="field">
+            <span className="field__label">Opens</span>
+            <input type="time" className="field__input" value={form.opens} onChange={set('opens')} />
+          </label>
+          <label className="field">
+            <span className="field__label">Closes</span>
+            <input type="time" className="field__input" value={form.closes} onChange={set('closes')} />
+          </label>
+          <label className="field">
+            <span className="field__label">Home service fee</span>
+            <input
+              type="number"
+              min="0"
+              step="50"
+              className="field__input"
+              value={form.homeServiceFee}
+              onChange={set('homeServiceFee')}
+            />
+          </label>
+        </div>
+        <div className="pmodal__modes">
+          <label>
+            <input type="checkbox" checked={form.atSalon} onChange={set('atSalon')} /> At salon
+          </label>
+          <label>
+            <input type="checkbox" checked={form.home} onChange={set('home')} /> Home service
+          </label>
+        </div>
+        <div className="pmodal__actions">
+          <button type="button" className="btn btn--outline" onClick={onClose}>
+            Cancel
+          </button>
+          <button type="button" className="btn btn--gold" onClick={save} disabled={busy}>
+            {busy ? 'Saving…' : 'Save changes'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function FounderSalons() {
-  const { salons, setSalonStatus } = useApp()
+  const { salons, setSalonStatus, updateSalon, settings, updateSettings } = useApp()
   const { push } = useToast()
   const confirm = useConfirm()
   const [filter, setFilter] = useState('All')
+  const [editing, setEditing] = useState(null)
+
+  const saveEdit = async (changes) => {
+    try {
+      await updateSalon(editing, changes)
+      push({ tone: 'success', title: 'Salon updated', body: changes.name })
+      setEditing(null)
+    } catch (err) {
+      push({ tone: 'warn', title: 'Could not update', body: err.message })
+    }
+  }
+
+  const toggleComingSoon = async () => {
+    try {
+      const s = await updateSettings({ comingSoonEnabled: !settings.comingSoonEnabled })
+      push({
+        tone: 'info',
+        title: `"Coming soon" ${s.comingSoonEnabled ? 'on' : 'off'}`,
+        body: s.comingSoonEnabled
+          ? 'Areas with no live salons show a coming-soon message.'
+          : 'Coming-soon message hidden.',
+      })
+    } catch (err) {
+      push({ tone: 'warn', title: 'Could not update', body: err.message })
+    }
+  }
 
   const rows = useMemo(() => {
     if (filter === 'All') return salons
@@ -55,9 +186,24 @@ export default function FounderSalons() {
 
   return (
     <>
-      <div className="p-head">
-        <h2 className="p-head__title">Salons</h2>
-        <p className="p-head__sub">Every salon on the platform and its approval status.</p>
+      <div className="p-head p-head--row">
+        <div>
+          <h2 className="p-head__title">Salons</h2>
+          <p className="p-head__sub">Every salon on the platform and its approval status.</p>
+        </div>
+        <label className="cs-toggle">
+          <input
+            type="checkbox"
+            checked={settings.comingSoonEnabled}
+            onChange={toggleComingSoon}
+          />
+          <span>
+            <span className="cs-toggle__name">&ldquo;Coming soon&rdquo; in empty areas</span>
+            <span className="cs-toggle__note">
+              Show a coming-soon message where no salon is live yet.
+            </span>
+          </span>
+        </label>
       </div>
 
       <div className="fs-filters">
@@ -104,46 +250,59 @@ export default function FounderSalons() {
                   </span>
                 </td>
                 <td>
-                  {s.status === 'pending' ? (
-                    <div className="fs-actions">
-                      <button
-                        type="button"
-                        className="btn btn--gold btn--sm"
-                        onClick={() => decide(s, true)}
-                      >
-                        Approve
-                      </button>
+                  <div className="fs-actions">
+                    <button
+                      type="button"
+                      className="btn btn--outline btn--sm"
+                      onClick={() => setEditing(s)}
+                    >
+                      Edit
+                    </button>
+                    {s.status === 'pending' ? (
+                      <>
+                        <button
+                          type="button"
+                          className="btn btn--gold btn--sm"
+                          onClick={() => decide(s, true)}
+                        >
+                          Approve
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn--danger btn--sm"
+                          onClick={() => decide(s, false)}
+                        >
+                          Reject
+                        </button>
+                      </>
+                    ) : s.status === 'approved' ? (
                       <button
                         type="button"
                         className="btn btn--danger btn--sm"
                         onClick={() => decide(s, false)}
                       >
-                        Reject
+                        Suspend
                       </button>
-                    </div>
-                  ) : s.status === 'approved' ? (
-                    <button
-                      type="button"
-                      className="btn btn--danger btn--sm"
-                      onClick={() => decide(s, false)}
-                    >
-                      Suspend
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      className="btn btn--ghost-gold btn--sm"
-                      onClick={() => decide(s, true)}
-                    >
-                      Reinstate
-                    </button>
-                  )}
+                    ) : (
+                      <button
+                        type="button"
+                        className="btn btn--ghost-gold btn--sm"
+                        onClick={() => decide(s, true)}
+                      >
+                        Reinstate
+                      </button>
+                    )}
+                  </div>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+
+      {editing && (
+        <SalonEditDialog salon={editing} onClose={() => setEditing(null)} onSave={saveEdit} />
+      )}
     </>
   )
 }

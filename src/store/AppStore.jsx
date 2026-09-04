@@ -40,6 +40,7 @@ export function AppProvider({ children }) {
   const [allBookings, setAllBookings] = useState([])
   const [notifications, setNotifications] = useState([])
   const [unreadCount, setUnreadCount] = useState(0)
+  const [settings, setSettings] = useState({ comingSoonEnabled: false, comingSoonMessage: '' })
 
   const role = session?.role ?? null
 
@@ -51,6 +52,15 @@ export function AppProvider({ children }) {
       setPublicSalons(enrichList(salons))
     } finally {
       setSalonsReady(true)
+    }
+  }, [])
+
+  const loadSettings = useCallback(async () => {
+    try {
+      const { settings: s } = await api.settings()
+      setSettings(s)
+    } catch {
+      /* keep defaults */
     }
   }, [])
 
@@ -94,8 +104,9 @@ export function AppProvider({ children }) {
   useEffect(() => {
     let alive = true
     ;(async () => {
-      // Storefront salons load for everyone, signed in or not.
+      // Storefront salons + settings load for everyone, signed in or not.
       loadPublicSalons().catch(() => {})
+      loadSettings().catch(() => {})
 
       if (getToken()) {
         try {
@@ -113,7 +124,7 @@ export function AppProvider({ children }) {
     return () => {
       alive = false
     }
-  }, [loadPublicSalons, loadForRole])
+  }, [loadPublicSalons, loadSettings, loadForRole])
 
   /* ---- Auth actions ---- */
 
@@ -238,6 +249,21 @@ export function AppProvider({ children }) {
     [loadFounder, loadPublicSalons, loadNotifications],
   )
 
+  const updateSalon = useCallback(
+    async (salon, changes) => {
+      const { salon: updated } = await api.updateSalon(salon.id, changes)
+      await Promise.all([loadFounder(), loadPublicSalons()])
+      return updated
+    },
+    [loadFounder, loadPublicSalons],
+  )
+
+  const updateSettings = useCallback(async (changes) => {
+    const { settings: s } = await api.updateSettings(changes)
+    setSettings(s)
+    return s
+  }, [])
+
   const markRead = useCallback(async () => {
     setUnreadCount(0)
     try {
@@ -317,6 +343,11 @@ export function AppProvider({ children }) {
       // salon mutations
       submitSalon,
       setSalonStatus,
+      updateSalon,
+
+      // platform settings
+      settings,
+      updateSettings,
 
       // wallet + notifications
       walletBalance,
@@ -333,7 +364,7 @@ export function AppProvider({ children }) {
     [
       ready, salonsReady, session, role, requestOtp, verifyOtp, widgetLogin, logout, setName, allSalons, publicSalons,
       findSalon, mySalons, pendingSalons, allBookings, myBookings, ownerBookings, createBooking,
-      cancelBooking, rescheduleBooking, completeBooking, rateBooking, submitSalon, setSalonStatus, walletBalance, myLedger, notifications,
+      cancelBooking, rescheduleBooking, completeBooking, rateBooking, submitSalon, setSalonStatus, updateSalon, settings, updateSettings, walletBalance, myLedger, notifications,
       unreadCount, markRead, platformStats,
     ],
   )

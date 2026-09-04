@@ -16,12 +16,13 @@ const CARD_IMAGES = {
 
 export default function Home() {
   const navigate = useNavigate()
-  const { publicSalons, isFirstBooking, isSignedIn } = useApp()
+  const { publicSalons, isFirstBooking, isSignedIn, settings } = useApp()
   const { city, setCategory } = usePrefs()
   const [openFaq, setOpenFaq] = useState(0)
 
   const inCity = publicSalons.filter((s) => s.city === city.id)
   const featured = [...inCity].sort((a, b) => b.rating - a.rating).slice(0, 3)
+  const showComingSoon = inCity.length === 0 && settings.comingSoonEnabled
 
   const goCategory = (id) => {
     setCategory(id)
@@ -113,10 +114,22 @@ export default function Home() {
             <div className="eyebrow">Top rated</div>
             <h2 className="section-title">Salons in {city.label}</h2>
           </div>
-          <button type="button" className="section__more" onClick={() => navigate('/salons')}>
-            View all {inCity.length}
-          </button>
+          {!showComingSoon && (
+            <button type="button" className="section__more" onClick={() => navigate('/salons')}>
+              View all {inCity.length}
+            </button>
+          )}
         </Reveal>
+
+        {showComingSoon && (
+          <div className="empty">
+            <h3 className="empty__title">Coming soon in {city.label}</h3>
+            <p className="empty__text">
+              {settings.comingSoonMessage ||
+                'We’re onboarding great salons near you — check back soon.'}
+            </p>
+          </div>
+        )}
 
         <div className="grid3">
           {featured.map((salon, i) => (

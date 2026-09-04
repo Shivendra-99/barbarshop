@@ -305,6 +305,124 @@
 .fs-actions {
   display: flex;
   gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* ---------------- Coming-soon toggle + row head ---------------- */
+
+.p-head--row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.cs-toggle {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  cursor: pointer;
+  max-width: 320px;
+}
+
+.cs-toggle input {
+  margin-top: 3px;
+  width: 18px;
+  height: 18px;
+  accent-color: var(--gold);
+  flex-shrink: 0;
+}
+
+.cs-toggle__name {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--heading);
+}
+
+.cs-toggle__note {
+  display: block;
+  font-size: 12.5px;
+  color: var(--muted-3);
+  margin-top: 2px;
+}
+
+/* ---------------- Panel modal (edit dialogs) ---------------- */
+
+.pmodal {
+  position: fixed;
+  inset: 0;
+  z-index: 240;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(10, 8, 6, 0.6);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+}
+
+.pmodal__box {
+  width: 100%;
+  max-width: 620px;
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-lg);
+  padding: 26px;
+}
+
+.pmodal__title {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 400;
+  color: var(--heading);
+  margin: 0 0 20px;
+}
+
+.pmodal__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.pmodal__full {
+  grid-column: 1 / -1;
+}
+
+.pmodal__modes {
+  display: flex;
+  gap: 24px;
+  margin: 18px 0 4px;
+  font-size: 14px;
+  color: var(--text);
+}
+
+.pmodal__modes label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.pmodal__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+@media (max-width: 560px) {
+  .pmodal__grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* ---------------- Add-owner form ---------------- */

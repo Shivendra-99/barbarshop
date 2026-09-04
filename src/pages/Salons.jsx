@@ -21,7 +21,7 @@ const MODE_FILTERS = [
 
 export default function Salons() {
   const navigate = useNavigate()
-  const { publicSalons } = useApp()
+  const { publicSalons, settings } = useApp()
   const { city, category, setCategory } = usePrefs()
   const [mode, setMode] = useState('all')
   const [sort, setSort] = useState('rating')
@@ -39,6 +39,8 @@ export default function Salons() {
   }, [publicSalons, city.id, category, mode, sort])
 
   const activeCategory = CATEGORIES.find((c) => c.id === category)
+  const cityHasNoSalons = !publicSalons.some((s) => s.city === city.id)
+  const showComingSoon = cityHasNoSalons && settings.comingSoonEnabled
 
   return (
     <div className="shell salons">
@@ -108,7 +110,14 @@ export default function Salons() {
         </div>
       </div>
 
-      {results.length === 0 ? (
+      {showComingSoon ? (
+        <div className="empty">
+          <h2 className="empty__title">Coming soon in {city.label}</h2>
+          <p className="empty__text">
+            {settings.comingSoonMessage || 'We’re onboarding great salons near you — check back soon.'}
+          </p>
+        </div>
+      ) : results.length === 0 ? (
         <div className="empty">
           <h2 className="empty__title">No salons match those filters</h2>
           <p className="empty__text">

@@ -80,6 +80,7 @@ export const api = {
   submitSalon: (draft) => request('/salons', { method: 'POST', body: draft }),
   setSalonStatus: (id, status) =>
     request(`/salons/${id}/status`, { method: 'PATCH', body: { status } }),
+  updateSalon: (id, body) => request(`/salons/${id}`, { method: 'PATCH', body }),
 
   // --- Services (per salon, owner-managed) ---
   salonServices: (salonId) => request(`/services?salon=${salonId}`, { auth: false }),
@@ -108,6 +109,10 @@ export const api = {
   reverseGeocode: (lat, lng) => request(`/geo/reverse?lat=${lat}&lng=${lng}`, { auth: false }),
   // City-name search → { results: [{ label, city, state, pincode }] }
   searchLocations: (q) => request(`/geo/search?q=${encodeURIComponent(q)}`, { auth: false }),
+
+  // --- Platform settings (founder-managed) ---
+  settings: () => request('/settings', { auth: false }),
+  updateSettings: (body) => request('/settings', { method: 'PATCH', body }),
 
   // --- Wallet & notifications ---
   wallet: () => request('/wallet'),

@@ -10,6 +10,7 @@ import salonRoutes from './routes/salons.routes.js'
 import serviceRoutes from './routes/services.routes.js'
 import bookingRoutes from './routes/bookings.routes.js'
 import geoRoutes from './routes/geo.routes.js'
+import settingsRoutes from './routes/settings.routes.js'
 import notificationRoutes from './routes/notifications.routes.js'
 import walletRoutes from './routes/wallet.routes.js'
 import { notFound, errorHandler } from './middleware/error.js'
@@ -49,6 +50,7 @@ export function createApp() {
   app.use('/api/services', serviceRoutes)
   app.use('/api/bookings', bookingRoutes)
   app.use('/api/geo', geoRoutes)
+  app.use('/api/settings', settingsRoutes)
   app.use('/api/notifications', notificationRoutes)
   app.use('/api/wallet', walletRoutes)
 

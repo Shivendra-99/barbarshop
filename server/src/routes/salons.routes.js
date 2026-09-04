@@ -41,6 +41,17 @@ const createSchema = z.object({
 
 const statusSchema = z.object({ status: z.enum(['approved', 'rejected']) })
 
+const editSchema = z.object({
+  name: z.string().trim().min(3).max(80).optional(),
+  category: z.enum(['mens', 'unisex', 'parlour']).optional(),
+  area: z.string().trim().min(2).optional(),
+  address: z.string().trim().min(8).optional(),
+  opens: z.string().optional(),
+  closes: z.string().optional(),
+  serviceModes: z.array(z.enum(['salon', 'home'])).min(1).optional(),
+  homeServiceFee: z.number().int().min(0).max(5000).optional(),
+})
+
 /**
  * Attaches each salon's live starting price (the cheapest of its own services)
  * as `from`. One grouped query for the whole set — no N+1.
@@ -199,6 +210,23 @@ router.post(
     }
 
     res.status(201).json({ salon: salon.toPublic() })
+  }),
+)
+
+/* ---- Founder: edit a salon's details ---- */
+
+router.patch(
+  '/:id',
+  requireAuth,
+  requireRole('founder'),
+  validate(editSchema),
+  asyncHandler(async (req, res) => {
+    const salon = await Salon.findById(req.params.id).catch(() => null)
+    if (!salon) throw new ApiError(404, 'Salon not found.')
+    Object.assign(salon, req.body)
+    await salon.save()
+    const [withPrice] = await withFrom([salon])
+    res.json({ salon: withPrice })
   }),
 )
 
