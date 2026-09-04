@@ -4,9 +4,10 @@ import { useApp } from '../store/AppStore'
 import { useToast } from '../components/Toast'
 import RescheduleDialog from '../components/RescheduleDialog'
 import RatingDialog from '../components/RatingDialog'
+import QueueBadge from '../components/QueueBadge'
 import { formatINR } from '../lib/money'
 import { REFUND_METHODS } from '../lib/pricing'
-import { fromISO, startOfToday } from '../lib/datetime'
+import { fromISO, startOfToday, toISO } from '../lib/datetime'
 import './Appointments.css'
 
 const TABS = ['Upcoming', 'Past']
@@ -234,6 +235,9 @@ export default function Appointments() {
                       {REFUND_METHODS[b.refund.method]?.label} ·{' '}
                       {b.refund.status === 'completed' ? 'Completed' : 'Processing'}
                     </div>
+                  )}
+                  {!cancelled && b.mode === 'salon' && b.date === toISO(today) && (
+                    <QueueBadge bookingId={b.id} />
                   )}
                 </div>
 

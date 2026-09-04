@@ -190,6 +190,54 @@ router.patch(
   }),
 )
 
+/* ---- Customer: live queue position for a booking ---- */
+
+/** "11:00 AM" → minutes since midnight, for ordering the day's queue. */
+function slotMinutes(slot) {
+  const m = /^(\d{1,2}):(\d{2})\s*(AM|PM)$/i.exec((slot || '').trim())
+  if (!m) return 0
+  let h = Number(m[1]) % 12
+  if (/PM/i.test(m[3])) h += 12
+  return h * 60 + Number(m[2])
+}
+
+router.get(
+  '/:id/queue',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const booking = await Booking.findById(req.params.id).catch(() => null)
+    if (!booking) throw new ApiError(404, 'Booking not found.')
+    if (booking.customer.toString() !== req.user._id.toString()) {
+      throw new ApiError(403, 'That is not your booking.')
+    }
+
+    // The live queue = still-confirmed, at-salon bookings for the same salon and
+    // day. Served/cancelled bookings have already left, so counts drop live.
+    const queue = await Booking.find({
+      salon: booking.salon,
+      date: booking.date,
+      mode: 'salon',
+      status: 'confirmed',
+    }).select('slot createdAt')
+
+    const mine = slotMinutes(booking.slot)
+    const ahead = queue.filter((b) => {
+      if (b._id.toString() === booking._id.toString()) return false
+      const bm = slotMinutes(b.slot)
+      if (bm !== mine) return bm < mine
+      return new Date(b.createdAt) < new Date(booking.createdAt)
+    }).length
+
+    res.json({
+      inQueue: booking.status === 'confirmed' && booking.mode === 'salon',
+      status: booking.status,
+      ahead,
+      position: ahead + 1,
+      total: queue.length,
+    })
+  }),
+)
+
 /* ---- Customer: rate the salon for a booking ---- */
 
 const rateSchema = z.object({
@@ -244,13 +292,14 @@ router.patch(
     if (!owns) throw new ApiError(403, 'That booking is not for your salon.')
 
     if (booking.status === 'cancelled') throw new ApiError(400, 'This booking was cancelled.')
-    if (booking.paymentMode !== 'offline') {
-      throw new ApiError(400, 'Only pay-at-salon bookings are completed here.')
-    }
-    if (booking.paymentStatus === 'paid') throw new ApiError(400, 'Payment is already marked complete.')
+    if (booking.status === 'completed') throw new ApiError(400, 'This booking is already completed.')
 
-    booking.paymentStatus = 'paid'
-    booking.paidAt = new Date()
+    const cash = booking.paymentMode === 'offline'
+    // Offline: record the cash payment. Online: already paid, just mark served.
+    if (cash) {
+      booking.paymentStatus = 'paid'
+      booking.paidAt = new Date()
+    }
     booking.status = 'completed'
     await booking.save()
 
@@ -258,14 +307,16 @@ router.patch(
       {
         audience: `user:${booking.customer.toString()}`,
         tone: 'success',
-        title: 'Payment received',
-        body: `${booking.serviceName} at ${booking.salonName} — ${formatINR(booking.total)} paid at the salon.`,
+        title: cash ? 'Payment received' : 'Service completed',
+        body: cash
+          ? `${booking.serviceName} at ${booking.salonName} — ${formatINR(booking.total)} paid at the salon.`
+          : `${booking.serviceName} at ${booking.salonName} is complete. Thanks for visiting!`,
       },
       {
         audience: `owner:${req.user._id.toString()}`,
         tone: 'success',
-        title: 'Payment marked complete',
-        body: `${booking.serviceName} · ${formatINR(booking.total)} collected.`,
+        title: cash ? 'Payment marked complete' : 'Booking marked served',
+        body: `${booking.serviceName} · ${formatINR(booking.total)}`,
       },
     ])
 

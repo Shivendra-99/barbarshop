@@ -15,17 +15,24 @@ export default function OwnerBookings() {
   const [filter, setFilter] = useState('All')
   const [busyId, setBusyId] = useState(null)
 
-  const markPaid = async (b) => {
+  const markDone = async (b) => {
+    const cash = b.paymentMode === 'offline'
     const ok = await confirm({
-      title: 'Payment complete?',
-      message: `Confirm you collected ${formatINR(b.total)} in cash for ${b.serviceName} (#${b.ref}). This marks the booking completed.`,
-      confirmLabel: 'Payment complete',
+      title: cash ? 'Payment complete?' : 'Mark as served?',
+      message: cash
+        ? `Confirm you collected ${formatINR(b.total)} in cash for ${b.serviceName} (#${b.ref}). This completes the booking and removes it from the live queue.`
+        : `Mark ${b.serviceName} (#${b.ref}) as served? It’s already paid online. This completes the booking and removes it from the live queue.`,
+      confirmLabel: cash ? 'Payment complete' : 'Mark served',
     })
     if (!ok) return
     setBusyId(b.id)
     try {
       await completeBooking(b)
-      push({ tone: 'success', title: 'Payment marked complete', body: `#${b.ref} · ${formatINR(b.total)}` })
+      push({
+        tone: 'success',
+        title: cash ? 'Payment marked complete' : 'Marked served',
+        body: `#${b.ref} · ${formatINR(b.total)}`,
+      })
     } catch (err) {
       push({ tone: 'warn', title: 'Could not update', body: err.message })
     } finally {
@@ -101,7 +108,7 @@ export default function OwnerBookings() {
                   {rows.map((b) => {
                     const cancelled = b.status === 'cancelled'
                     const paid = b.paymentStatus === 'paid'
-                    const cashPending = b.paymentMode === 'offline' && !paid && !cancelled
+                    const actionable = !cancelled && b.status !== 'completed'
                     return (
                       <tr key={b.id}>
                         <td>
@@ -133,14 +140,18 @@ export default function OwnerBookings() {
                           </span>
                         </td>
                         <td>
-                          {cashPending ? (
+                          {actionable ? (
                             <button
                               type="button"
                               className="btn btn--gold btn--sm"
-                              onClick={() => markPaid(b)}
+                              onClick={() => markDone(b)}
                               disabled={busyId === b.id}
                             >
-                              {busyId === b.id ? '…' : 'Payment complete'}
+                              {busyId === b.id
+                                ? '…'
+                                : b.paymentMode === 'offline'
+                                  ? 'Payment complete'
+                                  : 'Mark served'}
                             </button>
                           ) : (
                             <span className="ptable__sub">—</span>
