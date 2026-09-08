@@ -333,10 +333,10 @@ export const BRAND = {
 
 // Support WhatsApp: display + wa.me (digits only, with country code).
 export const SUPPORT = {
-  whatsappDisplay: '+91 70811 26623',
-  whatsappNumber: '917081126623',
+  whatsappDisplay: '+91 70811 26830',
+  whatsappNumber: '917081126830',
   whatsappUrl: (msg = 'Hi SalonSaathi, I need help with') =>
-    `https://wa.me/917081126623?text=${encodeURIComponent(msg)}`,
+    `https://wa.me/917081126830?text=${encodeURIComponent(msg)}`,
 }
 
 export const TRUST_POINTS = [

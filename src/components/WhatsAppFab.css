@@ -1,0 +1,72 @@
+.wafab {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.wafab__label {
+  background: #202c33;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 8px 12px;
+  border-radius: 10px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+  white-space: nowrap;
+  position: relative;
+}
+
+/* little speech-bubble tail pointing at the button */
+.wafab__label::after {
+  content: '';
+  position: absolute;
+  right: -5px;
+  top: 50%;
+  transform: translateY(-50%);
+  border-top: 6px solid transparent;
+  border-bottom: 6px solid transparent;
+  border-left: 6px solid #202c33;
+}
+
+.wafab__btn {
+  width: 58px;
+  height: 58px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: #25d366;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6px 18px rgba(37, 211, 102, 0.45);
+  transition: transform var(--dur-fast) ease, box-shadow var(--dur-fast) ease;
+}
+
+.wafab__btn svg {
+  width: 34px;
+  height: 34px;
+}
+
+.wafab:hover .wafab__btn {
+  transform: scale(1.06);
+  box-shadow: 0 8px 22px rgba(37, 211, 102, 0.55);
+}
+
+/* Mobile: just the circle (label hidden to save space) */
+@media (max-width: 560px) {
+  .wafab__label {
+    display: none;
+  }
+  .wafab {
+    right: 16px;
+    bottom: 16px;
+  }
+  .wafab__btn {
+    width: 52px;
+    height: 52px;
+  }
+}
