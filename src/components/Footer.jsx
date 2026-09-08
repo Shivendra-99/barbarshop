@@ -23,8 +23,8 @@ const COLUMNS = [
     title: 'Company',
     links: [
       { label: 'Help centre', to: '/help' },
-      { label: 'About', to: '/help' },
-      { label: 'Contact', to: '/help' },
+      { label: 'Privacy Policy', to: '/privacy-policy' },
+      { label: 'Terms & Conditions', to: '/terms-and-conditions' },
     ],
   },
 ]
@@ -64,7 +64,11 @@ export default function Footer() {
 
       <div className="shell ftr__base">
         <div>© {new Date().getFullYear()} {BRAND.name}</div>
-        <div>Privacy · Terms</div>
+        <div className="ftr__legal">
+          <Link to="/privacy-policy">Privacy Policy</Link>
+          <span aria-hidden="true"> · </span>
+          <Link to="/terms-and-conditions">Terms &amp; Conditions</Link>
+        </div>
       </div>
     </footer>
   )

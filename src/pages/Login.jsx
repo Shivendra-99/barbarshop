@@ -265,7 +265,15 @@ export default function Login() {
               </button>
 
               <p className="login__fine">
-                By continuing you agree to our Terms and Privacy Policy.
+                By continuing you agree to our{' '}
+                <Link to="/terms-and-conditions" className="login__link">
+                  Terms
+                </Link>{' '}
+                and{' '}
+                <Link to="/privacy-policy" className="login__link">
+                  Privacy Policy
+                </Link>
+                .
               </p>
             </form>
           ) : step === 'otp' ? (

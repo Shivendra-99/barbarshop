@@ -11,6 +11,8 @@ import Appointments from './pages/Appointments'
 import Wallet from './pages/Wallet'
 import Account from './pages/Account'
 import Help from './pages/Help'
+import PrivacyPolicy from './pages/PrivacyPolicy'
+import Terms from './pages/Terms'
 import Login from './pages/Login'
 import NotFound from './pages/NotFound'
 import PanelLayout from './panel/PanelLayout'
@@ -34,6 +36,8 @@ export default function App() {
           <Route path="/salons" element={<Salons />} />
           <Route path="/salon/:salonId" element={<Salon />} />
           <Route path="/help" element={<Help />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="/terms-and-conditions" element={<Terms />} />
           <Route path="/login" element={<Login />} />
 
           <Route

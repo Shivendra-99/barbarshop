@@ -96,6 +96,14 @@
   color: #877f70;
 }
 
+.ftr__legal a {
+  color: #877f70;
+}
+
+.ftr__legal a:hover {
+  color: var(--gold);
+}
+
 @media (max-width: 900px) {
   .ftr__grid {
     grid-template-columns: 1fr 1fr;
