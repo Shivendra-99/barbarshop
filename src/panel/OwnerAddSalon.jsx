@@ -123,7 +123,7 @@ export default function OwnerAddSalon({ asFounder = false }) {
       title: asFounder ? 'Add this salon?' : 'Submit for review?',
       message: asFounder
         ? `${form.name.trim()} and its ${count} will be added to ${ownerName ?? 'the owner'} and go live immediately.`
-        : `${form.name.trim()} and its ${count} will be sent to the SalonSathi team for approval. You can edit the menu anytime after it's approved.`,
+        : `${form.name.trim()} and its ${count} will be sent to the SalonSaathi team for approval. You can edit the menu anytime after it's approved.`,
       confirmLabel: asFounder ? 'Add salon' : 'Submit',
     })
     if (!ok) return

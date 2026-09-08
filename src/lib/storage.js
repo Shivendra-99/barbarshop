@@ -54,7 +54,7 @@ export function clear(name) {
   }
 }
 
-/** Wipes every SalonSathi key, including older versions. */
+/** Wipes every SalonSaathi key, including older versions. */
 export function clearAll() {
   try {
     if (!available) {

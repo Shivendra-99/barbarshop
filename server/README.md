@@ -1,6 +1,6 @@
-# SalonSathi API
+# SalonSaathi API
 
-Node + Express + Mongoose backend for SalonSathi: OTP login with JWT sessions,
+Node + Express + Mongoose backend for SalonSaathi: OTP login with JWT sessions,
 salons (list / submit / approve), services, bookings with server-authoritative
 pricing, cancellation with wallet/UPI refunds, a wallet ledger, and a
 three-audience notification fan-out.

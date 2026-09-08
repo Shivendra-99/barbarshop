@@ -1,6 +1,6 @@
 # OTP Login Setup (MSG91 Widget)
 
-Real phone OTP login for SalonSathi, using **MSG91's OTP Widget**. The browser
+Real phone OTP login for SalonSaathi, using **MSG91's OTP Widget**. The browser
 widget sends + verifies the code (MSG91 handles DLT/sender/template), returns a
 JWT access-token, and our backend verifies that token and issues our own 30-day
 JWT.
@@ -76,7 +76,7 @@ affects the server-OTP fallback, not the widget).
 Point the widget at **MSG91's default OTP template**. It's already registered
 under MSG91's own DLT header, so it delivers immediately with **no DLT
 registration on your side**. The message uses MSG91's generic OTP wording (not
-SalonSathi branding). This is the simplest path and what we use now.
+SalonSaathi branding). This is the simplest path and what we use now.
 
 ### Option B — custom branded template (needs your DLT)
 
@@ -86,12 +86,12 @@ identical to the DLT-approved content, or DLT must re-approve a change):
 
 **MSG91 template field (`##OTP##`):**
 ```
-##OTP## is your SalonSathi verification code, valid for 15 minutes. Do not share it with anyone.
+##OTP## is your SalonSaathi verification code, valid for 15 minutes. Do not share it with anyone.
 ```
 
 **DLT portal (`{#var#}`):**
 ```
-{#var#} is your SalonSathi verification code, valid for 15 minutes. Do not share it with anyone.
+{#var#} is your SalonSaathi verification code, valid for 15 minutes. Do not share it with anyone.
 ```
 
 > India requires DLT only for **custom** sender/content. A changed custom

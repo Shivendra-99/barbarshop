@@ -3,7 +3,7 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "description": "SalonSathi — book your appointment, skip the wait.",
+  "description": "SalonSaathi — book your appointment, skip the wait.",
   "scripts": {
     "dev": "vite",
     "build": "vite build",

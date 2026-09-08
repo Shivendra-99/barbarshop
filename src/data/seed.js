@@ -327,7 +327,7 @@ export function enrichSalon(salon, index = 0) {
    ------------------------------------------------------------------ */
 
 export const BRAND = {
-  name: 'SalonSathi',
+  name: 'SalonSaathi',
   tagline: 'Book Your Appointment, Skip The Wait',
 }
 
@@ -335,7 +335,7 @@ export const BRAND = {
 export const SUPPORT = {
   whatsappDisplay: '+91 70811 26623',
   whatsappNumber: '917081126623',
-  whatsappUrl: (msg = 'Hi SalonSathi, I need help with') =>
+  whatsappUrl: (msg = 'Hi SalonSaathi, I need help with') =>
     `https://wa.me/917081126623?text=${encodeURIComponent(msg)}`,
 }
 
@@ -366,7 +366,7 @@ export const FAQS = [
   },
   {
     q: 'How do refunds work if I cancel?',
-    a: 'Choose SalonSathi Wallet for an instant credit, or send it back to your UPI or bank account, which takes 2–3 working days. Cash bookings have nothing to refund.',
+    a: 'Choose SalonSaathi Wallet for an instant credit, or send it back to your UPI or bank account, which takes 2–3 working days. Cash bookings have nothing to refund.',
   },
   {
     q: 'How do I list my salon?',

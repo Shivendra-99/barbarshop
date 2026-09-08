@@ -49,7 +49,7 @@ export default function Help() {
         </div>
         <a
           className="btn wa-btn"
-          href={SUPPORT.whatsappUrl('Hi SalonSathi, I need help with ')}
+          href={SUPPORT.whatsappUrl('Hi SalonSaathi, I need help with ')}
           target="_blank"
           rel="noopener noreferrer"
         >

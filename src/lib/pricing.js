@@ -68,7 +68,7 @@ export function quote({ amount, paymentMode, isFirstBooking, homeServiceFee = 0 
 export const REFUND_METHODS = {
   wallet: {
     id: 'wallet',
-    label: 'SalonSathi Wallet',
+    label: 'SalonSaathi Wallet',
     eta: 'Instant',
     note: 'Credited immediately, usable on your next booking.',
     instant: true,

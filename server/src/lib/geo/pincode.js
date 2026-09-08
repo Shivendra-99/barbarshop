@@ -40,7 +40,7 @@ export async function reverseViaOsm(lat, lng) {
   try {
     res = await fetch(
       `https://nominatim.openstreetmap.org/reverse?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lng)}&format=json&addressdetails=1`,
-      { headers: { 'User-Agent': 'SalonSathi/1.0 (support@salonsaathi.in)' } },
+      { headers: { 'User-Agent': 'SalonSaathi/1.0 (support@salonsaathi.in)' } },
     )
   } catch {
     return null
@@ -69,7 +69,7 @@ export async function searchPlaces(q) {
   try {
     res = await fetch(
       `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&countrycodes=in&format=json&addressdetails=1&limit=6`,
-      { headers: { 'User-Agent': 'SalonSathi/1.0 (support@salonsaathi.in)' } },
+      { headers: { 'User-Agent': 'SalonSaathi/1.0 (support@salonsaathi.in)' } },
     )
   } catch {
     return []
