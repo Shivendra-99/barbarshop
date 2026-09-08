@@ -24,6 +24,7 @@ export default function IntroGate() {
   }
   const login = () => {
     save('intro:skipped', true)
+    setDismissed(true)
     navigate('/login')
   }
 
