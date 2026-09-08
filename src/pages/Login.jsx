@@ -9,6 +9,7 @@ import {
   widgetSendOtp,
   widgetVerifyOtp,
   widgetRetryOtp,
+  widgetRetryWhatsapp,
 } from '../lib/msg91Widget'
 import { IMG_UNISEX, STAFF_IMAGES } from '../assets'
 import './Login.css'
@@ -24,6 +25,18 @@ const HOME_FOR_ROLE = { founder: '/admin', owner: '/owner', customer: '/' }
 
 const OTP_LENGTH = 6
 const PHONE_LENGTH = 10
+
+/** Turn raw MSG91/network errors into a clear, human message. */
+function friendlyOtpError(raw) {
+  const m = (raw || '').toLowerCase()
+  if ((m.includes('ip') && (m.includes('block') || m.includes('blacklist'))) || m.includes('blocked')) {
+    return 'Too many attempts from your network. Please wait ~15 minutes, then try again — or get the code on WhatsApp.'
+  }
+  if (m.includes('limit') || m.includes('too many') || m.includes('exceed') || m.includes('maximum')) {
+    return 'You’ve reached the resend limit (2 codes per 15 minutes). Please wait a bit, then try again — or get the code on WhatsApp.'
+  }
+  return raw || 'Something went wrong. Please try again.'
+}
 
 export default function Login() {
   const navigate = useNavigate()
@@ -77,7 +90,28 @@ export default function Login() {
       push({ title: 'Code resent', body: `New code sent to +91 ${phone}`, tone: 'info' })
       focusCell(0)
     } catch (err) {
-      setError(err.message || 'Could not resend. Try again.')
+      setError(friendlyOtpError(err.message))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  /** Fallback: get the OTP on WhatsApp when the SMS doesn't arrive. */
+  const resendWhatsapp = async () => {
+    if (busy) return
+    setBusy(true)
+    try {
+      await widgetRetryWhatsapp()
+      setDigits(Array(OTP_LENGTH).fill(''))
+      setError('')
+      push({ title: 'Code sent on WhatsApp', body: `Check WhatsApp on +91 ${phone}`, tone: 'info' })
+      focusCell(0)
+    } catch (err) {
+      setError(
+        friendlyOtpError(err.message) === (err.message || '')
+          ? 'Couldn’t send on WhatsApp right now. Please use SMS, or try again shortly.'
+          : friendlyOtpError(err.message),
+      )
     } finally {
       setBusy(false)
     }
@@ -106,7 +140,7 @@ export default function Login() {
       push({ title: 'OTP sent', body: `Code sent to +91 ${phone}`, tone: 'info' })
       window.setTimeout(() => inputs.current[0]?.focus(), 60)
     } catch (err) {
-      setError(err.message || 'Could not send the code. Try again.')
+      setError(friendlyOtpError(err.message))
     } finally {
       setBusy(false)
     }
@@ -358,8 +392,26 @@ export default function Login() {
                 )}
               </div>
 
+              {WIDGET && (
+                <button
+                  type="button"
+                  className="btn login__wa"
+                  onClick={resendWhatsapp}
+                  disabled={busy}
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true" width="18" height="18">
+                    <path
+                      fill="currentColor"
+                      d="M12 2a10 10 0 0 0-8.6 15l-1.3 4.9 5-1.3A10 10 0 1 0 12 2Zm5.8 14.2c-.2.7-1.4 1.3-2 1.4-.5.1-1.2.1-1.9-.1-.4-.1-1-.3-1.7-.6-3-1.3-4.9-4.3-5.1-4.5-.1-.2-1.2-1.6-1.2-3 0-1.4.7-2.1 1-2.4.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.8 2c.1.2.1.4 0 .5l-.4.5-.3.3c-.2.2-.3.4-.2.6.2.4.8 1.3 1.6 2 1 .9 1.9 1.2 2.2 1.3.2.1.4.1.6-.1l.7-.9c.2-.2.4-.2.6-.1l1.9.9c.3.1.4.2.5.3.1.2.1.8-.1 1.5Z"
+                    />
+                  </svg>
+                  Get the code on WhatsApp
+                </button>
+              )}
+
               <p className="login__fine">
-                Stays signed in on this device for {SESSION_DAYS} days.
+                You can resend up to 2 times in 15 minutes. Stays signed in on this device for{' '}
+                {SESSION_DAYS} days.
               </p>
             </form>
           ) : (

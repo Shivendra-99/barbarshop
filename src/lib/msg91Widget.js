@@ -10,6 +10,9 @@
 
 const WIDGET_ID = import.meta.env.VITE_MSG91_WIDGET_ID
 const TOKEN_AUTH = import.meta.env.VITE_MSG91_TOKEN_AUTH
+// MSG91 retry channel for WhatsApp. Configure in the MSG91 widget (enable the
+// WhatsApp channel) and set the exact channel code here. Default '12'.
+const WA_CHANNEL = import.meta.env.VITE_MSG91_WA_CHANNEL || '12'
 const SCRIPT_SRC = 'https://verify.msg91.com/otp-provider.js'
 
 /**
@@ -77,13 +80,18 @@ export function widgetVerifyOtp(code) {
   })
 }
 
-/** Resends the OTP over the text channel. */
-export function widgetRetryOtp() {
+/** Resends the OTP. Defaults to the text (SMS) channel; pass a channel to switch. */
+export function widgetRetryOtp(channel = '11') {
   return new Promise((resolve, reject) => {
     window.retryOtp(
-      '11', // text channel
+      channel,
       (data) => resolve(data),
       (err) => reject(new Error(readErr(err))),
     )
   })
+}
+
+/** Resends the OTP over WhatsApp (channel configured via VITE_MSG91_WA_CHANNEL). */
+export function widgetRetryWhatsapp() {
+  return widgetRetryOtp(WA_CHANNEL)
 }

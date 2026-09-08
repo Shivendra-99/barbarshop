@@ -67,6 +67,18 @@
   letter-spacing: 0.02em;
 }
 
+.login__wa {
+  width: 100%;
+  margin-top: 12px;
+  background: #25d366;
+  color: #fff;
+}
+
+.login__wa:hover:not(:disabled) {
+  background: #1ebe5b;
+  color: #fff;
+}
+
 .login__panel {
   display: flex;
   align-items: center;
