@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useNavigate, useSearchParams, Link } from 'react-router-dom'
+import { useNavigate, useSearchParams, useLocation, Link } from 'react-router-dom'
 import { useApp, SESSION_DAYS } from '../store/AppStore'
 import { useToast } from '../components/Toast'
 import { BRAND } from '../data/seed'
@@ -41,6 +41,7 @@ function friendlyOtpError(raw) {
 export default function Login() {
   const navigate = useNavigate()
   const [params] = useSearchParams()
+  const location = useLocation()
   const { requestOtp, verifyOtp, widgetLogin, setName: saveName } = useApp()
   const { push } = useToast()
 
@@ -51,7 +52,7 @@ export default function Login() {
 
   const next = params.get('next') || '/'
   const [step, setStep] = useState('phone')
-  const [phone, setPhone] = useState('')
+  const [phone, setPhone] = useState(() => location.state?.phone || '')
   const [name, setName] = useState('') // only collected for a brand-new customer
   const [newUser, setNewUser] = useState(null) // set when a first-time user needs a name
   const [code, setCode] = useState('') // dev code echoed by the API
@@ -62,6 +63,7 @@ export default function Login() {
   const [resends, setResends] = useState(0)
   const inputs = useRef([])
   const nameRef = useRef(null)
+  const autoSentRef = useRef(false)
 
   const phoneValid = /^[6-9]\d{9}$/.test(phone)
   const otpComplete = digits.every((d) => d !== '')
@@ -117,15 +119,12 @@ export default function Login() {
     }
   }
 
-  const sendCode = async (e) => {
-    e.preventDefault()
-    if (!phoneValid) {
-      setError('Enter a valid 10-digit mobile number.')
-      return
-    }
+  const doSend = async () => {
+    if (!phoneValid || busy) return
     setBusy(true)
     try {
       if (WIDGET) {
+        await initWidget() // ensure the widget is ready (also needed for auto-send)
         await widgetSendOtp(phone)
         setCode('') // real SMS — no code to echo
       } else {
@@ -145,6 +144,24 @@ export default function Login() {
       setBusy(false)
     }
   }
+
+  const sendCode = (e) => {
+    e.preventDefault()
+    if (!phoneValid) {
+      setError('Enter a valid 10-digit mobile number.')
+      return
+    }
+    doSend()
+  }
+
+  // Auto-send once when arriving from the intro popup with a prefilled number.
+  useEffect(() => {
+    if (location.state?.autoSend && !autoSentRef.current && phoneValid) {
+      autoSentRef.current = true
+      doSend()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const focusCell = (i) => {
     const el = inputs.current[i]
