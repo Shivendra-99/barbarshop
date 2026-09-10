@@ -77,10 +77,14 @@
 }
 
 .hdr__mark {
-  width: 28px;
-  height: 28px;
+  width: 34px;
+  height: 34px;
   color: var(--gold);
   flex-shrink: 0;
+  background: #fbf7f0;
+  border-radius: 9px;
+  padding: 3px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
 }
 
 .hdr__word {

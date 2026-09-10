@@ -53,10 +53,13 @@
 }
 
 .ftr__mark {
-  width: 30px;
-  height: 30px;
+  width: 36px;
+  height: 36px;
   color: var(--gold);
   flex-shrink: 0;
+  background: #fbf7f0;
+  border-radius: 9px;
+  padding: 3px;
 }
 
 .ftr__blurb {
