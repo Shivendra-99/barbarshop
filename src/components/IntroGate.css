@@ -104,8 +104,8 @@
   width: 100%;
   min-height: 50px;
   border-radius: var(--r-pill);
-  background: linear-gradient(90deg, #17a89a, #0e8f80);
-  color: #fff;
+  background: var(--gold);
+  color: var(--on-gold);
   font-size: 15px;
   font-weight: 600;
   letter-spacing: 0.02em;
@@ -113,11 +113,11 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  transition: filter var(--dur-fast) ease, transform var(--dur-fast) ease;
+  transition: background var(--dur-fast) ease, transform var(--dur-fast) ease;
 }
 
 .intro__send:hover:not(:disabled) {
-  filter: brightness(1.06);
+  background: var(--gold-light);
 }
 
 .intro__send:active:not(:disabled) {
