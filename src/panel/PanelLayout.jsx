@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useApp } from '../store/AppStore'
 import { BRAND } from '../data/seed'
+import LogoMark from '../components/LogoMark'
 import './PanelLayout.css'
 
 /* Sidebar navigation per role. `end` marks exact-match links. */
@@ -101,14 +102,7 @@ export default function PanelLayout({ role }) {
       {/* ---- Sidebar ---- */}
       <aside className={`pnl__side${mobileNav ? ' is-open' : ''}`}>
         <div className="pnl__brand">
-          <svg className="pnl__logo" viewBox="0 0 28 28" aria-hidden="true">
-            <path d="M14 3c2.6 3.4 4 6.4 4 9a4 4 0 0 1-8 0c0-2.6 1.4-5.6 4-9Z" fill="currentColor" opacity=".9" />
-            <path
-              d="M6.5 14.5c3.6.9 6.1 2.3 7.5 4.2 1.4-1.9 3.9-3.3 7.5-4.2-1.6 5-4.1 7.9-7.5 10.3-3.4-2.4-5.9-5.3-7.5-10.3Z"
-              fill="currentColor"
-              opacity=".55"
-            />
-          </svg>
+          <LogoMark className="pnl__logo" />
           <div>
             <div className="pnl__brandName">{BRAND.name}</div>
             <div className="pnl__brandRole">{nav.label}</div>

@@ -4,6 +4,7 @@ import { useApp } from '../store/AppStore'
 import { BRAND } from '../data/seed'
 import { load, save } from '../lib/storage'
 import { IMG_UNISEX } from '../assets'
+import LogoMark from './LogoMark'
 import './IntroGate.css'
 
 /**
@@ -36,6 +37,7 @@ export default function IntroGate() {
           <div className="intro__scrim" />
         </div>
         <div className="intro__body">
+          <LogoMark className="intro__logo" />
           <div className="eyebrow">Welcome to</div>
           <h1 className="intro__brand">{BRAND.name}</h1>
           <p className="intro__tag">{BRAND.tagline}</p>

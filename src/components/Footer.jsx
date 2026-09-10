@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { BRAND, TRUST_POINTS } from '../data/seed'
+import LogoMark from './LogoMark'
 import './Footer.css'
 
 const COLUMNS = [
@@ -48,7 +49,10 @@ export default function Footer() {
 
       <div className="shell ftr__grid">
         <div>
-          <div className="ftr__word">{BRAND.name}</div>
+          <div className="ftr__word">
+            <LogoMark className="ftr__mark" />
+            {BRAND.name}
+          </div>
           <p className="ftr__blurb">{BRAND.tagline}</p>
         </div>
         {COLUMNS.map((col) => (

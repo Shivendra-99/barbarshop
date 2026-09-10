@@ -3,6 +3,7 @@ import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { useApp } from '../store/AppStore'
 import { usePrefs, THEMES } from '../store/Prefs'
 import { BRAND } from '../data/seed'
+import LogoMark from './LogoMark'
 import { api } from '../lib/api'
 import { formatINR } from '../lib/money'
 import './Header.css'
@@ -242,18 +243,7 @@ export default function Header({ city, onCityChange }) {
       {/* ---- Main bar ---- */}
       <div className="hdr__bar">
         <Link to="/" className="hdr__brand" onClick={() => setMobileOpen(false)}>
-          <svg className="hdr__mark" viewBox="0 0 28 28" aria-hidden="true">
-            <path
-              d="M14 3c2.6 3.4 4 6.4 4 9a4 4 0 0 1-8 0c0-2.6 1.4-5.6 4-9Z"
-              fill="currentColor"
-              opacity=".9"
-            />
-            <path
-              d="M6.5 14.5c3.6.9 6.1 2.3 7.5 4.2 1.4-1.9 3.9-3.3 7.5-4.2-1.6 5-4.1 7.9-7.5 10.3-3.4-2.4-5.9-5.3-7.5-10.3Z"
-              fill="currentColor"
-              opacity=".55"
-            />
-          </svg>
+          <LogoMark className="hdr__mark" />
           <span className="hdr__word">{BRAND.name}</span>
         </Link>
 
