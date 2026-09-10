@@ -13,6 +13,9 @@ import Account from './pages/Account'
 import Help from './pages/Help'
 import PrivacyPolicy from './pages/PrivacyPolicy'
 import Terms from './pages/Terms'
+import ContactUs from './pages/ContactUs'
+import RefundPolicy from './pages/RefundPolicy'
+import AboutUs from './pages/AboutUs'
 import Login from './pages/Login'
 import NotFound from './pages/NotFound'
 import PanelLayout from './panel/PanelLayout'
@@ -38,6 +41,9 @@ export default function App() {
           <Route path="/help" element={<Help />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/terms-and-conditions" element={<Terms />} />
+          <Route path="/contact-us" element={<ContactUs />} />
+          <Route path="/refund-policy" element={<RefundPolicy />} />
+          <Route path="/about-us" element={<AboutUs />} />
           <Route path="/login" element={<Login />} />
 
           <Route

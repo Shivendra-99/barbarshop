@@ -23,6 +23,9 @@ const COLUMNS = [
     title: 'Company',
     links: [
       { label: 'Help centre', to: '/help' },
+      { label: 'About Us', to: '/about-us' },
+      { label: 'Contact Us', to: '/contact-us' },
+      { label: 'Refund Policy', to: '/refund-policy' },
       { label: 'Privacy Policy', to: '/privacy-policy' },
       { label: 'Terms & Conditions', to: '/terms-and-conditions' },
     ],
