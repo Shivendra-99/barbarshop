@@ -11,7 +11,7 @@ import {
   widgetRetryOtp,
   widgetRetryWhatsapp,
 } from '../lib/msg91Widget'
-import { IMG_UNISEX, STAFF_IMAGES } from '../assets'
+import LogoMark from '../components/LogoMark'
 import './Login.css'
 
 const WIDGET = widgetConfigured()
@@ -256,33 +256,21 @@ export default function Login() {
 
   return (
     <div className="login">
-      <div className="login__art" aria-hidden="true">
-        <img src={IMG_UNISEX} alt="" />
-        <div className="login__artScrim" />
-        <blockquote className="login__quote">{BRAND.tagline}</blockquote>
-        <div className="login__staff">
-          <div className="login__staffRow">
-            {STAFF_IMAGES.map((src, i) => (
-              // eslint-disable-next-line react/no-array-index-key
-              <img key={i} src={src} alt="" />
-            ))}
-          </div>
-          <span>Trusted salon professionals near you</span>
-        </div>
-      </div>
-
       <div className="login__panel">
         <div className="login__inner">
           <Link to="/" className="login__back">
             ← Back to home
           </Link>
 
+          <LogoMark className="login__logo" />
+          <div className="login__brand">{BRAND.name}</div>
+
           {step === 'phone' ? (
             <form onSubmit={sendCode} noValidate>
-              <div className="eyebrow">Step 01 — Your number</div>
-              <h1 className="display login__title">Sign in to book</h1>
-              <p className="lede login__lede">
-                We&rsquo;ll text you a one-time code. No password to remember.
+              <h1 className="login__title">Login to continue</h1>
+              <p className="login__sub">
+                Enter your phone number to receive an OTP and continue booking your salon
+                appointment
               </p>
 
               <label className="field" htmlFor="login-phone">
@@ -329,8 +317,7 @@ export default function Login() {
             </form>
           ) : step === 'otp' ? (
             <form onSubmit={verify} noValidate>
-              <div className="eyebrow">Step 02 — Verify</div>
-              <h1 className="display login__title">Enter your code</h1>
+              <h1 className="login__title">Enter your code</h1>
               <p className="lede login__lede">
                 Sent to <strong>+91 {phone}</strong>.{' '}
                 <button type="button" className="login__link" onClick={() => setStep('phone')}>
@@ -433,8 +420,7 @@ export default function Login() {
             </form>
           ) : (
             <form onSubmit={submitName} noValidate>
-              <div className="eyebrow">One last thing</div>
-              <h1 className="display login__title">What should we call you?</h1>
+              <h1 className="login__title">What should we call you?</h1>
               <p className="lede login__lede">
                 You&rsquo;re signed in. Add your name so salons know who&rsquo;s booking.
               </p>
