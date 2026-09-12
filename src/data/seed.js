@@ -370,11 +370,12 @@ export const FAQS = [
   },
   {
     q: 'How to list your salon?',
-    a: 'Contact our support team. After verification, we will register your number and you can login at salonsaathi.in and list your salon.',
-  },
-  {
-    q: 'Need help?',
-    a: 'For any assistance, simply contact the SalonSaathi Team. Email: supportsalonsaathi@gmail.com, Phone: 7081126830.',
+    a:
+      'Contact our support team. After verification, we will register your number and you can login at salonsaathi.in and list your salon.\n\n' +
+      'Need Help?\n' +
+      'For any assistance, simply contact the SalonSaathi Team.\n' +
+      'Email: supportsalonsaathi@gmail.com\n' +
+      'Phone: 7081126830',
   },
 ]
 

@@ -402,6 +402,7 @@
   line-height: 1.7;
   color: var(--muted-2);
   padding-right: 48px;
+  white-space: pre-line;
 }
 
 .faq__panel.is-open > .faq__a {
