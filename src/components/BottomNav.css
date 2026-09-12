@@ -1,0 +1,53 @@
+/* Mobile-only bottom tab bar. Desktop keeps the header nav. */
+.btmnav {
+  display: none;
+}
+
+@media (max-width: 860px) {
+  .btmnav {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 210;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    background: var(--surface);
+    border-top: 1px solid var(--line-strong);
+    box-shadow: 0 -6px 20px rgba(0, 0, 0, 0.08);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .btmnav__tab {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    padding: 8px 4px 7px;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    color: var(--muted-2);
+    -webkit-tap-highlight-color: transparent;
+    transition: color var(--dur-fast, 0.15s) ease;
+  }
+
+  .btmnav__tab.is-active {
+    color: var(--gold-deep);
+  }
+
+  .btmnav__icon {
+    width: 24px;
+    height: 24px;
+  }
+
+  .btmnav__label {
+    line-height: 1;
+  }
+
+  /* Keep the footer clear of the fixed bar. */
+  .ftr {
+    padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+  }
+}

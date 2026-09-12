@@ -62,6 +62,35 @@
   border: 1px solid var(--gold-line);
   font-size: 14px;
   color: var(--gold-deep);
+  transform-origin: center;
+  animation: offerWobble 2.6s ease-in-out infinite;
+}
+
+/* Gentle attention wobble on the first-booking offer pill. */
+@keyframes offerWobble {
+  0%,
+  70%,
+  100% {
+    transform: rotate(0deg) scale(1);
+  }
+  76% {
+    transform: rotate(-1.6deg) scale(1.02);
+  }
+  82% {
+    transform: rotate(1.6deg) scale(1.02);
+  }
+  88% {
+    transform: rotate(-1.1deg) scale(1.01);
+  }
+  94% {
+    transform: rotate(0.7deg) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .choose__offer {
+    animation: none;
+  }
 }
 
 .choose__offer strong {

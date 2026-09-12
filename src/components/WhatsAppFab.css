@@ -56,11 +56,17 @@
   box-shadow: 0 8px 22px rgba(37, 211, 102, 0.55);
 }
 
+/* Lift above the fixed bottom nav bar (which appears at <=860px). */
+@media (max-width: 860px) {
+  .wafab {
+    bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
 /* Mobile: keep the label, just make everything a touch smaller */
 @media (max-width: 560px) {
   .wafab {
     right: 12px;
-    bottom: 12px;
     gap: 8px;
   }
   .wafab__label {

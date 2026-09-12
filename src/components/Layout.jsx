@@ -3,6 +3,7 @@ import Header from './Header'
 import Footer from './Footer'
 import IntroGate from './IntroGate'
 import WhatsAppFab from './WhatsAppFab'
+import BottomNav from './BottomNav'
 import { usePrefs } from '../store/Prefs'
 
 export default function Layout() {
@@ -20,6 +21,7 @@ export default function Layout() {
       </main>
       <Footer />
       <WhatsAppFab />
+      <BottomNav />
     </>
   )
 }
