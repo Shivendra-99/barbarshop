@@ -128,6 +128,11 @@ export default function OwnerBookings() {
                           <div className="ptable__sub">
                             {paid ? 'Paid' : b.paymentMode === 'online' ? 'Paid' : 'Awaiting cash'}
                           </div>
+                          {b.razorpay?.paymentId && (
+                            <div className="ptable__mono" title="Razorpay Payment ID">
+                              {b.razorpay.paymentId}
+                            </div>
+                          )}
                         </td>
                         <td className="ptable__money">{formatINR(b.total)}</td>
                         <td>

@@ -111,6 +111,14 @@
   margin-top: 4px;
 }
 
+.appt__pay {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 12px;
+  color: var(--muted-3);
+  margin-top: 4px;
+  word-break: break-all;
+}
+
 .appt__refund {
   display: inline-block;
   margin-top: 10px;

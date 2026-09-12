@@ -228,6 +228,9 @@ export default function Appointments() {
                     {b.staffName ? ` · ${b.staffName}` : ''}
                     {` · ${b.paymentMode === 'online' ? 'Paid online' : 'Cash at salon'}`}
                   </div>
+                  {b.razorpay?.paymentId && (
+                    <div className="appt__pay">Razorpay · {b.razorpay.paymentId}</div>
+                  )}
                   {b.address && <div className="appt__addr">{b.address}</div>}
                   {cancelled && b.refund?.amount > 0 && (
                     <div className="appt__refund">
