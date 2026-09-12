@@ -335,6 +335,9 @@ export const BRAND = {
 export const SUPPORT = {
   whatsappDisplay: '+91 70811 26830',
   whatsappNumber: '917081126830',
+  phoneDisplay: '+91 70811 26830',
+  phoneNumber: '917081126830',
+  email: 'supportsalonsaathi@gmail.com',
   whatsappUrl: (msg = 'Hi SalonSaathi, I need help with') =>
     `https://wa.me/917081126830?text=${encodeURIComponent(msg)}`,
 }
@@ -370,7 +373,7 @@ export const FAQS = [
   },
   {
     q: 'How do I list my salon?',
-    a: 'Register as a salon owner and submit your salon. Our team reviews and approves it, usually within a day, and then it goes live.',
+    a: 'Contact our support team. After verification, we register your number and you can log in at salonsaathi.in and list your salon.',
   },
 ]
 
