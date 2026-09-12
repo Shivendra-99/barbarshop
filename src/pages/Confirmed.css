@@ -191,6 +191,44 @@
   }
 }
 
+/* ---- Payment status ---- */
+
+.done__pay {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.done__payStatus {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 9px;
+  border-radius: var(--r-pill);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.done__payStatus--paid {
+  background: rgba(37, 160, 90, 0.14);
+  color: #1f9d55;
+}
+
+.done__payStatus--pending {
+  background: var(--gold-wash);
+  color: var(--gold-deep);
+}
+
+.done__payId {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 13px;
+  color: var(--muted-2);
+  word-break: break-all;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .done__tickCircle,
   .done__tickMark {

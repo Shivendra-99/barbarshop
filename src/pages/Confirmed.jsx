@@ -12,6 +12,15 @@ export default function Confirmed() {
 
   const salon = publicSalons.find((s) => s.id === booking.salonId)
 
+  // A real Razorpay payment carries a paymentId; the demo online flow doesn't.
+  const rzpId = booking.razorpay?.paymentId ?? null
+  const paidOnline = booking.paymentMode === 'online' && booking.paymentStatus === 'paid'
+  const payMethod = paidOnline
+    ? rzpId
+      ? 'Paid online · Razorpay'
+      : 'Paid online'
+    : 'Cash at salon'
+
   return (
     <div className="done">
       <div className="done__inner anim-up">
@@ -69,8 +78,23 @@ export default function Confirmed() {
             </div>
             <div className="done__row">
               <dt>Payment</dt>
-              <dd>{booking.paymentMode === 'online' ? 'Paid online' : 'Cash at salon'}</dd>
+              <dd className="done__pay">
+                {payMethod}
+                <span
+                  className={`done__payStatus done__payStatus--${
+                    booking.paymentStatus === 'paid' ? 'paid' : 'pending'
+                  }`}
+                >
+                  {booking.paymentStatus === 'paid' ? 'Paid' : 'Pending'}
+                </span>
+              </dd>
             </div>
+            {rzpId && (
+              <div className="done__row">
+                <dt>Payment ID</dt>
+                <dd className="done__payId">{rzpId}</dd>
+              </div>
+            )}
             {booking.discount > 0 && (
               <div className="done__row done__row--save">
                 <dt>First booking discount</dt>
