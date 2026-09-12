@@ -9,6 +9,7 @@ import userRoutes from './routes/users.routes.js'
 import salonRoutes from './routes/salons.routes.js'
 import serviceRoutes from './routes/services.routes.js'
 import bookingRoutes from './routes/bookings.routes.js'
+import paymentRoutes from './routes/payments.routes.js'
 import geoRoutes from './routes/geo.routes.js'
 import settingsRoutes from './routes/settings.routes.js'
 import notificationRoutes from './routes/notifications.routes.js'
@@ -49,6 +50,7 @@ export function createApp() {
   app.use('/api/salons', salonRoutes)
   app.use('/api/services', serviceRoutes)
   app.use('/api/bookings', bookingRoutes)
+  app.use('/api/payments', paymentRoutes)
   app.use('/api/geo', geoRoutes)
   app.use('/api/settings', settingsRoutes)
   app.use('/api/notifications', notificationRoutes)

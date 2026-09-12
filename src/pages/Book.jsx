@@ -23,8 +23,23 @@ export default function Book() {
   const { salonId } = useParams()
   const [params] = useSearchParams()
   const navigate = useNavigate()
-  const { publicSalons, salonsReady, createBooking, isFirstBooking, session } = useApp()
+  const { publicSalons, salonsReady, createBooking, createBookingOnline, isFirstBooking, session } =
+    useApp()
   const { push } = useToast()
+
+  // Whether real online payments (Razorpay) are configured on the backend.
+  // When off, "Pay online" still works as the instant demo flow.
+  const [payEnabled, setPayEnabled] = useState(false)
+  useEffect(() => {
+    let alive = true
+    api
+      .paymentConfig()
+      .then((c) => alive && setPayEnabled(Boolean(c.enabled)))
+      .catch(() => alive && setPayEnabled(false))
+    return () => {
+      alive = false
+    }
+  }, [])
 
   const salon = publicSalons.find((s) => s.id === salonId)
 
@@ -126,20 +141,25 @@ export default function Book() {
     if (!ready || submitting) return
 
     const staff = salon.staff.find((p) => p.id === staffId) ?? null
+    const draft = {
+      salonId: salon.id,
+      serviceId: service.id,
+      staffName: staff?.name ?? null,
+      mode,
+      address: needsAddress ? address.trim() : null,
+      addressELoc: needsAddress ? addressELoc || undefined : undefined,
+      date,
+      dateLabel: formatDateLabel(date),
+      slot,
+      paymentMode,
+    }
+
     setSubmitting(true)
     try {
-      const booking = await createBooking({
-        salonId: salon.id,
-        serviceId: service.id,
-        staffName: staff?.name ?? null,
-        mode,
-        address: needsAddress ? address.trim() : null,
-        addressELoc: needsAddress ? addressELoc || undefined : undefined,
-        date,
-        dateLabel: formatDateLabel(date),
-        slot,
-        paymentMode,
-      })
+      // Real online payment → Razorpay Checkout. Cash (or online demo when
+      // Razorpay isn't configured) → the direct create path.
+      const useGateway = paymentMode === 'online' && payEnabled
+      const booking = useGateway ? await createBookingOnline(draft) : await createBooking(draft)
 
       push({
         tone: 'success',
@@ -153,7 +173,13 @@ export default function Book() {
 
       navigate(`/confirmed/${booking.id}`, { replace: true })
     } catch (err) {
-      push({ tone: 'warn', title: 'Could not confirm booking', body: err.message })
+      // A user closing the Razorpay modal isn't an error worth alarming them.
+      const cancelled = err.message === 'Payment cancelled.'
+      push({
+        tone: cancelled ? 'info' : 'warn',
+        title: cancelled ? 'Payment cancelled' : 'Could not confirm booking',
+        body: cancelled ? 'You can try the payment again when ready.' : err.message,
+      })
       setSubmitting(false)
     }
   }

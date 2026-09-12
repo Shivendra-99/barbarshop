@@ -88,6 +88,11 @@ export const api = {
   updateService: (id, body) => request(`/services/${id}`, { method: 'PATCH', body }),
   deleteService: (id) => request(`/services/${id}`, { method: 'DELETE' }),
 
+  // --- Payments (Razorpay) ---
+  paymentConfig: () => request('/payments/config', { auth: false }),
+  createPaymentOrder: (draft) => request('/payments/order', { method: 'POST', body: draft }),
+  verifyPayment: (body) => request('/payments/verify', { method: 'POST', body }),
+
   // --- Bookings ---
   createBooking: (draft) => request('/bookings', { method: 'POST', body: draft }),
   myBookings: () => request('/bookings/mine'),

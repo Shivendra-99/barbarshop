@@ -15,7 +15,7 @@ import { geocode } from '../lib/geo/mappls.js'
 
 const router = Router()
 
-const createSchema = z.object({
+export const createSchema = z.object({
   salonId: z.string().min(1),
   // Accepts a Mongo id or a service code (e.g. "m-haircut") — see resolution below.
   serviceId: z.string().min(1),
@@ -35,7 +35,128 @@ const isObjectId = (v) => /^[a-f0-9]{24}$/i.test(v)
 
 const makeRef = () => `SS${Math.floor(100000 + Math.random() * 899999)}`
 
-/* ---- Customer: create a booking ---- */
+/**
+ * Validate a booking draft, price it server-side, persist it, and fan out the
+ * "new booking" notifications. Shared by the cash route (below) and the online
+ * flow (payments.routes.js, after the Razorpay signature is verified).
+ *
+ * `payment` marks an already-captured online payment:
+ *   { paid: true, orderId, paymentId } → paymentStatus 'paid'.
+ * Omit it (or paid:false) for cash — collected at the salon later.
+ * Returns the created Booking document.
+ */
+/**
+ * Validate a booking draft against the salon/service and compute the
+ * server-authoritative price. Shared by the order step (to know how much to
+ * charge) and by createBookingRecord (to persist the same numbers). Never
+ * trusts a client-supplied amount. Returns { salon, service, priced, homeServiceFee }.
+ */
+export async function priceBookingDraft(user, body) {
+  const salon = await Salon.findById(body.salonId).catch(() => null)
+  if (!salon || salon.status !== 'approved') {
+    throw new ApiError(404, 'Salon not available.')
+  }
+
+  if (!isObjectId(body.serviceId)) throw new ApiError(400, 'Invalid service.')
+  const service = await Service.findById(body.serviceId).catch(() => null)
+  if (!service) throw new ApiError(404, 'Service not found.')
+  // The service must belong to the salon being booked.
+  if (service.salon.toString() !== salon._id.toString()) {
+    throw new ApiError(400, 'That service is not offered by this salon.')
+  }
+
+  if (!salon.serviceModes.includes(body.mode)) {
+    throw new ApiError(400, `This salon does not offer ${body.mode} service.`)
+  }
+  if (body.mode === 'home' && !body.address) {
+    throw new ApiError(400, 'A home-service booking needs an address.')
+  }
+
+  // First booking = the customer has never booked at all. Cancelled bookings
+  // still count, so the discount can't be farmed by booking and cancelling.
+  const priorCount = await Booking.countDocuments({ customer: user._id })
+  const isFirstBooking = priorCount === 0
+
+  const homeServiceFee = body.mode === 'home' ? salon.homeServiceFee : 0
+  const priced = quote({
+    amount: service.amount,
+    paymentMode: body.paymentMode,
+    isFirstBooking,
+    homeServiceFee,
+  })
+
+  return { salon, service, priced, homeServiceFee }
+}
+
+export async function createBookingRecord(user, body, payment = {}) {
+  const { salon, service, priced, homeServiceFee } = await priceBookingDraft(user, body)
+
+  // Geo reference for a home address: eLoc from the pick + lat/lng if the
+  // geocoder can resolve them (null otherwise; never blocks the booking).
+  let location = { eLoc: null, lat: null, lng: null }
+  if (body.mode === 'home' && body.address) {
+    const coords = await geocode({ eLoc: body.addressELoc, address: body.address })
+    location = { eLoc: body.addressELoc ?? null, lat: coords?.lat ?? null, lng: coords?.lng ?? null }
+  }
+
+  const paidOnline = body.paymentMode === 'online' && payment.paid === true
+
+  const booking = await Booking.create({
+    ref: makeRef(),
+    customer: user._id,
+    salon: salon._id,
+    service: service._id,
+    salonName: salon.name,
+    serviceName: service.name,
+    staffName: body.staffName ?? null,
+    mode: body.mode,
+    modeLabel: body.mode === 'home' ? 'Home service' : 'At salon',
+    address: body.mode === 'home' ? body.address : null,
+    location,
+    date: body.date,
+    dateLabel: body.dateLabel ?? body.date,
+    slot: body.slot,
+    paymentMode: body.paymentMode,
+    // Online is paid via the app upfront; cash is collected at the salon later.
+    paymentStatus: paidOnline ? 'paid' : 'pending',
+    paidAt: paidOnline ? new Date() : null,
+    razorpay: {
+      orderId: payment.orderId ?? null,
+      paymentId: payment.paymentId ?? null,
+    },
+    homeServiceFee,
+    ...priced,
+    status: 'confirmed',
+  })
+
+  // One booking event → three inboxes (customer, owner, founder).
+  await notify([
+    {
+      audience: `user:${user._id.toString()}`,
+      tone: 'success',
+      title: 'Booking confirmed',
+      body: `${service.name} at ${salon.name} · ${booking.dateLabel}, ${booking.slot}`,
+    },
+    {
+      audience: `owner:${salon.owner.toString()}`,
+      tone: 'info',
+      title: 'New booking received',
+      body: `${service.name} · ${booking.dateLabel}, ${booking.slot} · ${booking.modeLabel}`,
+    },
+    {
+      audience: 'founder',
+      tone: 'info',
+      title: 'New booking on platform',
+      body: `${salon.name} · ${
+        booking.paymentMode === 'online' ? 'Paid online' : 'Cash at salon'
+      } ${formatINR(booking.total)}`,
+    },
+  ])
+
+  return booking
+}
+
+/* ---- Customer: create a booking (cash, or online demo when Razorpay is off) ---- */
 
 router.post(
   '/',
@@ -43,97 +164,11 @@ router.post(
   requireRole('customer'),
   validate(createSchema),
   asyncHandler(async (req, res) => {
-    const body = req.body
-
-    const salon = await Salon.findById(body.salonId).catch(() => null)
-    if (!salon || salon.status !== 'approved') {
-      throw new ApiError(404, 'Salon not available.')
-    }
-
-    if (!isObjectId(body.serviceId)) throw new ApiError(400, 'Invalid service.')
-    const service = await Service.findById(body.serviceId).catch(() => null)
-    if (!service) throw new ApiError(404, 'Service not found.')
-    // The service must belong to the salon being booked.
-    if (service.salon.toString() !== salon._id.toString()) {
-      throw new ApiError(400, 'That service is not offered by this salon.')
-    }
-
-    if (!salon.serviceModes.includes(body.mode)) {
-      throw new ApiError(400, `This salon does not offer ${body.mode} service.`)
-    }
-    if (body.mode === 'home' && !body.address) {
-      throw new ApiError(400, 'A home-service booking needs an address.')
-    }
-
-    // First booking = the customer has never booked at all. Cancelled bookings
-    // still count, so the discount can't be farmed by booking and cancelling.
-    const priorCount = await Booking.countDocuments({ customer: req.user._id })
-    const isFirstBooking = priorCount === 0
-
-    // Geo reference for a home address: eLoc from the pick + lat/lng if the
-    // geocoder can resolve them (null otherwise; never blocks the booking).
-    let location = { eLoc: null, lat: null, lng: null }
-    if (body.mode === 'home' && body.address) {
-      const coords = await geocode({ eLoc: body.addressELoc, address: body.address })
-      location = { eLoc: body.addressELoc ?? null, lat: coords?.lat ?? null, lng: coords?.lng ?? null }
-    }
-
-    const homeServiceFee = body.mode === 'home' ? salon.homeServiceFee : 0
-    const priced = quote({
-      amount: service.amount,
-      paymentMode: body.paymentMode,
-      isFirstBooking,
-      homeServiceFee,
-    })
-
-    const booking = await Booking.create({
-      ref: makeRef(),
-      customer: req.user._id,
-      salon: salon._id,
-      service: service._id,
-      salonName: salon.name,
-      serviceName: service.name,
-      staffName: body.staffName ?? null,
-      mode: body.mode,
-      modeLabel: body.mode === 'home' ? 'Home service' : 'At salon',
-      address: body.mode === 'home' ? body.address : null,
-      location,
-      date: body.date,
-      dateLabel: body.dateLabel ?? body.date,
-      slot: body.slot,
-      paymentMode: body.paymentMode,
-      // Online is paid via the app upfront; cash is collected at the salon later.
-      paymentStatus: body.paymentMode === 'online' ? 'paid' : 'pending',
-      paidAt: body.paymentMode === 'online' ? new Date() : null,
-      homeServiceFee,
-      ...priced,
-      status: 'confirmed',
-    })
-
-    // One booking event → three inboxes (customer, owner, founder).
-    await notify([
-      {
-        audience: `user:${req.user._id.toString()}`,
-        tone: 'success',
-        title: 'Booking confirmed',
-        body: `${service.name} at ${salon.name} · ${booking.dateLabel}, ${booking.slot}`,
-      },
-      {
-        audience: `owner:${salon.owner.toString()}`,
-        tone: 'info',
-        title: 'New booking received',
-        body: `${service.name} · ${booking.dateLabel}, ${booking.slot} · ${booking.modeLabel}`,
-      },
-      {
-        audience: 'founder',
-        tone: 'info',
-        title: 'New booking on platform',
-        body: `${salon.name} · ${
-          booking.paymentMode === 'online' ? 'Paid online' : 'Cash at salon'
-        } ${formatINR(booking.total)}`,
-      },
-    ])
-
+    // Online here means the demo flow (no Razorpay configured): mark it paid.
+    // With Razorpay on, the client routes online bookings through /api/payments
+    // instead, so this path is cash — or the keyless demo — only.
+    const paid = req.body.paymentMode === 'online'
+    const booking = await createBookingRecord(req.user, req.body, { paid })
     res.status(201).json({ booking: booking.toPublic() })
   }),
 )

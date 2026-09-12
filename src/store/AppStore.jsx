@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { api, getToken, setToken, clearToken } from '../lib/api'
+import { openCheckout } from '../lib/razorpay'
 import { enrichSalon, OWNERS, FOUNDER } from '../data/seed'
 
 const AppContext = createContext(null)
@@ -188,6 +189,20 @@ export function AppProvider({ children }) {
     [loadNotifications],
   )
 
+  // Online booking via Razorpay: create the order, open Checkout, then verify.
+  // The booking is created server-side only after the signature is verified.
+  const createBookingOnline = useCallback(
+    async (draft) => {
+      const order = await api.createPaymentOrder(draft)
+      const result = await openCheckout(order)
+      const { booking } = await api.verifyPayment(result)
+      setMyBookings((prev) => [booking, ...prev])
+      loadNotifications().catch(() => {})
+      return booking
+    },
+    [loadNotifications],
+  )
+
   const cancelBooking = useCallback(
     async (booking, method) => {
       const { booking: updated, walletBalance: bal } = await api.cancelBooking(booking.id, method)
@@ -341,6 +356,7 @@ export function AppProvider({ children }) {
       ownerBookings,
       isFirstBooking: role === 'customer' && myBookings.length === 0,
       createBooking,
+      createBookingOnline,
       cancelBooking,
       rescheduleBooking,
       completeBooking,
@@ -370,6 +386,7 @@ export function AppProvider({ children }) {
     [
       ready, salonsReady, session, role, requestOtp, verifyOtp, widgetLogin, logout, setName, allSalons, publicSalons,
       findSalon, mySalons, pendingSalons, allBookings, myBookings, ownerBookings, createBooking,
+      createBookingOnline,
       cancelBooking, rescheduleBooking, completeBooking, rateBooking, submitSalon, setSalonStatus, updateSalon, settings, updateSettings, walletBalance, myLedger, notifications,
       unreadCount, markRead, platformStats,
     ],

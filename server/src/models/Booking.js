@@ -31,6 +31,11 @@ const bookingSchema = new mongoose.Schema(
     // marks "Payment Complete" after the service.
     paymentStatus: { type: String, enum: ['pending', 'paid'], default: 'pending' },
     paidAt: { type: Date, default: null },
+    // Razorpay references for an online payment (null for cash / demo).
+    razorpay: {
+      orderId: { type: String, default: null },
+      paymentId: { type: String, default: null },
+    },
 
     // Pricing snapshot (server-computed; the client never sets these).
     base: Number,
@@ -82,6 +87,7 @@ bookingSchema.methods.toPublic = function toPublic() {
     paymentMode: this.paymentMode,
     paymentStatus: this.paymentStatus,
     paidAt: this.paidAt,
+    razorpay: this.razorpay ?? { orderId: null, paymentId: null },
     base: this.base,
     discount: this.discount,
     discountEligible: this.discountEligible,

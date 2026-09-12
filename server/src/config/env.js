@@ -43,8 +43,20 @@ export const env = {
     restKey: process.env.MAPPLS_REST_KEY || '',
   },
 
+  // Razorpay online payments. keyId is public (sent to the browser to open
+  // Checkout); keySecret is server-only (order creation + signature verify).
+  // When both are set, real payments run; otherwise online bookings fall back
+  // to the demo flow (marked paid without a real charge).
+  razorpay: {
+    keyId: process.env.RAZORPAY_KEY_ID || '',
+    keySecret: process.env.RAZORPAY_KEY_SECRET || '',
+  },
+
   isProd: process.env.NODE_ENV === 'production',
 }
+
+/** True when Razorpay is configured — real online payments instead of demo. */
+export const razorpayEnabled = () => Boolean(env.razorpay.keyId && env.razorpay.keySecret)
 
 /** True when Mappls address autosuggest is configured. */
 export const mapplsEnabled = () => Boolean(env.mappls.clientId && env.mappls.clientSecret)
