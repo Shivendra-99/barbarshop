@@ -4,17 +4,25 @@
  *
  * Generated with Viewmax (Gemini 3 Pro), resized and re-encoded to WebP.
  */
+// Branded "Salon Saathi" interiors used for the home-page category tiles.
+import mensBrand from './mens-interior.png'
+import unisexBrand from './unisex-interior.png'
+import parlourBrand from './parlour-interior.png'
+
+// Generic stock imagery, still used for salon cards and staff avatars.
 import mensInterior from './shop-interior.webp'
 import mensAtWork from './barber-at-work.webp'
 import mensPortrait from './barber-portrait.webp'
 import unisex from './unisex-salon.webp'
 import parlour from './beauty-parlour.webp'
 
-export const IMG_MENS_INTERIOR = mensInterior
+// Category tiles show the branded interiors.
+export const IMG_MENS_INTERIOR = mensBrand
+export const IMG_UNISEX = unisexBrand
+export const IMG_PARLOUR = parlourBrand
+
 export const IMG_MENS_AT_WORK = mensAtWork
 export const IMG_MENS_PORTRAIT = mensPortrait
-export const IMG_UNISEX = unisex
-export const IMG_PARLOUR = parlour
 
 /** Imagery pools per salon category, cycled when seeding. */
 export const CATEGORY_IMAGES = {
