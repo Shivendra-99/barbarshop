@@ -1,9 +1,19 @@
 import { Link } from 'react-router-dom'
 import { BRAND, TRUST_POINTS } from '../data/seed'
+import { useApp } from '../store/AppStore'
 import LogoMark from './LogoMark'
 import './Footer.css'
 
 const COLUMNS = [
+  {
+    title: 'Menu',
+    links: [
+      { label: 'Home', to: '/' },
+      { label: 'Book', to: '/salons' },
+      { label: 'Help', to: '/help' },
+      { label: 'Account', to: 'account' },
+    ],
+  },
   {
     title: 'Book',
     links: [
@@ -34,6 +44,9 @@ const COLUMNS = [
 ]
 
 export default function Footer() {
+  const { isSignedIn } = useApp()
+  const resolve = (to) => (to === 'account' ? (isSignedIn ? '/account' : '/login') : to)
+
   return (
     <footer className="ftr">
       <div className="ftr__trust">
@@ -61,7 +74,7 @@ export default function Footer() {
             <ul className="ftr__links">
               {col.links.map((l) => (
                 <li key={l.label}>
-                  <Link to={l.to}>{l.label}</Link>
+                  <Link to={resolve(l.to)}>{l.label}</Link>
                 </li>
               ))}
             </ul>

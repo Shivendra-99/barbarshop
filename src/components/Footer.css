@@ -37,7 +37,7 @@
 
 .ftr__grid {
   display: grid;
-  grid-template-columns: 1.6fr 1fr 1fr 1fr;
+  grid-template-columns: 1.6fr 1fr 1fr 1fr 1fr;
   gap: 48px;
   padding-top: 64px;
   padding-bottom: 8px;
