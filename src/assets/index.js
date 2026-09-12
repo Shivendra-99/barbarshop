@@ -5,9 +5,9 @@
  * Generated with Viewmax (Gemini 3 Pro), resized and re-encoded to WebP.
  */
 // Branded "Salon Saathi" interiors used for the home-page category tiles.
-import mensBrand from './mens-interior.png'
-import unisexBrand from './unisex-interior.png'
-import parlourBrand from './parlour-interior.png'
+import mensBrand from './mens-interior.webp'
+import unisexBrand from './unisex-interior.webp'
+import parlourBrand from './parlour-interior.webp'
 
 // Generic stock imagery, still used for salon cards and staff avatars.
 import mensInterior from './shop-interior.webp'
