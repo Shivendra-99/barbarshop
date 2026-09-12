@@ -335,9 +335,6 @@ export const BRAND = {
 export const SUPPORT = {
   whatsappDisplay: '+91 70811 26830',
   whatsappNumber: '917081126830',
-  phoneDisplay: '+91 70811 26830',
-  phoneNumber: '917081126830',
-  email: 'supportsalonsaathi@gmail.com',
   whatsappUrl: (msg = 'Hi SalonSaathi, I need help with') =>
     `https://wa.me/917081126830?text=${encodeURIComponent(msg)}`,
 }
@@ -372,8 +369,12 @@ export const FAQS = [
     a: 'Choose SalonSaathi Wallet for an instant credit, or send it back to your UPI or bank account, which takes 2–3 working days. Cash bookings have nothing to refund.',
   },
   {
-    q: 'How do I list my salon?',
-    a: 'Contact our support team. After verification, we register your number and you can log in at salonsaathi.in and list your salon.',
+    q: 'How to list your salon?',
+    a: 'Contact our support team. After verification, we will register your number and you can login at salonsaathi.in and list your salon.',
+  },
+  {
+    q: 'Need help?',
+    a: 'For any assistance, simply contact the SalonSaathi Team. Email: supportsalonsaathi@gmail.com, Phone: 7081126830.',
   },
 ]
 
