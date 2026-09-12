@@ -56,17 +56,30 @@
   box-shadow: 0 8px 22px rgba(37, 211, 102, 0.55);
 }
 
-/* Mobile: just the circle (label hidden to save space) */
+/* Mobile: keep the label, just make everything a touch smaller */
 @media (max-width: 560px) {
-  .wafab__label {
-    display: none;
-  }
   .wafab {
-    right: 16px;
-    bottom: 16px;
+    right: 12px;
+    bottom: 12px;
+    gap: 8px;
+  }
+  .wafab__label {
+    font-size: 12px;
+    padding: 7px 10px;
   }
   .wafab__btn {
-    width: 52px;
-    height: 52px;
+    width: 50px;
+    height: 50px;
+  }
+  .wafab__btn svg {
+    width: 30px;
+    height: 30px;
+  }
+}
+
+/* Very narrow screens: drop the label so the circle never gets pushed off */
+@media (max-width: 360px) {
+  .wafab__label {
+    display: none;
   }
 }
