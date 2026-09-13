@@ -23,6 +23,7 @@ export default function SalonEditDialog({ salon, role = 'founder', onClose, onSa
     atSalon: salon.serviceModes.includes('salon'),
     home: salon.serviceModes.includes('home'),
     slotMinutes: salon.slotMinutes ?? 30,
+    capacity: salon.capacity ?? 1,
     daysOff: salon.daysOff ?? [],
     closedDates: salon.closedDates ?? [],
     photo: salon.photo ?? null,
@@ -79,6 +80,7 @@ export default function SalonEditDialog({ salon, role = 'founder', onClose, onSa
         homeServiceFee: Number(form.homeServiceFee) || 0,
         serviceModes,
         slotMinutes: Number(form.slotMinutes),
+        capacity: Math.max(1, Number(form.capacity) || 1),
         daysOff: form.daysOff,
         closedDates: form.closedDates,
         photo: form.photo ?? null,
@@ -166,6 +168,18 @@ export default function SalonEditDialog({ salon, role = 'founder', onClose, onSa
                 </option>
               ))}
             </select>
+          </label>
+          <label className="field">
+            <span className="field__label">Chairs (per slot)</span>
+            <input
+              type="number"
+              min="1"
+              max="50"
+              step="1"
+              className="field__input"
+              value={form.capacity}
+              onChange={set('capacity')}
+            />
           </label>
           <label className="field">
             <span className="field__label">Home service fee</span>

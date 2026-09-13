@@ -54,6 +54,7 @@ const editSchema = z.object({
   slotMinutes: z.number().int().refine((v) => [15, 20, 30, 45, 60].includes(v), 'Invalid slot length.').optional(),
   daysOff: z.array(z.number().int().min(0).max(6)).max(7).optional(),
   closedDates: z.array(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)).max(120).optional(),
+  capacity: z.number().int().min(1).max(50).optional(),
   // Cover photo as a compressed data URL, or null/'' to clear it. Bounded so a
   // huge upload can't be stored (client resizes to well under this).
   photo: z.string().max(1500000).nullable().optional(),
@@ -62,7 +63,7 @@ const editSchema = z.object({
 // Fields an owner may change on their own salon (a subset of the founder's).
 const OWNER_EDITABLE = new Set([
   'name', 'area', 'address', 'opens', 'closes', 'serviceModes',
-  'homeServiceFee', 'slotMinutes', 'daysOff', 'closedDates', 'photo',
+  'homeServiceFee', 'slotMinutes', 'daysOff', 'closedDates', 'photo', 'capacity',
 ])
 
 /**

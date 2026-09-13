@@ -3,7 +3,12 @@ import { z } from 'zod'
 import { env, razorpayEnabled } from '../config/env.js'
 import { PaymentIntent } from '../models/PaymentIntent.js'
 import { createOrder, verifySignature } from '../lib/razorpay.js'
-import { createSchema, priceBookingDraft, createBookingRecord } from './bookings.routes.js'
+import {
+  createSchema,
+  priceBookingDraft,
+  createBookingRecord,
+  assertSlotAvailable,
+} from './bookings.routes.js'
 import { validate } from '../middleware/validate.js'
 import { requireAuth, requireRole } from '../middleware/auth.js'
 import { asyncHandler, ApiError } from '../middleware/error.js'
@@ -36,6 +41,9 @@ router.post(
     if (!priced.total || priced.total <= 0) {
       throw new ApiError(400, 'Nothing to pay for this booking.')
     }
+
+    // Don't take payment for a slot that's already full.
+    await assertSlotAvailable(salon, draft.date, draft.slot)
 
     const order = await createOrder({
       amount: priced.total,

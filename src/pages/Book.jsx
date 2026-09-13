@@ -89,10 +89,25 @@ export default function Book() {
   const selected = services.filter((s) => selectedIds.includes(s.id))
   const servicesTotal = selected.reduce((sum, s) => sum + s.amount, 0)
 
-  // Slots depend on the salon's own opening hours, not a fixed window.
+  // Real slot availability for the chosen salon+date (which slots are full).
+  const [availability, setAvailability] = useState(null)
+  const [availTick, setAvailTick] = useState(0) // bump to force a refetch
+  useEffect(() => {
+    if (!salonId || !date) return undefined
+    let alive = true
+    api
+      .bookingAvailability(salonId, date)
+      .then((a) => alive && setAvailability(a))
+      .catch(() => alive && setAvailability(null))
+    return () => {
+      alive = false
+    }
+  }, [salonId, date, availTick])
+
+  // Slots depend on the salon's own opening hours + real availability.
   const slots = useMemo(
-    () => (salon ? slotsFor(salon, date, toISO(today)) : []),
-    [salon, date, today],
+    () => (salon ? slotsFor(salon, date, toISO(today), availability) : []),
+    [salon, date, today, availability],
   )
 
   // Drop a slot that stops being valid when the date changes.
@@ -183,11 +198,22 @@ export default function Book() {
     } catch (err) {
       // A user closing the Razorpay modal isn't an error worth alarming them.
       const cancelled = err.message === 'Payment cancelled.'
-      push({
-        tone: cancelled ? 'info' : 'warn',
-        title: cancelled ? 'Payment cancelled' : 'Could not confirm booking',
-        body: cancelled ? 'You can try the payment again when ready.' : err.message,
-      })
+      // 409 = the slot filled up between loading and confirming.
+      if (err.status === 409) {
+        setSlot('')
+        setAvailTick((t) => t + 1) // refresh which slots are free
+        push({
+          tone: 'warn',
+          title: 'That time just got booked',
+          body: 'Please pick another slot — availability has been refreshed.',
+        })
+      } else {
+        push({
+          tone: cancelled ? 'info' : 'warn',
+          title: cancelled ? 'Payment cancelled' : 'Could not confirm booking',
+          body: cancelled ? 'You can try the payment again when ready.' : err.message,
+        })
+      }
       setSubmitting(false)
     }
   }

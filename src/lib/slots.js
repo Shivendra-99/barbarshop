@@ -28,19 +28,19 @@ export function isSalonOpenOn(salon, dateISO) {
   return !daysOff.includes(weekday)
 }
 
-/** Deterministic "already booked" slots so a salon's day looks consistent. */
-export function takenSlots(salon, dateISO) {
-  const step = stepFor(salon)
-  const seed = [...`${salon.id}${dateISO}`].reduce((a, c) => a + c.charCodeAt(0), 0)
-  return new Set([(seed % 6) * step, ((seed % 4) + 7) * step])
-}
-
-/** Slots for one day, respecting the salon's hours, days off and current time. */
-export function slotsFor(salon, dateISO, todayISO) {
+/**
+ * Slots for one day, respecting the salon's hours, days off, current time and
+ * real availability. `availability` = { capacity, taken: { [slotLabel]: count } }
+ * from GET /bookings/availability; a slot is busy once its bookings reach the
+ * salon's capacity. Called without it (e.g. firstBookableDate) it only blocks
+ * past times, then the grid updates once availability loads.
+ */
+export function slotsFor(salon, dateISO, todayISO, availability = null) {
   if (!isSalonOpenOn(salon, dateISO)) return []
 
   const step = stepFor(salon)
-  const taken = takenSlots(salon, dateISO)
+  const capacity = availability?.capacity ?? salon?.capacity ?? 1
+  const taken = availability?.taken ?? {}
   const open = toMins(salon.opens)
   const close = toMins(salon.closes)
   const isToday = dateISO === todayISO
@@ -49,7 +49,9 @@ export function slotsFor(salon, dateISO, todayISO) {
 
   const out = []
   for (let m = open; m + step <= close; m += step) {
-    out.push({ label: label(m), busy: taken.has(m) || (isToday && m <= nowMins + 30) })
+    const lbl = label(m)
+    const full = (taken[lbl] ?? 0) >= capacity
+    out.push({ label: lbl, busy: full || (isToday && m <= nowMins + 30) })
   }
   return out
 }

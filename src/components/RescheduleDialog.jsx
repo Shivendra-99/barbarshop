@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useApp } from '../store/AppStore'
+import { api } from '../lib/api'
 import {
   buildCalendar,
   formatDateLabel,
@@ -53,7 +54,25 @@ export default function RescheduleDialog({ booking, onClose, onConfirm }) {
   }, [onClose])
 
   const todayISO = toISO(today)
-  const slots = useMemo(() => slotsFor(salon, date, todayISO), [salon, date, todayISO])
+
+  // Real availability for the chosen date, so full slots are greyed out.
+  const [availability, setAvailability] = useState(null)
+  useEffect(() => {
+    if (!booking.salonId || !date) return undefined
+    let alive = true
+    api
+      .bookingAvailability(booking.salonId, date)
+      .then((a) => alive && setAvailability(a))
+      .catch(() => alive && setAvailability(null))
+    return () => {
+      alive = false
+    }
+  }, [booking.salonId, date])
+
+  const slots = useMemo(
+    () => slotsFor(salon, date, todayISO, availability),
+    [salon, date, todayISO, availability],
+  )
 
   // Drop a slot that stops being valid when the date changes.
   useEffect(() => {

@@ -40,6 +40,9 @@ const salonSchema = new mongoose.Schema(
     slotMinutes: { type: Number, default: 30 },
     daysOff: { type: [Number], default: [] },
     closedDates: { type: [String], default: [] },
+    // Parallel bookings a single time slot can hold (chairs / staff working at
+    // once). Availability blocks a slot once its confirmed bookings hit this.
+    capacity: { type: Number, default: 1, min: 1 },
     rating: { type: Number, default: 0 },
     reviews: { type: Number, default: 0 },
     badge: { type: String, default: 'New' },
@@ -70,6 +73,7 @@ salonSchema.methods.toPublic = function toPublic() {
     slotMinutes: this.slotMinutes ?? 30,
     daysOff: this.daysOff ?? [],
     closedDates: this.closedDates ?? [],
+    capacity: this.capacity ?? 1,
     rating: this.rating,
     reviews: this.reviews,
     badge: this.badge,

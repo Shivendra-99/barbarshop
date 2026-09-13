@@ -95,6 +95,9 @@ export const api = {
 
   // --- Bookings ---
   createBooking: (draft) => request('/bookings', { method: 'POST', body: draft }),
+  // Slot availability for a salon on a date → { capacity, taken: { [slot]: count } }
+  bookingAvailability: (salon, date) =>
+    request(`/bookings/availability?salon=${encodeURIComponent(salon)}&date=${encodeURIComponent(date)}`),
   myBookings: () => request('/bookings/mine'),
   ownerBookings: () => request('/bookings/owner'),
   allBookings: () => request('/bookings/all'),

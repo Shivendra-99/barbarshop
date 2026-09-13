@@ -1,4 +1,5 @@
 import { Router } from 'express'
+import mongoose from 'mongoose'
 import { z } from 'zod'
 import { Booking } from '../models/Booking.js'
 import { Salon } from '../models/Salon.js'
@@ -41,6 +42,26 @@ export const createSchema = z
 const isObjectId = (v) => /^[a-f0-9]{24}$/i.test(v)
 
 const makeRef = () => `SS${Math.floor(100000 + Math.random() * 899999)}`
+
+/**
+ * How many confirmed bookings already hold a given salon/date/slot. Used to
+ * enforce capacity so a slot can't be double-booked past the salon's chairs.
+ * `excludeId` skips the booking being rescheduled.
+ */
+async function slotTakenCount(salonId, date, slot, excludeId) {
+  const q = { salon: salonId, date, slot, status: 'confirmed' }
+  if (excludeId) q._id = { $ne: excludeId }
+  return Booking.countDocuments(q)
+}
+
+/** Throw 409 if the slot is already full for this salon on this date. */
+export async function assertSlotAvailable(salon, date, slot, excludeId) {
+  const capacity = salon.capacity || 1
+  const taken = await slotTakenCount(salon._id, date, slot, excludeId)
+  if (taken >= capacity) {
+    throw new ApiError(409, 'That time slot was just taken. Please choose another time.')
+  }
+}
 
 /**
  * Validate a booking draft, price it server-side, persist it, and fan out the
@@ -108,6 +129,9 @@ export async function createBookingRecord(user, body, payment = {}) {
     user,
     body,
   )
+
+  // Final guard against double-booking (also checked before payment for online).
+  await assertSlotAvailable(salon, body.date, body.slot)
 
   // Geo reference for a home address: eLoc from the pick + lat/lng if the
   // geocoder can resolve them (null otherwise; never blocks the booking).
@@ -192,6 +216,33 @@ router.post(
   }),
 )
 
+/* ---- Slot availability for a salon on a date ---- */
+
+router.get(
+  '/availability',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const { salon, date } = req.query
+    if (!salon || !isObjectId(salon) || !/^\d{4}-\d{2}-\d{2}$/.test(date || '')) {
+      throw new ApiError(400, 'A salon id and date are required.')
+    }
+    const salonDoc = await Salon.findById(salon).catch(() => null)
+    if (!salonDoc) throw new ApiError(404, 'Salon not found.')
+
+    // Confirmed bookings grouped by slot → how many hold each time.
+    const rows = await Booking.aggregate([
+      { $match: { salon: new mongoose.Types.ObjectId(salon), date, status: 'confirmed' } },
+      { $group: { _id: '$slot', count: { $sum: 1 } } },
+    ])
+    const taken = {}
+    rows.forEach((r) => {
+      taken[r._id] = r.count
+    })
+
+    res.json({ capacity: salonDoc.capacity || 1, taken })
+  }),
+)
+
 /* ---- Customer: reschedule a booking (change date/time only) ---- */
 
 const rescheduleSchema = z.object({
@@ -215,12 +266,15 @@ router.patch(
       throw new ApiError(400, 'Only a confirmed booking can be rescheduled.')
     }
 
+    const salon = await Salon.findById(booking.salon).catch(() => null)
+    // The new slot must have room (ignoring this booking's own hold).
+    if (salon) await assertSlotAvailable(salon, req.body.date, req.body.slot, booking._id)
+
     booking.date = req.body.date
     booking.dateLabel = req.body.dateLabel ?? req.body.date
     booking.slot = req.body.slot
     await booking.save()
 
-    const salon = await Salon.findById(booking.salon).catch(() => null)
     await notify([
       {
         audience: `user:${req.user._id.toString()}`,
