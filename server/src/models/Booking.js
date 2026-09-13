@@ -30,6 +30,10 @@ const bookingSchema = new mongoose.Schema(
     date: { type: String, required: true }, // ISO yyyy-mm-dd
     dateLabel: String,
     slot: { type: String, required: true },
+    // Which parallel "chair" (0 … capacity-1) this booking holds in its slot.
+    // Combined with the partial unique index below, this makes double-booking
+    // impossible at the database level (not just a check-then-insert).
+    seat: { type: Number, default: 0 },
 
     paymentMode: { type: String, enum: ['online', 'offline'], required: true },
     // online = paid via app upfront; offline = cash, 'pending' until the owner
@@ -70,6 +74,15 @@ const bookingSchema = new mongoose.Schema(
     cancelledAt: Date,
   },
   { timestamps: true },
+)
+
+// One confirmed booking per (salon, date, slot, seat). Cancelled/completed
+// bookings are excluded, so their seats free up for reuse. This is the hard
+// guarantee behind capacity — a race that slips past the app-level check still
+// hits a duplicate-key error and is retried onto the next free seat.
+bookingSchema.index(
+  { salon: 1, date: 1, slot: 1, seat: 1 },
+  { unique: true, partialFilterExpression: { status: 'confirmed' } },
 )
 
 bookingSchema.methods.toPublic = function toPublic() {

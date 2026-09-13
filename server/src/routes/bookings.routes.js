@@ -63,6 +63,36 @@ export async function assertSlotAvailable(salon, date, slot, excludeId) {
   }
 }
 
+const SLOT_FULL = 'That time slot was just taken. Please choose another time.'
+
+/**
+ * Find the first free seat (0 … capacity-1) for a salon/date/slot and create the
+ * booking there. The partial unique index on (salon, date, slot, seat) makes
+ * this race-proof: if two requests grab the same seat, one insert fails with a
+ * duplicate-key error (11000) and we retry onto the next seat until the slot is
+ * genuinely full (409).
+ */
+async function createInFreeSeat(fields, salon) {
+  const capacity = salon.capacity || 1
+  for (let attempt = 0; attempt < capacity + 3; attempt += 1) {
+    const taken = await Booking.find({
+      salon: salon._id,
+      date: fields.date,
+      slot: fields.slot,
+      status: 'confirmed',
+    }).distinct('seat')
+    const seat = Array.from({ length: capacity }, (_, i) => i).find((i) => !taken.includes(i))
+    if (seat === undefined) throw new ApiError(409, SLOT_FULL)
+    try {
+      return await Booking.create({ ...fields, seat })
+    } catch (err) {
+      if (err && err.code === 11000) continue // seat taken concurrently — retry
+      throw err
+    }
+  }
+  throw new ApiError(409, SLOT_FULL)
+}
+
 /**
  * Validate a booking draft, price it server-side, persist it, and fan out the
  * "new booking" notifications. Shared by the cash route (below) and the online
@@ -130,9 +160,6 @@ export async function createBookingRecord(user, body, payment = {}) {
     body,
   )
 
-  // Final guard against double-booking (also checked before payment for online).
-  await assertSlotAvailable(salon, body.date, body.slot)
-
   // Geo reference for a home address: eLoc from the pick + lat/lng if the
   // geocoder can resolve them (null otherwise; never blocks the booking).
   let location = { eLoc: null, lat: null, lng: null }
@@ -143,34 +170,38 @@ export async function createBookingRecord(user, body, payment = {}) {
 
   const paidOnline = body.paymentMode === 'online' && payment.paid === true
 
-  const booking = await Booking.create({
-    ref: makeRef(),
-    customer: user._id,
-    salon: salon._id,
-    service: primary._id,
-    items,
-    salonName: salon.name,
-    serviceName,
-    staffName: body.staffName ?? null,
-    mode: body.mode,
-    modeLabel: body.mode === 'home' ? 'Home service' : 'At salon',
-    address: body.mode === 'home' ? body.address : null,
-    location,
-    date: body.date,
-    dateLabel: body.dateLabel ?? body.date,
-    slot: body.slot,
-    paymentMode: body.paymentMode,
-    // Online is paid via the app upfront; cash is collected at the salon later.
-    paymentStatus: paidOnline ? 'paid' : 'pending',
-    paidAt: paidOnline ? new Date() : null,
-    razorpay: {
-      orderId: payment.orderId ?? null,
-      paymentId: payment.paymentId ?? null,
+  // Assigns a free seat and creates atomically (race-proof — see createInFreeSeat).
+  const booking = await createInFreeSeat(
+    {
+      ref: makeRef(),
+      customer: user._id,
+      salon: salon._id,
+      service: primary._id,
+      items,
+      salonName: salon.name,
+      serviceName,
+      staffName: body.staffName ?? null,
+      mode: body.mode,
+      modeLabel: body.mode === 'home' ? 'Home service' : 'At salon',
+      address: body.mode === 'home' ? body.address : null,
+      location,
+      date: body.date,
+      dateLabel: body.dateLabel ?? body.date,
+      slot: body.slot,
+      paymentMode: body.paymentMode,
+      // Online is paid via the app upfront; cash is collected at the salon later.
+      paymentStatus: paidOnline ? 'paid' : 'pending',
+      paidAt: paidOnline ? new Date() : null,
+      razorpay: {
+        orderId: payment.orderId ?? null,
+        paymentId: payment.paymentId ?? null,
+      },
+      homeServiceFee,
+      ...priced,
+      status: 'confirmed',
     },
-    homeServiceFee,
-    ...priced,
-    status: 'confirmed',
-  })
+    salon,
+  )
 
   // One booking event → three inboxes (customer, owner, founder).
   await notify([
@@ -267,13 +298,36 @@ router.patch(
     }
 
     const salon = await Salon.findById(booking.salon).catch(() => null)
-    // The new slot must have room (ignoring this booking's own hold).
-    if (salon) await assertSlotAvailable(salon, req.body.date, req.body.slot, booking._id)
+    const capacity = salon?.capacity || 1
+    const newDate = req.body.date
+    const newSlot = req.body.slot
+    const newLabel = req.body.dateLabel ?? req.body.date
 
-    booking.date = req.body.date
-    booking.dateLabel = req.body.dateLabel ?? req.body.date
-    booking.slot = req.body.slot
-    await booking.save()
+    // Move onto a free seat in the new slot (race-proof via the unique index).
+    let saved = false
+    for (let attempt = 0; attempt < capacity + 3 && !saved; attempt += 1) {
+      const taken = await Booking.find({
+        salon: booking.salon,
+        date: newDate,
+        slot: newSlot,
+        status: 'confirmed',
+        _id: { $ne: booking._id },
+      }).distinct('seat')
+      const seat = Array.from({ length: capacity }, (_, i) => i).find((i) => !taken.includes(i))
+      if (seat === undefined) throw new ApiError(409, SLOT_FULL)
+      booking.date = newDate
+      booking.dateLabel = newLabel
+      booking.slot = newSlot
+      booking.seat = seat
+      try {
+        await booking.save()
+        saved = true
+      } catch (err) {
+        if (err && err.code === 11000) continue // seat taken concurrently — retry
+        throw err
+      }
+    }
+    if (!saved) throw new ApiError(409, SLOT_FULL)
 
     await notify([
       {
