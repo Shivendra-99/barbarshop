@@ -546,3 +546,82 @@
   font-size: 13px;
   color: var(--muted-3);
 }
+
+/* ---- Salon edit: slot controls ---- */
+
+.se-block {
+  margin-top: 18px;
+}
+
+.se-days {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.se-day {
+  min-width: 46px;
+  padding: 8px 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-md, 10px);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.se-day.is-off {
+  background: var(--danger, #c0392b);
+  border-color: var(--danger, #c0392b);
+  color: #fff;
+}
+
+.se-hint {
+  display: block;
+  font-size: 12px;
+  color: var(--muted-3);
+  margin-top: 8px;
+}
+
+.se-dateRow {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+  align-items: center;
+}
+
+.se-dateRow .field__input {
+  max-width: 200px;
+}
+
+.se-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.se-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 6px 5px 10px;
+  background: var(--gold-wash);
+  border: 1px solid var(--gold-line);
+  border-radius: var(--r-pill, 999px);
+  font-size: 12.5px;
+  color: var(--gold-deep);
+}
+
+.se-chip button {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.08);
+  color: inherit;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}

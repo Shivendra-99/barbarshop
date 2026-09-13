@@ -31,6 +31,11 @@ const salonSchema = new mongoose.Schema(
 
     opens: { type: String, default: '10:00' },
     closes: { type: String, default: '20:00' },
+    // Slot geometry the owner controls: interval length in minutes, weekly days
+    // off (0=Sun … 6=Sat) and one-off blocked dates (ISO yyyy-mm-dd holidays).
+    slotMinutes: { type: Number, default: 30 },
+    daysOff: { type: [Number], default: [] },
+    closedDates: { type: [String], default: [] },
     rating: { type: Number, default: 0 },
     reviews: { type: Number, default: 0 },
     badge: { type: String, default: 'New' },
@@ -57,6 +62,9 @@ salonSchema.methods.toPublic = function toPublic() {
     status: this.status,
     opens: this.opens,
     closes: this.closes,
+    slotMinutes: this.slotMinutes ?? 30,
+    daysOff: this.daysOff ?? [],
+    closedDates: this.closedDates ?? [],
     rating: this.rating,
     reviews: this.reviews,
     badge: this.badge,

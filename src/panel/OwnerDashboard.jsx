@@ -1,7 +1,9 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useApp } from '../store/AppStore'
+import { useToast } from '../components/Toast'
 import SalonQrDialog from '../components/SalonQrDialog'
+import SalonEditDialog from './SalonEditDialog'
 import { CITIES, categoryById } from '../data/seed'
 import { formatINR, formatCompactINR } from '../lib/money'
 
@@ -26,8 +28,20 @@ function Kpi({ label, value, delta }) {
 }
 
 export default function OwnerDashboard() {
-  const { mySalons, ownerBookings, session } = useApp()
+  const { mySalons, ownerBookings, session, updateSalon } = useApp()
+  const { push } = useToast()
   const [qrSalon, setQrSalon] = useState(null)
+  const [editing, setEditing] = useState(null)
+
+  const saveEdit = async (changes) => {
+    try {
+      await updateSalon(editing, changes)
+      push({ tone: 'success', title: 'Salon updated', body: changes.name })
+      setEditing(null)
+    } catch (err) {
+      push({ tone: 'warn', title: 'Could not update', body: err.message })
+    }
+  }
 
   const stats = useMemo(() => {
     const live = ownerBookings.filter((b) => b.status !== 'cancelled')
@@ -101,7 +115,7 @@ export default function OwnerDashboard() {
                   <th>From</th>
                   <th>Modes</th>
                   <th>Status</th>
-                  <th>QR</th>
+                  <th>Manage</th>
                 </tr>
               </thead>
               <tbody>
@@ -121,17 +135,24 @@ export default function OwnerDashboard() {
                       </span>
                     </td>
                     <td>
-                      {s.status === 'approved' ? (
+                      <div className="fs-actions">
                         <button
                           type="button"
                           className="btn btn--outline btn--sm"
-                          onClick={() => setQrSalon(s)}
+                          onClick={() => setEditing(s)}
                         >
-                          QR code
+                          Edit
                         </button>
-                      ) : (
-                        <span className="ptable__sub">—</span>
-                      )}
+                        {s.status === 'approved' && (
+                          <button
+                            type="button"
+                            className="btn btn--outline btn--sm"
+                            onClick={() => setQrSalon(s)}
+                          >
+                            QR
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -142,6 +163,15 @@ export default function OwnerDashboard() {
       </div>
 
       {qrSalon && <SalonQrDialog salon={qrSalon} onClose={() => setQrSalon(null)} />}
+
+      {editing && (
+        <SalonEditDialog
+          salon={editing}
+          role="owner"
+          onClose={() => setEditing(null)}
+          onSave={saveEdit}
+        />
+      )}
 
       <div className="p-section">
         <div className="p-section__head">

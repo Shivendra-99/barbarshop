@@ -3,7 +3,8 @@ import { useApp } from '../store/AppStore'
 import { useToast } from '../components/Toast'
 import { useConfirm } from '../components/Confirm'
 import SalonQrDialog from '../components/SalonQrDialog'
-import { CITIES, CATEGORIES, categoryById } from '../data/seed'
+import SalonEditDialog from './SalonEditDialog'
+import { CITIES, categoryById } from '../data/seed'
 import { formatINR } from '../lib/money'
 import './panel-ui.css'
 
@@ -15,111 +16,6 @@ const STATUS_BADGE = {
   approved: 'badge--green',
   pending: 'badge--amber',
   rejected: 'badge--red',
-}
-
-/* Edit dialog for a salon's live details. */
-function SalonEditDialog({ salon, onClose, onSave }) {
-  const [form, setForm] = useState({
-    name: salon.name,
-    category: salon.category,
-    area: salon.area,
-    address: salon.address,
-    opens: salon.opens,
-    closes: salon.closes,
-    homeServiceFee: salon.homeServiceFee ?? 0,
-    atSalon: salon.serviceModes.includes('salon'),
-    home: salon.serviceModes.includes('home'),
-  })
-  const [busy, setBusy] = useState(false)
-  const set = (k) => (e) =>
-    setForm((f) => ({ ...f, [k]: e.target.type === 'checkbox' ? e.target.checked : e.target.value }))
-
-  const save = async () => {
-    const serviceModes = [form.atSalon && 'salon', form.home && 'home'].filter(Boolean)
-    if (!serviceModes.length || busy) return
-    setBusy(true)
-    try {
-      await onSave({
-        name: form.name.trim(),
-        category: form.category,
-        area: form.area.trim(),
-        address: form.address.trim(),
-        opens: form.opens,
-        closes: form.closes,
-        homeServiceFee: Number(form.homeServiceFee) || 0,
-        serviceModes,
-      })
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  return (
-    <div className="pmodal" role="presentation" onMouseDown={onClose}>
-      <div className="pmodal__box" role="dialog" aria-modal="true" onMouseDown={(e) => e.stopPropagation()}>
-        <h3 className="pmodal__title">Edit {salon.name}</h3>
-        <div className="pmodal__grid">
-          <label className="field pmodal__full">
-            <span className="field__label">Salon name</span>
-            <input className="field__input" value={form.name} onChange={set('name')} />
-          </label>
-          <label className="field">
-            <span className="field__label">Type</span>
-            <select className="field__input" value={form.category} onChange={set('category')}>
-              {CATEGORIES.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="field">
-            <span className="field__label">Area / locality</span>
-            <input className="field__input" value={form.area} onChange={set('area')} />
-          </label>
-          <label className="field pmodal__full">
-            <span className="field__label">Address</span>
-            <input className="field__input" value={form.address} onChange={set('address')} />
-          </label>
-          <label className="field">
-            <span className="field__label">Opens</span>
-            <input type="time" className="field__input" value={form.opens} onChange={set('opens')} />
-          </label>
-          <label className="field">
-            <span className="field__label">Closes</span>
-            <input type="time" className="field__input" value={form.closes} onChange={set('closes')} />
-          </label>
-          <label className="field">
-            <span className="field__label">Home service fee</span>
-            <input
-              type="number"
-              min="0"
-              step="50"
-              className="field__input"
-              value={form.homeServiceFee}
-              onChange={set('homeServiceFee')}
-            />
-          </label>
-        </div>
-        <div className="pmodal__modes">
-          <label>
-            <input type="checkbox" checked={form.atSalon} onChange={set('atSalon')} /> At salon
-          </label>
-          <label>
-            <input type="checkbox" checked={form.home} onChange={set('home')} /> Home service
-          </label>
-        </div>
-        <div className="pmodal__actions">
-          <button type="button" className="btn btn--outline" onClick={onClose}>
-            Cancel
-          </button>
-          <button type="button" className="btn btn--gold" onClick={save} disabled={busy}>
-            {busy ? 'Saving…' : 'Save changes'}
-          </button>
-        </div>
-      </div>
-    </div>
-  )
 }
 
 export default function FounderSalons() {
@@ -312,7 +208,12 @@ export default function FounderSalons() {
       </div>
 
       {editing && (
-        <SalonEditDialog salon={editing} onClose={() => setEditing(null)} onSave={saveEdit} />
+        <SalonEditDialog
+          salon={editing}
+          role="founder"
+          onClose={() => setEditing(null)}
+          onSave={saveEdit}
+        />
       )}
 
       {qrSalon && <SalonQrDialog salon={qrSalon} onClose={() => setQrSalon(null)} />}

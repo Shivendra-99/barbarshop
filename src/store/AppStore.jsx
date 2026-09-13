@@ -267,10 +267,12 @@ export function AppProvider({ children }) {
   const updateSalon = useCallback(
     async (salon, changes) => {
       const { salon: updated } = await api.updateSalon(salon.id, changes)
-      await Promise.all([loadFounder(), loadPublicSalons()])
+      // Refresh the caller's own list — an owner can't call the founder feeds.
+      if (role === 'founder') await Promise.all([loadFounder(), loadPublicSalons()])
+      else await Promise.all([loadOwner(), loadPublicSalons()])
       return updated
     },
-    [loadFounder, loadPublicSalons],
+    [role, loadOwner, loadFounder, loadPublicSalons],
   )
 
   const updateSettings = useCallback(async (changes) => {

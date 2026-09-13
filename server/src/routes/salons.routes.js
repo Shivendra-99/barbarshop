@@ -50,7 +50,17 @@ const editSchema = z.object({
   closes: z.string().optional(),
   serviceModes: z.array(z.enum(['salon', 'home'])).min(1).optional(),
   homeServiceFee: z.number().int().min(0).max(5000).optional(),
+  // Owner slot controls.
+  slotMinutes: z.number().int().refine((v) => [15, 20, 30, 45, 60].includes(v), 'Invalid slot length.').optional(),
+  daysOff: z.array(z.number().int().min(0).max(6)).max(7).optional(),
+  closedDates: z.array(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)).max(120).optional(),
 })
+
+// Fields an owner may change on their own salon (a subset of the founder's).
+const OWNER_EDITABLE = new Set([
+  'name', 'area', 'address', 'opens', 'closes', 'serviceModes',
+  'homeServiceFee', 'slotMinutes', 'daysOff', 'closedDates',
+])
 
 /**
  * Attaches each salon's live starting price (the cheapest of its own services)
@@ -213,17 +223,31 @@ router.post(
   }),
 )
 
-/* ---- Founder: edit a salon's details ---- */
+/* ---- Edit a salon's details ----
+   Founder: any salon, any editable field.
+   Owner: only their own salon, and only the owner-editable subset. */
 
 router.patch(
   '/:id',
   requireAuth,
-  requireRole('founder'),
+  requireRole('owner', 'founder'),
   validate(editSchema),
   asyncHandler(async (req, res) => {
     const salon = await Salon.findById(req.params.id).catch(() => null)
     if (!salon) throw new ApiError(404, 'Salon not found.')
-    Object.assign(salon, req.body)
+
+    let changes = req.body
+    if (req.user.role === 'owner') {
+      if (salon.owner.toString() !== req.user._id.toString()) {
+        throw new ApiError(403, 'That salon is not yours.')
+      }
+      // Silently drop any field an owner isn't allowed to touch.
+      changes = Object.fromEntries(
+        Object.entries(req.body).filter(([k]) => OWNER_EDITABLE.has(k)),
+      )
+    }
+
+    Object.assign(salon, changes)
     await salon.save()
     const [withPrice] = await withFrom([salon])
     res.json({ salon: withPrice })

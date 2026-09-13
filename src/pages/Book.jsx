@@ -16,7 +16,7 @@ import {
   toISO,
   WEEKDAY_INITIALS,
 } from '../lib/datetime'
-import { MONTHS_AHEAD, slotsFor, firstBookableDate } from '../lib/slots'
+import { MONTHS_AHEAD, slotsFor, firstBookableDate, isSalonOpenOn } from '../lib/slots'
 import './Book.css'
 
 export default function Book() {
@@ -360,7 +360,7 @@ export default function Book() {
                         key={c.key}
                         type="button"
                         className={`cal__day${date === c.iso ? ' is-selected' : ''}`}
-                        disabled={c.disabled}
+                        disabled={c.disabled || !isSalonOpenOn(salon, c.iso)}
                         aria-pressed={date === c.iso}
                         onClick={() => setDate(c.iso)}
                       >

@@ -9,7 +9,7 @@ import {
   toISO,
   WEEKDAY_INITIALS,
 } from '../lib/datetime'
-import { MONTHS_AHEAD, slotsFor, firstBookableDate } from '../lib/slots'
+import { MONTHS_AHEAD, slotsFor, firstBookableDate, isSalonOpenOn } from '../lib/slots'
 import './RescheduleDialog.css'
 
 /**
@@ -29,6 +29,9 @@ export default function RescheduleDialog({ booking, onClose, onConfirm }) {
       id: booking.salonId,
       opens: found?.opens ?? '09:00',
       closes: found?.closes ?? '21:00',
+      slotMinutes: found?.slotMinutes ?? 30,
+      daysOff: found?.daysOff ?? [],
+      closedDates: found?.closedDates ?? [],
     }
   }, [findSalon, booking.salonId])
 
@@ -141,7 +144,7 @@ export default function RescheduleDialog({ booking, onClose, onConfirm }) {
                   key={c.key}
                   type="button"
                   className={`rsx__day${c.iso === date ? ' is-active' : ''}`}
-                  disabled={c.disabled}
+                  disabled={c.disabled || !isSalonOpenOn(salon, c.iso)}
                   onClick={() => setDate(c.iso)}
                 >
                   {c.label}

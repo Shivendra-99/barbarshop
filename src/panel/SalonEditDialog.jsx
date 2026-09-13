@@ -1,0 +1,201 @@
+import { useState } from 'react'
+import { CATEGORIES } from '../data/seed'
+import './panel-ui.css'
+
+const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+const SLOT_LENGTHS = [15, 20, 30, 45, 60]
+
+/**
+ * Edit a salon's live details, including the owner's slot controls (interval,
+ * weekly days off, one-off blocked dates). Used by both the founder (any salon)
+ * and an owner (their own). `role` gates the founder-only field (category).
+ */
+export default function SalonEditDialog({ salon, role = 'founder', onClose, onSave }) {
+  const [form, setForm] = useState({
+    name: salon.name,
+    category: salon.category,
+    area: salon.area,
+    address: salon.address,
+    opens: salon.opens,
+    closes: salon.closes,
+    homeServiceFee: salon.homeServiceFee ?? 0,
+    atSalon: salon.serviceModes.includes('salon'),
+    home: salon.serviceModes.includes('home'),
+    slotMinutes: salon.slotMinutes ?? 30,
+    daysOff: salon.daysOff ?? [],
+    closedDates: salon.closedDates ?? [],
+  })
+  const [newDate, setNewDate] = useState('')
+  const [busy, setBusy] = useState(false)
+
+  const set = (k) => (e) =>
+    setForm((f) => ({ ...f, [k]: e.target.type === 'checkbox' ? e.target.checked : e.target.value }))
+
+  const toggleDay = (d) =>
+    setForm((f) => ({
+      ...f,
+      daysOff: f.daysOff.includes(d) ? f.daysOff.filter((x) => x !== d) : [...f.daysOff, d].sort(),
+    }))
+
+  const addClosedDate = () => {
+    if (!newDate || form.closedDates.includes(newDate)) return
+    setForm((f) => ({ ...f, closedDates: [...f.closedDates, newDate].sort() }))
+    setNewDate('')
+  }
+  const removeClosedDate = (d) =>
+    setForm((f) => ({ ...f, closedDates: f.closedDates.filter((x) => x !== d) }))
+
+  const save = async () => {
+    const serviceModes = [form.atSalon && 'salon', form.home && 'home'].filter(Boolean)
+    if (!serviceModes.length || busy) return
+    setBusy(true)
+    try {
+      const changes = {
+        name: form.name.trim(),
+        area: form.area.trim(),
+        address: form.address.trim(),
+        opens: form.opens,
+        closes: form.closes,
+        homeServiceFee: Number(form.homeServiceFee) || 0,
+        serviceModes,
+        slotMinutes: Number(form.slotMinutes),
+        daysOff: form.daysOff,
+        closedDates: form.closedDates,
+      }
+      // Category is founder-only.
+      if (role === 'founder') changes.category = form.category
+      await onSave(changes)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="pmodal" role="presentation" onMouseDown={onClose}>
+      <div className="pmodal__box" role="dialog" aria-modal="true" onMouseDown={(e) => e.stopPropagation()}>
+        <h3 className="pmodal__title">Edit {salon.name}</h3>
+
+        <div className="pmodal__grid">
+          <label className="field pmodal__full">
+            <span className="field__label">Salon name</span>
+            <input className="field__input" value={form.name} onChange={set('name')} />
+          </label>
+          {role === 'founder' && (
+            <label className="field">
+              <span className="field__label">Type</span>
+              <select className="field__input" value={form.category} onChange={set('category')}>
+                {CATEGORIES.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+          <label className="field">
+            <span className="field__label">Area / locality</span>
+            <input className="field__input" value={form.area} onChange={set('area')} />
+          </label>
+          <label className="field pmodal__full">
+            <span className="field__label">Address</span>
+            <input className="field__input" value={form.address} onChange={set('address')} />
+          </label>
+          <label className="field">
+            <span className="field__label">Opens</span>
+            <input type="time" className="field__input" value={form.opens} onChange={set('opens')} />
+          </label>
+          <label className="field">
+            <span className="field__label">Closes</span>
+            <input type="time" className="field__input" value={form.closes} onChange={set('closes')} />
+          </label>
+          <label className="field">
+            <span className="field__label">Slot length</span>
+            <select className="field__input" value={form.slotMinutes} onChange={set('slotMinutes')}>
+              {SLOT_LENGTHS.map((m) => (
+                <option key={m} value={m}>
+                  {m} min
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="field">
+            <span className="field__label">Home service fee</span>
+            <input
+              type="number"
+              min="0"
+              step="50"
+              className="field__input"
+              value={form.homeServiceFee}
+              onChange={set('homeServiceFee')}
+            />
+          </label>
+        </div>
+
+        {/* Weekly days off */}
+        <div className="se-block">
+          <span className="field__label">Weekly day off</span>
+          <div className="se-days">
+            {WEEKDAYS.map((label, d) => (
+              <button
+                key={label}
+                type="button"
+                className={`se-day${form.daysOff.includes(d) ? ' is-off' : ''}`}
+                aria-pressed={form.daysOff.includes(d)}
+                onClick={() => toggleDay(d)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <span className="se-hint">Highlighted days are closed — no slots offered.</span>
+        </div>
+
+        {/* One-off blocked dates */}
+        <div className="se-block">
+          <span className="field__label">Blocked dates (holidays)</span>
+          <div className="se-dateRow">
+            <input
+              type="date"
+              className="field__input"
+              value={newDate}
+              onChange={(e) => setNewDate(e.target.value)}
+            />
+            <button type="button" className="btn btn--outline btn--sm" onClick={addClosedDate}>
+              Add
+            </button>
+          </div>
+          {form.closedDates.length > 0 && (
+            <div className="se-chips">
+              {form.closedDates.map((d) => (
+                <span key={d} className="se-chip">
+                  {d}
+                  <button type="button" onClick={() => removeClosedDate(d)} aria-label={`Remove ${d}`}>
+                    ×
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="pmodal__modes">
+          <label>
+            <input type="checkbox" checked={form.atSalon} onChange={set('atSalon')} /> At salon
+          </label>
+          <label>
+            <input type="checkbox" checked={form.home} onChange={set('home')} /> Home service
+          </label>
+        </div>
+
+        <div className="pmodal__actions">
+          <button type="button" className="btn btn--outline" onClick={onClose}>
+            Cancel
+          </button>
+          <button type="button" className="btn btn--gold" onClick={save} disabled={busy}>
+            {busy ? 'Saving…' : 'Save changes'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
