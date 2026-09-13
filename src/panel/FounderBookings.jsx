@@ -92,6 +92,11 @@ export default function FounderBookings() {
                     <span className={`badge ${b.paymentMode === 'online' ? 'badge--gold' : 'badge--neutral'}`}>
                       {b.paymentMode === 'online' ? 'Online' : 'Cash'}
                     </span>
+                    {b.razorpay?.paymentId && (
+                      <div className="ptable__mono" title="Razorpay Payment ID">
+                        {b.razorpay.paymentId}
+                      </div>
+                    )}
                   </td>
                   <td className="ptable__money">{formatINR(b.total)}</td>
                   <td>
