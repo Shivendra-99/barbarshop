@@ -1,6 +1,7 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useApp } from '../store/AppStore'
+import SalonQrDialog from '../components/SalonQrDialog'
 import { CITIES, categoryById } from '../data/seed'
 import { formatINR, formatCompactINR } from '../lib/money'
 
@@ -26,6 +27,7 @@ function Kpi({ label, value, delta }) {
 
 export default function OwnerDashboard() {
   const { mySalons, ownerBookings, session } = useApp()
+  const [qrSalon, setQrSalon] = useState(null)
 
   const stats = useMemo(() => {
     const live = ownerBookings.filter((b) => b.status !== 'cancelled')
@@ -99,6 +101,7 @@ export default function OwnerDashboard() {
                   <th>From</th>
                   <th>Modes</th>
                   <th>Status</th>
+                  <th>QR</th>
                 </tr>
               </thead>
               <tbody>
@@ -117,6 +120,19 @@ export default function OwnerDashboard() {
                         {s.status}
                       </span>
                     </td>
+                    <td>
+                      {s.status === 'approved' ? (
+                        <button
+                          type="button"
+                          className="btn btn--outline btn--sm"
+                          onClick={() => setQrSalon(s)}
+                        >
+                          QR code
+                        </button>
+                      ) : (
+                        <span className="ptable__sub">—</span>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -124,6 +140,8 @@ export default function OwnerDashboard() {
           </div>
         )}
       </div>
+
+      {qrSalon && <SalonQrDialog salon={qrSalon} onClose={() => setQrSalon(null)} />}
 
       <div className="p-section">
         <div className="p-section__head">

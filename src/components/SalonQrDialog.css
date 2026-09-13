@@ -1,0 +1,121 @@
+.qrm {
+  position: fixed;
+  inset: 0;
+  z-index: 260;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(10, 8, 6, 0.6);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+}
+
+.qrm__box {
+  position: relative;
+  width: 100%;
+  max-width: 380px;
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-lg);
+  padding: 28px 26px 22px;
+  text-align: center;
+}
+
+.qrm__close {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  width: 30px;
+  height: 30px;
+  font-size: 22px;
+  line-height: 1;
+  color: var(--muted-3);
+}
+
+.qrm__close:hover {
+  color: var(--heading);
+}
+
+.qrm__brand {
+  font-family: var(--font-display, serif);
+  font-size: 18px;
+  color: var(--gold-deep);
+}
+
+.qrm__title {
+  font-family: var(--font-display, serif);
+  font-size: 24px;
+  font-weight: 400;
+  color: var(--heading);
+  margin: 4px 0 2px;
+}
+
+.qrm__sub {
+  font-size: 13px;
+  color: var(--muted-2);
+  margin: 0 0 16px;
+}
+
+.qrm__code {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 240px;
+  height: 240px;
+  margin: 0 auto 14px;
+  background: #fff;
+  border-radius: var(--r-md, 12px);
+  padding: 12px;
+  box-shadow: var(--shadow-sm);
+}
+
+.qrm__code img {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.qrm__loading {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  border: 3px solid var(--line-strong);
+  border-top-color: var(--gold);
+  animation: qrmSpin 0.8s linear infinite;
+}
+
+@keyframes qrmSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.qrm__err {
+  font-size: 14px;
+  color: var(--danger, #c0392b);
+}
+
+.qrm__url {
+  font-size: 12.5px;
+  color: var(--muted-3);
+  word-break: break-all;
+  margin-bottom: 18px;
+}
+
+.qrm__actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.qrm__actions .btn {
+  flex: 1;
+}
+
+.qrm__tip {
+  font-size: 12px;
+  color: var(--muted-3);
+  margin: 14px 0 0;
+}

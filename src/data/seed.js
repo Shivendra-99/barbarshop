@@ -329,6 +329,9 @@ export function enrichSalon(salon, index = 0) {
 export const BRAND = {
   name: 'SalonSaathi',
   tagline: 'Book Your Appointment, Skip The Wait',
+  // Canonical public site — used for QR codes / share links so they always
+  // point at production, even when generated from localhost or a preview.
+  siteUrl: 'https://www.salonsaathi.in',
 }
 
 // Support WhatsApp: display + wa.me (digits only, with country code).

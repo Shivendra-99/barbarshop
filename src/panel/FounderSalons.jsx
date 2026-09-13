@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { useApp } from '../store/AppStore'
 import { useToast } from '../components/Toast'
 import { useConfirm } from '../components/Confirm'
+import SalonQrDialog from '../components/SalonQrDialog'
 import { CITIES, CATEGORIES, categoryById } from '../data/seed'
 import { formatINR } from '../lib/money'
 import './panel-ui.css'
@@ -127,6 +128,7 @@ export default function FounderSalons() {
   const confirm = useConfirm()
   const [filter, setFilter] = useState('All')
   const [editing, setEditing] = useState(null)
+  const [qrSalon, setQrSalon] = useState(null)
 
   const saveEdit = async (changes) => {
     try {
@@ -258,6 +260,15 @@ export default function FounderSalons() {
                     >
                       Edit
                     </button>
+                    {s.status === 'approved' && (
+                      <button
+                        type="button"
+                        className="btn btn--outline btn--sm"
+                        onClick={() => setQrSalon(s)}
+                      >
+                        QR
+                      </button>
+                    )}
                     {s.status === 'pending' ? (
                       <>
                         <button
@@ -303,6 +314,8 @@ export default function FounderSalons() {
       {editing && (
         <SalonEditDialog salon={editing} onClose={() => setEditing(null)} onSave={saveEdit} />
       )}
+
+      {qrSalon && <SalonQrDialog salon={qrSalon} onClose={() => setQrSalon(null)} />}
     </>
   )
 }
