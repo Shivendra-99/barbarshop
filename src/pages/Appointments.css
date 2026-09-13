@@ -119,6 +119,28 @@
   word-break: break-all;
 }
 
+.appt__items {
+  list-style: none;
+  margin: 2px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.appt__items li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 14px;
+  color: var(--heading);
+}
+
+.appt__items li .money {
+  color: var(--muted-2);
+  font-size: 13px;
+}
+
 .appt__refund {
   display: inline-block;
   margin-top: 10px;

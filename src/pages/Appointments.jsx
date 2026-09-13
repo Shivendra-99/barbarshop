@@ -222,7 +222,18 @@ export default function Appointments() {
 
                 <div className="appt__body">
                   <div className="appt__salon">{b.salonName}</div>
-                  <div className="appt__service">{b.serviceName}</div>
+                  {b.items?.length > 1 ? (
+                    <ul className="appt__items">
+                      {b.items.map((it, i) => (
+                        <li key={`${it.name}-${i}`}>
+                          <span>{it.name}</span>
+                          <span className="money">{formatINR(it.amount)}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <div className="appt__service">{b.serviceName}</div>
+                  )}
                   <div className="appt__meta">
                     {b.modeLabel}
                     {b.staffName ? ` · ${b.staffName}` : ''}
