@@ -312,7 +312,8 @@ export function enrichSalon(salon, index = 0) {
   const staffSeed = STAFF_NAMES[salon.category] ?? STAFF_NAMES.unisex
   return {
     ...salon,
-    img: imageFor(salon.category, index),
+    // An owner-uploaded photo wins; otherwise fall back to the stock category image.
+    img: salon.photo || imageFor(salon.category, index),
     from: salon.from ?? Math.min(...services.map((x) => x.amount)),
     staff: staffSeed.map((p, k) => ({
       ...p,

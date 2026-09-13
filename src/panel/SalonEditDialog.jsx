@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { CATEGORIES } from '../data/seed'
+import { fileToCompressedDataUrl } from '../lib/image'
 import './panel-ui.css'
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
@@ -24,9 +25,28 @@ export default function SalonEditDialog({ salon, role = 'founder', onClose, onSa
     slotMinutes: salon.slotMinutes ?? 30,
     daysOff: salon.daysOff ?? [],
     closedDates: salon.closedDates ?? [],
+    photo: salon.photo ?? null,
   })
   const [newDate, setNewDate] = useState('')
   const [busy, setBusy] = useState(false)
+  const [photoErr, setPhotoErr] = useState('')
+  const [photoBusy, setPhotoBusy] = useState(false)
+
+  const onPhoto = async (e) => {
+    const file = e.target.files?.[0]
+    e.target.value = '' // allow re-selecting the same file
+    if (!file) return
+    setPhotoErr('')
+    setPhotoBusy(true)
+    try {
+      const dataUrl = await fileToCompressedDataUrl(file)
+      setForm((f) => ({ ...f, photo: dataUrl }))
+    } catch (err) {
+      setPhotoErr(err.message)
+    } finally {
+      setPhotoBusy(false)
+    }
+  }
 
   const set = (k) => (e) =>
     setForm((f) => ({ ...f, [k]: e.target.type === 'checkbox' ? e.target.checked : e.target.value }))
@@ -61,6 +81,7 @@ export default function SalonEditDialog({ salon, role = 'founder', onClose, onSa
         slotMinutes: Number(form.slotMinutes),
         daysOff: form.daysOff,
         closedDates: form.closedDates,
+        photo: form.photo ?? null,
       }
       // Category is founder-only.
       if (role === 'founder') changes.category = form.category
@@ -74,6 +95,34 @@ export default function SalonEditDialog({ salon, role = 'founder', onClose, onSa
     <div className="pmodal" role="presentation" onMouseDown={onClose}>
       <div className="pmodal__box" role="dialog" aria-modal="true" onMouseDown={(e) => e.stopPropagation()}>
         <h3 className="pmodal__title">Edit {salon.name}</h3>
+
+        {/* Cover photo */}
+        <div className="se-photo">
+          <div className="se-photo__preview">
+            {form.photo ? (
+              <img src={form.photo} alt="Salon cover preview" />
+            ) : (
+              <span className="se-photo__empty">No photo — stock image is used</span>
+            )}
+          </div>
+          <div className="se-photo__controls">
+            <label className="btn btn--outline btn--sm se-photo__btn">
+              {photoBusy ? 'Processing…' : form.photo ? 'Change photo' : 'Upload photo'}
+              <input type="file" accept="image/*" onChange={onPhoto} hidden disabled={photoBusy} />
+            </label>
+            {form.photo && (
+              <button
+                type="button"
+                className="btn btn--ghost-gold btn--sm"
+                onClick={() => setForm((f) => ({ ...f, photo: null }))}
+              >
+                Remove
+              </button>
+            )}
+            <span className="se-hint">JPG/PNG · auto-resized. Shown as the salon banner.</span>
+            {photoErr && <span className="field__error">{photoErr}</span>}
+          </div>
+        </div>
 
         <div className="pmodal__grid">
           <label className="field pmodal__full">

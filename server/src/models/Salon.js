@@ -22,6 +22,10 @@ const salonSchema = new mongoose.Schema(
     serviceModes: { type: [String], default: ['salon'] }, // 'salon' | 'home'
     homeServiceFee: { type: Number, default: 0 },
 
+    // Owner-uploaded cover photo, stored as a compressed data URL (resized on
+    // the client to keep it small). Null = fall back to the stock category image.
+    photo: { type: String, default: null },
+
     status: {
       type: String,
       enum: ['pending', 'approved', 'rejected'],
@@ -59,6 +63,7 @@ salonSchema.methods.toPublic = function toPublic() {
     ownerId: this.owner?.toString?.() ?? this.owner,
     serviceModes: this.serviceModes,
     homeServiceFee: this.homeServiceFee,
+    photo: this.photo ?? null,
     status: this.status,
     opens: this.opens,
     closes: this.closes,
