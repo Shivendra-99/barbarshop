@@ -9,7 +9,12 @@ const bookingSchema = new mongoose.Schema(
 
     // Denormalised labels so history reads correctly even if the salon later changes.
     salonName: String,
-    serviceName: String,
+    serviceName: String, // combined label, e.g. "Haircut + Beard trim"
+    // Snapshot of each booked service (cart). Single-service bookings have one.
+    items: {
+      type: [{ name: String, amount: Number, mins: Number }],
+      default: [],
+    },
     staffName: { type: String, default: null },
 
     mode: { type: String, enum: ['salon', 'home'], required: true },
@@ -76,6 +81,7 @@ bookingSchema.methods.toPublic = function toPublic() {
     serviceId: this.service?.toString?.() ?? this.service,
     salonName: this.salonName,
     serviceName: this.serviceName,
+    items: (this.items ?? []).map((i) => ({ name: i.name, amount: i.amount, mins: i.mins })),
     staffName: this.staffName,
     mode: this.mode,
     modeLabel: this.modeLabel,

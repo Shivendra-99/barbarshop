@@ -15,21 +15,28 @@ import { geocode } from '../lib/geo/mappls.js'
 
 const router = Router()
 
-export const createSchema = z.object({
-  salonId: z.string().min(1),
-  // Accepts a Mongo id or a service code (e.g. "m-haircut") — see resolution below.
-  serviceId: z.string().min(1),
-  staffName: z.string().trim().max(60).nullish(),
-  mode: z.enum(['salon', 'home']),
-  // null/omitted for at-salon; required (checked below) for home service.
-  address: z.string().trim().min(6).max(200).nullish(),
-  // Mappls eLoc for the address, when picked from autosuggest.
-  addressELoc: z.string().trim().max(40).nullish(),
-  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date.'),
-  dateLabel: z.string().optional(),
-  slot: z.string().min(1),
-  paymentMode: z.enum(['online', 'offline']),
-})
+export const createSchema = z
+  .object({
+    salonId: z.string().min(1),
+    // Single service (legacy) …
+    serviceId: z.string().min(1).optional(),
+    // … or a cart of services booked together. At least one is required.
+    serviceIds: z.array(z.string().min(1)).min(1).max(10).optional(),
+    staffName: z.string().trim().max(60).nullish(),
+    mode: z.enum(['salon', 'home']),
+    // null/omitted for at-salon; required (checked below) for home service.
+    address: z.string().trim().min(6).max(200).nullish(),
+    // Mappls eLoc for the address, when picked from autosuggest.
+    addressELoc: z.string().trim().max(40).nullish(),
+    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date.'),
+    dateLabel: z.string().optional(),
+    slot: z.string().min(1),
+    paymentMode: z.enum(['online', 'offline']),
+  })
+  .refine((b) => b.serviceId || (b.serviceIds && b.serviceIds.length), {
+    message: 'Choose at least one service.',
+    path: ['serviceIds'],
+  })
 
 const isObjectId = (v) => /^[a-f0-9]{24}$/i.test(v)
 
@@ -57,12 +64,16 @@ export async function priceBookingDraft(user, body) {
     throw new ApiError(404, 'Salon not available.')
   }
 
-  if (!isObjectId(body.serviceId)) throw new ApiError(400, 'Invalid service.')
-  const service = await Service.findById(body.serviceId).catch(() => null)
-  if (!service) throw new ApiError(404, 'Service not found.')
-  // The service must belong to the salon being booked.
-  if (service.salon.toString() !== salon._id.toString()) {
-    throw new ApiError(400, 'That service is not offered by this salon.')
+  // One or many services (cart). De-dupe while preserving order.
+  const ids = [...new Set(body.serviceIds?.length ? body.serviceIds : [body.serviceId])]
+  if (!ids.length || ids.some((id) => !isObjectId(id))) throw new ApiError(400, 'Invalid service.')
+
+  const found = await Service.find({ _id: { $in: ids } })
+  // Keep the caller's order and reject anything missing or from another salon.
+  const services = ids.map((id) => found.find((s) => s._id.toString() === id))
+  if (services.some((s) => !s)) throw new ApiError(404, 'Service not found.')
+  if (services.some((s) => s.salon.toString() !== salon._id.toString())) {
+    throw new ApiError(400, 'A chosen service is not offered by this salon.')
   }
 
   if (!salon.serviceModes.includes(body.mode)) {
@@ -77,19 +88,26 @@ export async function priceBookingDraft(user, body) {
   const priorCount = await Booking.countDocuments({ customer: user._id })
   const isFirstBooking = priorCount === 0
 
+  const servicesTotal = services.reduce((sum, s) => sum + s.amount, 0)
+  const items = services.map((s) => ({ name: s.name, amount: s.amount, mins: s.mins }))
+  const serviceName = services.map((s) => s.name).join(' + ')
+
   const homeServiceFee = body.mode === 'home' ? salon.homeServiceFee : 0
   const priced = quote({
-    amount: service.amount,
+    amount: servicesTotal,
     paymentMode: body.paymentMode,
     isFirstBooking,
     homeServiceFee,
   })
 
-  return { salon, service, priced, homeServiceFee }
+  return { salon, services, primary: services[0], items, serviceName, priced, homeServiceFee }
 }
 
 export async function createBookingRecord(user, body, payment = {}) {
-  const { salon, service, priced, homeServiceFee } = await priceBookingDraft(user, body)
+  const { salon, primary, items, serviceName, priced, homeServiceFee } = await priceBookingDraft(
+    user,
+    body,
+  )
 
   // Geo reference for a home address: eLoc from the pick + lat/lng if the
   // geocoder can resolve them (null otherwise; never blocks the booking).
@@ -105,9 +123,10 @@ export async function createBookingRecord(user, body, payment = {}) {
     ref: makeRef(),
     customer: user._id,
     salon: salon._id,
-    service: service._id,
+    service: primary._id,
+    items,
     salonName: salon.name,
-    serviceName: service.name,
+    serviceName,
     staffName: body.staffName ?? null,
     mode: body.mode,
     modeLabel: body.mode === 'home' ? 'Home service' : 'At salon',
@@ -135,13 +154,13 @@ export async function createBookingRecord(user, body, payment = {}) {
       audience: `user:${user._id.toString()}`,
       tone: 'success',
       title: 'Booking confirmed',
-      body: `${service.name} at ${salon.name} · ${booking.dateLabel}, ${booking.slot}`,
+      body: `${serviceName} at ${salon.name} · ${booking.dateLabel}, ${booking.slot}`,
     },
     {
       audience: `owner:${salon.owner.toString()}`,
       tone: 'info',
       title: 'New booking received',
-      body: `${service.name} · ${booking.dateLabel}, ${booking.slot} · ${booking.modeLabel}`,
+      body: `${serviceName} · ${booking.dateLabel}, ${booking.slot} · ${booking.modeLabel}`,
     },
     {
       audience: 'founder',

@@ -94,6 +94,42 @@
   background: var(--gold-wash);
 }
 
+.opt {
+  gap: 12px;
+}
+
+.opt__check {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1px solid var(--line-strong);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  color: var(--muted-3);
+  background: var(--surface);
+}
+
+.opt.is-active .opt__check {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: var(--on-gold, #1f1a13);
+}
+
+.opt__body {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+}
+
+.step__hint {
+  font-size: 13px;
+  color: var(--muted-3);
+  margin: -6px 0 12px;
+}
+
 .opt__name {
   display: block;
   font-size: 15px;

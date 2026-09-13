@@ -45,9 +45,12 @@ export default function Book() {
 
   const today = useMemo(() => startOfToday(), [])
 
-  // The salon's own menu, loaded from the API.
+  // The salon's own menu, loaded from the API. Customers can pick several
+  // services (a cart) that are booked together in one appointment.
   const [services, setServices] = useState([])
-  const [serviceId, setServiceId] = useState(params.get('service') || '')
+  const [selectedIds, setSelectedIds] = useState(() =>
+    params.get('service') ? [params.get('service')] : [],
+  )
 
   useEffect(() => {
     if (!salonId) return undefined
@@ -57,10 +60,11 @@ export default function Book() {
       .then((res) => {
         if (!alive) return
         setServices(res.services)
-        // Default to the requested service, else the first one.
-        setServiceId((cur) => {
-          if (cur && res.services.some((s) => s.id === cur)) return cur
-          return res.services[0]?.id ?? ''
+        // Keep any valid pre-selection (deep link); else start with the first.
+        setSelectedIds((cur) => {
+          const valid = cur.filter((id) => res.services.some((s) => s.id === id))
+          if (valid.length) return valid
+          return res.services[0] ? [res.services[0].id] : []
         })
       })
       .catch(() => alive && setServices([]))
@@ -68,6 +72,9 @@ export default function Book() {
       alive = false
     }
   }, [salonId])
+
+  const toggleService = (id) =>
+    setSelectedIds((cur) => (cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]))
   const [mode, setMode] = useState(salon?.serviceModes[0] ?? 'salon')
   const [address, setAddress] = useState('')
   const [addressELoc, setAddressELoc] = useState(null)
@@ -79,7 +86,8 @@ export default function Book() {
   const [touched, setTouched] = useState(false)
   const [submitting, setSubmitting] = useState(false)
 
-  const service = services.find((s) => s.id === serviceId) ?? null
+  const selected = services.filter((s) => selectedIds.includes(s.id))
+  const servicesTotal = selected.reduce((sum, s) => sum + s.amount, 0)
 
   // Slots depend on the salon's own opening hours, not a fixed window.
   const slots = useMemo(
@@ -114,14 +122,14 @@ export default function Book() {
   const homeFee = mode === 'home' ? (salon?.homeServiceFee ?? 0) : 0
 
   const priced = quote({
-    amount: service?.amount ?? 0,
+    amount: servicesTotal,
     paymentMode,
     isFirstBooking,
     homeServiceFee: homeFee,
   })
 
   const missing = []
-  if (!service) missing.push('a service')
+  if (selected.length === 0) missing.push('a service')
   if (!slot) missing.push('a time slot')
   if (needsAddress && address.trim().length < 10) missing.push('your address')
   const ready = missing.length === 0
@@ -143,7 +151,7 @@ export default function Book() {
     const staff = salon.staff.find((p) => p.id === staffId) ?? null
     const draft = {
       salonId: salon.id,
-      serviceId: service.id,
+      serviceIds: selected.map((s) => s.id),
       staffName: staff?.name ?? null,
       mode,
       address: needsAddress ? address.trim() : null,
@@ -164,7 +172,7 @@ export default function Book() {
       push({
         tone: 'success',
         title: 'Booking confirmed',
-        body: `${service.name} · ${formatDateLabel(date)}, ${slot}`,
+        body: `${selected.map((s) => s.name).join(' + ')} · ${formatDateLabel(date)}, ${slot}`,
         meta:
           paymentMode === 'online'
             ? `Paid online · ${formatINR(booking.total)}`
@@ -197,10 +205,11 @@ export default function Book() {
         <div className="book__main">
           {/* ---- 01 Service ---- */}
           <section className="step">
-            <h2 className="step__legend">01 — Service</h2>
+            <h2 className="step__legend">01 — Services</h2>
+            <p className="step__hint">Add one or more services to book together.</p>
             <div className="opts">
               {services.map((s) => {
-                const active = serviceId === s.id
+                const active = selectedIds.includes(s.id)
                 return (
                   <button
                     key={s.id}
@@ -208,9 +217,12 @@ export default function Book() {
                     className={`opt${active ? ' is-active' : ''}`}
                     aria-pressed={active}
                     aria-label={`${s.name}, ${s.mins} minutes, ${formatINR(s.amount)}`}
-                    onClick={() => setServiceId(s.id)}
+                    onClick={() => toggleService(s.id)}
                   >
-                    <span>
+                    <span className="opt__check" aria-hidden="true">
+                      {active ? '✓' : '+'}
+                    </span>
+                    <span className="opt__body">
                       <span className="opt__name">{s.name}</span>
                       <span className="opt__meta">{s.mins} min</span>
                     </span>
@@ -402,7 +414,7 @@ export default function Book() {
             <div className="pay">
               {Object.values(PAYMENT_MODES).map((p) => {
                 const active = paymentMode === p.id
-                const savesNow = p.id === 'online' && isFirstBooking && service
+                const savesNow = p.id === 'online' && isFirstBooking && selected.length > 0
                 return (
                   <button
                     key={p.id}
@@ -440,8 +452,10 @@ export default function Book() {
               <span className="summary__val">{salon.name}</span>
             </div>
             <div className="summary__row">
-              <span>Service</span>
-              <span className="summary__val">{service ? service.name : '—'}</span>
+              <span>{selected.length > 1 ? 'Services' : 'Service'}</span>
+              <span className="summary__val">
+                {selected.length ? selected.map((s) => s.name).join(', ') : '—'}
+              </span>
             </div>
             <div className="summary__row">
               <span>Where</span>
@@ -463,10 +477,18 @@ export default function Book() {
 
             <div className="summary__sep" />
 
-            <div className="summary__row">
-              <span>Service</span>
-              <span className="summary__val money">{formatINR(service?.amount ?? 0)}</span>
-            </div>
+            {selected.map((s) => (
+              <div className="summary__row" key={s.id}>
+                <span>{s.name}</span>
+                <span className="summary__val money">{formatINR(s.amount)}</span>
+              </div>
+            ))}
+            {selected.length === 0 && (
+              <div className="summary__row">
+                <span>Service</span>
+                <span className="summary__val money">{formatINR(0)}</span>
+              </div>
+            )}
             {homeFee > 0 && (
               <div className="summary__row">
                 <span>Home visit</span>
