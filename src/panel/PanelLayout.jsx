@@ -24,6 +24,7 @@ const NAV = {
       { to: '/owner/add', label: 'Add salon', icon: 'plus' },
       { to: '/owner/services', label: 'Services', icon: 'store' },
       { to: '/owner/bookings', label: 'Bookings', icon: 'calendar' },
+      { to: '/owner/wallet', label: 'Wallet', icon: 'wallet' },
     ],
   },
 }
@@ -35,6 +36,8 @@ const ICONS = {
   plus: 'M12 5v14M5 12h14',
   users:
     'M9 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7ZM2.5 20a6.5 6.5 0 0 1 13 0M17 4.5a3.5 3.5 0 0 1 0 6.9M18 14a6.5 6.5 0 0 1 3.5 6',
+  wallet:
+    'M3 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM3 9h18M16 13h2',
 }
 
 function Icon({ name }) {
