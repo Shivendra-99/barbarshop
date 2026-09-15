@@ -117,6 +117,21 @@ export default function Appointments() {
   const [rescheduling, setRescheduling] = useState(null)
   const [rating, setRating] = useState(null)
 
+  // Auto-prompt for a rating once a service is completed: when the customer
+  // opens My Bookings and has a completed, unrated booking, pop the dialog.
+  // Shown once per booking per session so it doesn't nag.
+  const autoRated = useRef(new Set())
+  useEffect(() => {
+    if (rating) return
+    const pending = myBookings.find(
+      (b) => b.status === 'completed' && !b.rating && !b.noShow && !autoRated.current.has(b.id),
+    )
+    if (pending) {
+      autoRated.current.add(pending.id)
+      setRating(pending)
+    }
+  }, [myBookings, rating])
+
   const doRate = async ({ rating: stars, review }) => {
     const booking = rating
     try {
