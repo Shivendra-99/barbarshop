@@ -104,7 +104,7 @@ router.post(
       const existing = await import('../models/Booking.js').then(({ Booking }) =>
         Booking.findOne({ 'razorpay.orderId': orderId }).catch(() => null),
       )
-      if (existing) return res.json({ booking: existing.toPublic() })
+      if (existing) return res.json({ booking: existing.toPublic({ includeOtp: true }) })
     }
 
     const booking = await createBookingRecord(req.user, intent.draft, {
@@ -117,7 +117,7 @@ router.post(
     intent.bookingRef = booking.ref
     await intent.save()
 
-    res.status(201).json({ booking: booking.toPublic() })
+    res.status(201).json({ booking: booking.toPublic({ includeOtp: true }) })
   }),
 )
 

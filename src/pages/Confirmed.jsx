@@ -40,6 +40,17 @@ export default function Confirmed() {
             : 'Slot held. Pay cash at the salon when you arrive.'}
         </p>
 
+        {booking.completionOtp && booking.status !== 'completed' && (
+          <div className="done__otp">
+            <div className="done__otpLabel">Your service OTP</div>
+            <div className="done__otpCode">{booking.completionOtp}</div>
+            <div className="done__otpHint">
+              Share this with the salon only after your service — they need it to complete the
+              booking. Also saved in <strong>My Bookings</strong>.
+            </div>
+          </div>
+        )}
+
         <div className="done__card">
           <div className="done__shop">
             <img src={salon?.img} alt="" aria-hidden="true" />

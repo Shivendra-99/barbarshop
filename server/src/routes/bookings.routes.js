@@ -11,6 +11,7 @@ import { validate } from '../middleware/validate.js'
 import { requireAuth, requireRole } from '../middleware/auth.js'
 import { asyncHandler, ApiError } from '../middleware/error.js'
 import { notify } from '../lib/notify.js'
+import { sendBookingOtp } from '../lib/sms/bookingOtp.js'
 import { formatINR } from '../lib/money.js'
 import { geocode } from '../lib/geo/mappls.js'
 
@@ -174,6 +175,8 @@ export async function createBookingRecord(user, body, payment = {}) {
   const booking = await createInFreeSeat(
     {
       ref: makeRef(),
+      completionOtp: String(Math.floor(1000 + Math.random() * 9000)),
+      completionOtpVerified: false,
       customer: user._id,
       salon: salon._id,
       service: primary._id,
@@ -208,8 +211,8 @@ export async function createBookingRecord(user, body, payment = {}) {
     {
       audience: `user:${user._id.toString()}`,
       tone: 'success',
-      title: 'Booking confirmed',
-      body: `${serviceName} at ${salon.name} · ${booking.dateLabel}, ${booking.slot}`,
+      title: `Booking confirmed · OTP ${booking.completionOtp}`,
+      body: `${serviceName} at ${salon.name} · ${booking.dateLabel}, ${booking.slot}. Share OTP ${booking.completionOtp} with the salon to complete your service (#${booking.ref}).`,
     },
     {
       audience: `owner:${salon.owner.toString()}`,
@@ -226,6 +229,9 @@ export async function createBookingRecord(user, body, payment = {}) {
       } ${formatINR(booking.total)}`,
     },
   ])
+
+  // Best-effort SMS/WhatsApp of the completion OTP (never blocks the booking).
+  sendBookingOtp({ phone: user.phone, otp: booking.completionOtp, ref: booking.ref }).catch(() => {})
 
   return booking
 }
@@ -250,7 +256,7 @@ router.post(
     // instead, so this path is cash — or the keyless demo — only.
     const paid = req.body.paymentMode === 'online'
     const booking = await createBookingRecord(req.user, req.body, { paid })
-    res.status(201).json({ booking: booking.toPublic() })
+    res.status(201).json({ booking: booking.toPublic({ includeOtp: true }) })
   }),
 )
 
@@ -355,7 +361,7 @@ router.patch(
         : []),
     ])
 
-    res.json({ booking: booking.toPublic() })
+    res.json({ booking: booking.toPublic({ includeOtp: true }) })
   }),
 )
 
@@ -443,16 +449,19 @@ router.post(
       )
     }
 
-    res.json({ booking: booking.toPublic() })
+    res.json({ booking: booking.toPublic({ includeOtp: true }) })
   }),
 )
 
 /* ---- Owner: mark a pay-at-salon booking as paid (after the service) ---- */
 
+const completeSchema = z.object({ otp: z.string().trim().optional() })
+
 router.patch(
   '/:id/complete',
   requireAuth,
   requireRole('owner'),
+  validate(completeSchema),
   asyncHandler(async (req, res) => {
     const booking = await Booking.findById(req.params.id).catch(() => null)
     if (!booking) throw new ApiError(404, 'Booking not found.')
@@ -462,6 +471,15 @@ router.patch(
 
     if (booking.status === 'cancelled') throw new ApiError(400, 'This booking was cancelled.')
     if (booking.status === 'completed') throw new ApiError(400, 'This booking is already completed.')
+
+    // OTP proof of service: the customer reads out their 4-digit code. (Legacy
+    // bookings created before OTP have none — those complete without it.)
+    if (booking.completionOtp) {
+      const otp = (req.body.otp || '').trim()
+      if (!otp) throw new ApiError(400, 'Enter the customer’s OTP to complete this booking.')
+      if (otp !== booking.completionOtp) throw new ApiError(400, 'Incorrect OTP. Ask the customer to re-check.')
+      booking.completionOtpVerified = true
+    }
 
     const cash = booking.paymentMode === 'offline'
     // Offline: record the cash payment. Online: already paid, just mark served.
@@ -576,7 +594,7 @@ router.post(
         : []),
     ])
 
-    res.json({ booking: booking.toPublic(), walletBalance, cashBlocked })
+    res.json({ booking: booking.toPublic({ includeOtp: true }), walletBalance, cashBlocked })
   }),
 )
 
@@ -658,7 +676,7 @@ router.get(
   requireRole('customer'),
   asyncHandler(async (req, res) => {
     const bookings = await Booking.find({ customer: req.user._id }).sort({ createdAt: -1 })
-    res.json({ bookings: bookings.map((b) => b.toPublic()) })
+    res.json({ bookings: bookings.map((b) => b.toPublic({ includeOtp: true })) })
   }),
 )
 

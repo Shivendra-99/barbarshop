@@ -672,3 +672,18 @@
 .se-photo__btn {
   cursor: pointer;
 }
+
+/* ---- Complete-service OTP dialog ---- */
+.pmodal__box--sm {
+  max-width: 380px;
+}
+
+.otp-input {
+  width: 100%;
+  text-align: center;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 30px;
+  letter-spacing: 0.5em;
+  padding: 12px;
+  margin: 6px 0 4px;
+}

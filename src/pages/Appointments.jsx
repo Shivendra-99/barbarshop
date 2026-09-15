@@ -251,6 +251,12 @@ export default function Appointments() {
                   {b.razorpay?.paymentId && (
                     <div className="appt__pay">Razorpay · {b.razorpay.paymentId}</div>
                   )}
+                  {b.completionOtp && b.status === 'confirmed' && (
+                    <div className="appt__otp">
+                      Service OTP: <strong>{b.completionOtp}</strong>
+                      <span className="appt__otpHint"> — give to salon after service</span>
+                    </div>
+                  )}
                   {b.address && <div className="appt__addr">{b.address}</div>}
                   {cancelled && b.refund?.amount > 0 && (
                     <div className="appt__refund">

@@ -14,6 +14,31 @@ export default function OwnerBookings() {
   const confirm = useConfirm()
   const [filter, setFilter] = useState('All')
   const [busyId, setBusyId] = useState(null)
+  const [otpFor, setOtpFor] = useState(null) // booking awaiting OTP to complete
+  const [otpValue, setOtpValue] = useState('')
+  const [otpErr, setOtpErr] = useState('')
+  const [otpBusy, setOtpBusy] = useState(false)
+
+  const submitComplete = async () => {
+    const b = otpFor
+    if (!b || otpBusy) return
+    setOtpBusy(true)
+    setOtpErr('')
+    try {
+      await completeBooking(b, otpValue.trim())
+      push({
+        tone: 'success',
+        title: b.paymentMode === 'offline' ? 'Payment marked complete' : 'Service completed',
+        body: `#${b.ref} · ${formatINR(b.total)}`,
+      })
+      setOtpFor(null)
+      setOtpValue('')
+    } catch (err) {
+      setOtpErr(err.message || 'Could not complete.')
+    } finally {
+      setOtpBusy(false)
+    }
+  }
 
   const doNoShow = async (b) => {
     const ok = await confirm({
@@ -38,29 +63,10 @@ export default function OwnerBookings() {
     }
   }
 
-  const markDone = async (b) => {
-    const cash = b.paymentMode === 'offline'
-    const ok = await confirm({
-      title: cash ? 'Payment complete?' : 'Mark as served?',
-      message: cash
-        ? `Confirm you collected ${formatINR(b.total)} in cash for ${b.serviceName} (#${b.ref}). This completes the booking and removes it from the live queue.`
-        : `Mark ${b.serviceName} (#${b.ref}) as served? It’s already paid online. This completes the booking and removes it from the live queue.`,
-      confirmLabel: cash ? 'Payment complete' : 'Mark served',
-    })
-    if (!ok) return
-    setBusyId(b.id)
-    try {
-      await completeBooking(b)
-      push({
-        tone: 'success',
-        title: cash ? 'Payment marked complete' : 'Marked served',
-        body: `#${b.ref} · ${formatINR(b.total)}`,
-      })
-    } catch (err) {
-      push({ tone: 'warn', title: 'Could not update', body: err.message })
-    } finally {
-      setBusyId(null)
-    }
+  const openComplete = (b) => {
+    setOtpValue('')
+    setOtpErr('')
+    setOtpFor(b)
   }
 
   const rows = useMemo(() => {
@@ -173,14 +179,10 @@ export default function OwnerBookings() {
                               <button
                                 type="button"
                                 className="btn btn--gold btn--sm"
-                                onClick={() => markDone(b)}
+                                onClick={() => openComplete(b)}
                                 disabled={busyId === b.id}
                               >
-                                {busyId === b.id
-                                  ? '…'
-                                  : b.paymentMode === 'offline'
-                                    ? 'Payment complete'
-                                    : 'Mark served'}
+                                {b.paymentMode === 'offline' ? 'Payment complete' : 'Mark served'}
                               </button>
                               <button
                                 type="button"
@@ -205,6 +207,52 @@ export default function OwnerBookings() {
             </div>
           )}
         </>
+      )}
+
+      {otpFor && (
+        <div className="pmodal" role="presentation" onMouseDown={() => setOtpFor(null)}>
+          <div
+            className="pmodal__box pmodal__box--sm"
+            role="dialog"
+            aria-modal="true"
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            <h3 className="pmodal__title">Complete service</h3>
+            <p className="pmodal__text">
+              Ask the customer for their <strong>4-digit OTP</strong> for {otpFor.serviceName} (#
+              {otpFor.ref})
+              {otpFor.paymentMode === 'offline'
+                ? `, and confirm you collected ${formatINR(otpFor.total)} in cash.`
+                : '.'}
+            </p>
+            <input
+              className="field__input otp-input"
+              value={otpValue}
+              onChange={(e) => {
+                setOtpValue(e.target.value.replace(/\D/g, '').slice(0, 4))
+                setOtpErr('')
+              }}
+              inputMode="numeric"
+              placeholder="0000"
+              autoFocus
+              onKeyDown={(e) => e.key === 'Enter' && submitComplete()}
+            />
+            {otpErr && <p className="field__error">{otpErr}</p>}
+            <div className="pmodal__actions">
+              <button type="button" className="btn btn--outline" onClick={() => setOtpFor(null)}>
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn btn--gold"
+                onClick={submitComplete}
+                disabled={otpBusy || otpValue.length < 4}
+              >
+                {otpBusy ? 'Verifying…' : 'Verify & complete'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </>
   )

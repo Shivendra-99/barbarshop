@@ -63,6 +63,10 @@ const bookingSchema = new mongoose.Schema(
       default: 'confirmed',
       index: true,
     },
+    // 4-digit code the customer gives the salon to complete the service. The
+    // owner must enter it to mark the booking COMPLETED (proof of service).
+    completionOtp: { type: String, default: null },
+    completionOtpVerified: { type: Boolean, default: false },
     // True when the salon cancelled this as a customer no-show.
     noShow: { type: Boolean, default: false },
     refund: {
@@ -89,9 +93,13 @@ bookingSchema.index(
   { unique: true, partialFilterExpression: { status: 'confirmed' } },
 )
 
-bookingSchema.methods.toPublic = function toPublic() {
+// `includeOtp` is set only for the customer's own views — never owner/founder,
+// so the completion OTP stays secret from the salon until the customer shares it.
+bookingSchema.methods.toPublic = function toPublic({ includeOtp = false } = {}) {
   return {
     id: this._id.toString(),
+    completionOtp: includeOtp ? this.completionOtp ?? null : undefined,
+    completionOtpVerified: this.completionOtpVerified ?? false,
     ref: this.ref,
     customerId: this.customer?.toString?.() ?? this.customer,
     salonId: this.salon?.toString?.() ?? this.salon,
