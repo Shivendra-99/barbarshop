@@ -9,6 +9,11 @@ const userSchema = new mongoose.Schema(
     // Seeded staff carry a stable code (own-1, etc.) used to wire seed salons.
     code: { type: String, default: null },
     walletBalance: { type: Number, default: 0 },
+    // Cash-booking abuse guard: cancels/no-shows on cash bookings. At 3 the
+    // customer is blocked from cash and can only pay online; a completed cash
+    // service resets it to 0.
+    cashCancelCount: { type: Number, default: 0 },
+    cashBlocked: { type: Boolean, default: false },
   },
   { timestamps: true },
 )
@@ -20,6 +25,8 @@ userSchema.methods.toPublic = function toPublic() {
     name: this.name,
     role: this.role,
     walletBalance: this.walletBalance,
+    cashBlocked: this.cashBlocked ?? false,
+    cashCancelCount: this.cashCancelCount ?? 0,
   }
 }
 

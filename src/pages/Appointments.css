@@ -417,3 +417,15 @@
   color: var(--gold);
   text-decoration: underline;
 }
+
+.refund__amount {
+  display: block;
+  font-size: 13px;
+  color: var(--gold-deep);
+  margin: 2px 0;
+}
+.modal__note--fine {
+  font-size: 12px;
+  color: var(--muted-3);
+  margin-top: 4px;
+}

@@ -6,7 +6,7 @@ import { Salon } from '../models/Salon.js'
 import { Service } from '../models/Service.js'
 import { User } from '../models/User.js'
 import { WalletTxn } from '../models/WalletTxn.js'
-import { quote, refundFor } from '../lib/pricing.js'
+import { quote, refundFor, noShowRefund } from '../lib/pricing.js'
 import { validate } from '../middleware/validate.js'
 import { requireAuth, requireRole } from '../middleware/auth.js'
 import { asyncHandler, ApiError } from '../middleware/error.js'
@@ -238,6 +238,13 @@ router.post(
   requireRole('customer'),
   validate(createSchema),
   asyncHandler(async (req, res) => {
+    // Customers blocked for cash abuse may only pay online.
+    if (req.body.paymentMode === 'offline' && req.user.cashBlocked) {
+      throw new ApiError(
+        403,
+        'Cash bookings are disabled on your account after repeated cancellations. Please pay online.',
+      )
+    }
     // Online here means the demo flow (no Razorpay configured): mark it paid.
     // With Razorpay on, the client routes online bookings through /api/payments
     // instead, so this path is cash — or the keyless demo — only.
@@ -465,6 +472,14 @@ router.patch(
     booking.status = 'completed'
     await booking.save()
 
+    // A completed cash service clears the customer's cash-cancel strikes.
+    if (cash) {
+      await User.updateOne(
+        { _id: booking.customer },
+        { cashCancelCount: 0, cashBlocked: false },
+      )
+    }
+
     await notify([
       {
         audience: `user:${booking.customer.toString()}`,
@@ -526,12 +541,21 @@ router.post(
       })
     }
 
+    // Cash-booking abuse guard: a cash cancel counts as a strike; 3 → blocked.
+    let cashBlocked = req.user.cashBlocked
+    if (booking.paymentMode === 'offline') {
+      const count = (req.user.cashCancelCount || 0) + 1
+      cashBlocked = count >= 3
+      await User.updateOne({ _id: req.user._id }, { cashCancelCount: count, cashBlocked })
+    }
+
     const salon = await Salon.findById(booking.salon).catch(() => null)
+    const feeLine = refund.fee > 0 ? ` (${refund.feePct}% fee ${formatINR(refund.fee)})` : ''
     const refundLine =
       refund.status === 'completed'
-        ? `${formatINR(refund.amount)} credited to your wallet`
+        ? `${formatINR(refund.amount)} credited to your wallet${feeLine}`
         : refund.status === 'processing'
-          ? `${formatINR(refund.amount)} refunded to UPI in 2–3 days`
+          ? `${formatINR(refund.amount)} refunded to UPI in 2–3 days${feeLine}`
           : 'No payment was taken, so nothing to refund'
     await notify([
       {
@@ -552,7 +576,77 @@ router.post(
         : []),
     ])
 
-    res.json({ booking: booking.toPublic(), walletBalance })
+    res.json({ booking: booking.toPublic(), walletBalance, cashBlocked })
+  }),
+)
+
+/* ---- Owner: mark a customer no-show (didn't turn up after 15 min) ---- */
+
+router.post(
+  '/:id/no-show',
+  requireAuth,
+  requireRole('owner'),
+  asyncHandler(async (req, res) => {
+    const booking = await Booking.findById(req.params.id).catch(() => null)
+    if (!booking) throw new ApiError(404, 'Booking not found.')
+
+    const owns = await Salon.exists({ _id: booking.salon, owner: req.user._id })
+    if (!owns) throw new ApiError(403, 'That booking is not for your salon.')
+    if (booking.status !== 'confirmed') {
+      throw new ApiError(400, 'Only a confirmed booking can be marked no-show.')
+    }
+
+    // Online: 15% penalty, 85% to the customer's WALLET only. Cash: nothing paid.
+    const refund = noShowRefund(booking)
+    booking.status = 'cancelled'
+    booking.noShow = true
+    booking.refund = refund
+    booking.cancelledAt = new Date()
+    await booking.save()
+
+    const customer = await User.findById(booking.customer).catch(() => null)
+    if (customer) {
+      if (refund.status === 'completed' && refund.amount > 0) {
+        const walletBalance = (customer.walletBalance || 0) + refund.amount
+        await User.updateOne({ _id: customer._id }, { walletBalance })
+        await WalletTxn.create({
+          user: customer._id,
+          type: 'credit',
+          amount: refund.amount,
+          note: `No-show refund (15% penalty) for ${booking.serviceName}`,
+          bookingRef: booking.ref,
+          balanceAfter: walletBalance,
+        })
+      }
+      // A cash no-show is a strike toward the cash block.
+      if (booking.paymentMode === 'offline') {
+        const count = (customer.cashCancelCount || 0) + 1
+        await User.updateOne(
+          { _id: customer._id },
+          { cashCancelCount: count, cashBlocked: count >= 3 },
+        )
+      }
+    }
+
+    await notify([
+      {
+        audience: `user:${booking.customer.toString()}`,
+        tone: 'warn',
+        title: 'Marked as no-show',
+        body:
+          refund.amount > 0
+            ? `${booking.serviceName}: 15% penalty applied, ${formatINR(refund.amount)} credited to your wallet.`
+            : `${booking.serviceName} was marked no-show.`,
+      },
+      {
+        audience: `owner:${req.user._id.toString()}`,
+        tone: 'info',
+        title: 'No-show recorded',
+        body: `${booking.serviceName} · ${booking.dateLabel}, ${booking.slot}`,
+      },
+    ])
+
+    res.json({ booking: booking.toPublic() })
   }),
 )
 

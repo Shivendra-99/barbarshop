@@ -82,16 +82,40 @@ export const REFUND_METHODS = {
   },
 }
 
+/** Slot start as epoch ms (mirrors the server). date "yyyy-mm-dd" + slot "HH:MM". */
+export function slotStartMs(booking) {
+  const m = /^(\d{1,2}):(\d{2})/.exec(booking.slot || '')
+  const [y, mo, d] = (booking.date || '').split('-').map(Number)
+  if (!y || !m) return Date.now()
+  return new Date(y, mo - 1, d, Number(m[1]), Number(m[2])).getTime()
+}
+
+/**
+ * Cancellation fee % (mirrors the server). Shown in the cancel dialog so the
+ * customer sees the fee before confirming; the server recomputes authoritatively.
+ *   2h+ before → 0% wallet / 2% UPI · within 2h → 10% · up to 15m late → 15%.
+ */
+export function cancellationFeePct(booking, method, now = Date.now()) {
+  const minsUntil = (slotStartMs(booking) - now) / 60000
+  if (minsUntil >= 120) return method === 'upi' ? 2 : 0
+  if (minsUntil >= 0) return 10
+  return 15
+}
+
 /**
  * Offline bookings were never collected by the platform, so there is nothing
- * to refund — the customer simply never pays.
+ * to refund. Online applies the time-based cancellation fee.
  */
-export function refundFor(booking, method) {
+export function refundFor(booking, method, now = Date.now()) {
   if (booking.paymentMode === 'offline') {
-    return { amount: 0, method: null, status: 'not_applicable' }
+    return { amount: 0, fee: 0, feePct: 0, method: null, status: 'not_applicable' }
   }
+  const feePct = cancellationFeePct(booking, method, now)
+  const fee = Math.round((booking.total * feePct) / 100)
   return {
-    amount: booking.total,
+    amount: booking.total - fee,
+    fee,
+    feePct,
     method,
     status: REFUND_METHODS[method]?.instant ? 'completed' : 'processing',
   }

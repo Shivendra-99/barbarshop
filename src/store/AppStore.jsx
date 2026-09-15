@@ -232,8 +232,18 @@ export function AppProvider({ children }) {
   }, [])
 
   const completeBooking = useCallback(
+    async (booking, otp) => {
+      const { booking: updated } = await api.completeBooking(booking.id, otp)
+      setOwnerBookings((prev) => prev.map((b) => (b.id === updated.id ? updated : b)))
+      loadNotifications().catch(() => {})
+      return updated
+    },
+    [loadNotifications],
+  )
+
+  const markNoShow = useCallback(
     async (booking) => {
-      const { booking: updated } = await api.completeBooking(booking.id)
+      const { booking: updated } = await api.noShowBooking(booking.id)
       setOwnerBookings((prev) => prev.map((b) => (b.id === updated.id ? updated : b)))
       loadNotifications().catch(() => {})
       return updated
@@ -362,6 +372,7 @@ export function AppProvider({ children }) {
       cancelBooking,
       rescheduleBooking,
       completeBooking,
+      markNoShow,
       rateBooking,
 
       // salon mutations
@@ -389,7 +400,7 @@ export function AppProvider({ children }) {
       ready, salonsReady, session, role, requestOtp, verifyOtp, widgetLogin, logout, setName, allSalons, publicSalons,
       findSalon, mySalons, pendingSalons, allBookings, myBookings, ownerBookings, createBooking,
       createBookingOnline,
-      cancelBooking, rescheduleBooking, completeBooking, rateBooking, submitSalon, setSalonStatus, updateSalon, settings, updateSettings, walletBalance, myLedger, notifications,
+      cancelBooking, rescheduleBooking, completeBooking, markNoShow, rateBooking, submitSalon, setSalonStatus, updateSalon, settings, updateSettings, walletBalance, myLedger, notifications,
       unreadCount, markRead, platformStats,
     ],
   )

@@ -63,8 +63,12 @@ const bookingSchema = new mongoose.Schema(
       default: 'confirmed',
       index: true,
     },
+    // True when the salon cancelled this as a customer no-show.
+    noShow: { type: Boolean, default: false },
     refund: {
       amount: Number,
+      fee: Number,
+      feePct: Number,
       method: String,
       status: String,
     },
@@ -117,6 +121,7 @@ bookingSchema.methods.toPublic = function toPublic() {
     dueAtSalon: this.dueAtSalon,
     homeServiceFee: this.homeServiceFee,
     status: this.status,
+    noShow: this.noShow ?? false,
     refund: this.refund,
     rating: this.rating,
     review: this.review,

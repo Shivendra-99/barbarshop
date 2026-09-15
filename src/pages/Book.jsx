@@ -441,24 +441,29 @@ export default function Book() {
               {Object.values(PAYMENT_MODES).map((p) => {
                 const active = paymentMode === p.id
                 const savesNow = p.id === 'online' && isFirstBooking && selected.length > 0
+                const blocked = p.id === 'offline' && session?.cashBlocked
                 return (
                   <button
                     key={p.id}
                     type="button"
                     className={`pay__opt${active ? ' is-active' : ''}`}
                     aria-pressed={active}
+                    disabled={blocked}
                     onClick={() => setPaymentMode(p.id)}
                   >
                     <span className="pay__top">
                       <span className="pay__name">{p.label}</span>
                       {savesNow && <span className="badge badge--gold">10% off</span>}
+                      {blocked && <span className="badge badge--red">Disabled</span>}
                     </span>
-                    <span className="pay__note">{p.note}</span>
+                    <span className="pay__note">
+                      {blocked ? 'Disabled after repeated cash cancellations.' : p.note}
+                    </span>
                   </button>
                 )
               })}
             </div>
-            {paymentMode === 'offline' && (
+            {paymentMode === 'offline' && !session?.cashBlocked && (
               <p className="pay__hint">
                 Your booking is still confirmed instantly. The salon records the cash payment
                 when you arrive.

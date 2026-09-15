@@ -6,7 +6,7 @@ import RescheduleDialog from '../components/RescheduleDialog'
 import RatingDialog from '../components/RatingDialog'
 import QueueBadge from '../components/QueueBadge'
 import { formatINR } from '../lib/money'
-import { REFUND_METHODS } from '../lib/pricing'
+import { REFUND_METHODS, refundFor } from '../lib/pricing'
 import { fromISO, startOfToday, toISO } from '../lib/datetime'
 import './Appointments.css'
 
@@ -53,29 +53,38 @@ function CancelDialog({ booking, onClose, onConfirm }) {
           </p>
         ) : (
           <fieldset className="modal__methods">
-            <legend className="modal__legend">
-              Refund {formatINR(booking.total)} to
-            </legend>
-            {Object.values(REFUND_METHODS).map((m) => (
-              <label key={m.id} className={`refund${method === m.id ? ' is-active' : ''}`}>
-                <input
-                  type="radio"
-                  name="refund-method"
-                  value={m.id}
-                  checked={method === m.id}
-                  onChange={() => setMethod(m.id)}
-                />
-                <span className="refund__body">
-                  <span className="refund__top">
-                    <span className="refund__name">{m.label}</span>
-                    <span className={`badge ${m.instant ? 'badge--green' : 'badge--amber'}`}>
-                      {m.eta}
+            <legend className="modal__legend">Choose your refund</legend>
+            {Object.values(REFUND_METHODS).map((m) => {
+              const r = refundFor(booking, m.id)
+              return (
+                <label key={m.id} className={`refund${method === m.id ? ' is-active' : ''}`}>
+                  <input
+                    type="radio"
+                    name="refund-method"
+                    value={m.id}
+                    checked={method === m.id}
+                    onChange={() => setMethod(m.id)}
+                  />
+                  <span className="refund__body">
+                    <span className="refund__top">
+                      <span className="refund__name">{m.label}</span>
+                      <span className={`badge ${m.instant ? 'badge--green' : 'badge--amber'}`}>
+                        {m.eta}
+                      </span>
                     </span>
+                    <span className="refund__amount money">
+                      You get {formatINR(r.amount)}
+                      {r.fee > 0 ? ` · ${r.feePct}% fee (${formatINR(r.fee)})` : ' · no fee'}
+                    </span>
+                    <span className="refund__note">{m.note}</span>
                   </span>
-                  <span className="refund__note">{m.note}</span>
-                </span>
-              </label>
-            ))}
+                </label>
+              )
+            })}
+            <p className="modal__note modal__note--fine">
+              Fee depends on timing: free up to 2 hours before (UPI 2%), 10% within 2 hours, 15% if
+              you cancel late.
+            </p>
           </fieldset>
         )}
 

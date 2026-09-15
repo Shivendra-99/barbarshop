@@ -103,9 +103,11 @@ export const api = {
   allBookings: () => request('/bookings/all'),
   cancelBooking: (id, method) =>
     request(`/bookings/${id}/cancel`, { method: 'POST', body: { method } }),
+  noShowBooking: (id) => request(`/bookings/${id}/no-show`, { method: 'POST' }),
   rescheduleBooking: (id, body) =>
     request(`/bookings/${id}/reschedule`, { method: 'PATCH', body }),
-  completeBooking: (id) => request(`/bookings/${id}/complete`, { method: 'PATCH' }),
+  completeBooking: (id, otp) =>
+    request(`/bookings/${id}/complete`, { method: 'PATCH', body: otp ? { otp } : {} }),
   rateBooking: (id, body) => request(`/bookings/${id}/rate`, { method: 'POST', body }),
   bookingQueue: (id) => request(`/bookings/${id}/queue`),
 

@@ -9,11 +9,34 @@ import './panel-ui.css'
 const FILTERS = ['All', 'Upcoming', 'Cancelled']
 
 export default function OwnerBookings() {
-  const { ownerBookings, mySalons, completeBooking } = useApp()
+  const { ownerBookings, mySalons, completeBooking, markNoShow } = useApp()
   const { push } = useToast()
   const confirm = useConfirm()
   const [filter, setFilter] = useState('All')
   const [busyId, setBusyId] = useState(null)
+
+  const doNoShow = async (b) => {
+    const ok = await confirm({
+      title: 'Mark as no-show?',
+      message: `Confirm ${b.serviceName} (#${b.ref}) as a no-show. ${
+        b.paymentMode === 'online'
+          ? 'A 15% penalty applies; 85% is refunded to the customer’s wallet.'
+          : 'This counts as a strike against the customer’s cash bookings.'
+      }`,
+      confirmLabel: 'Mark no-show',
+      tone: 'danger',
+    })
+    if (!ok) return
+    setBusyId(b.id)
+    try {
+      await markNoShow(b)
+      push({ tone: 'info', title: 'No-show recorded', body: `#${b.ref}` })
+    } catch (err) {
+      push({ tone: 'warn', title: 'Could not update', body: err.message })
+    } finally {
+      setBusyId(null)
+    }
+  }
 
   const markDone = async (b) => {
     const cash = b.paymentMode === 'offline'
@@ -146,20 +169,32 @@ export default function OwnerBookings() {
                         </td>
                         <td>
                           {actionable ? (
-                            <button
-                              type="button"
-                              className="btn btn--gold btn--sm"
-                              onClick={() => markDone(b)}
-                              disabled={busyId === b.id}
-                            >
-                              {busyId === b.id
-                                ? '…'
-                                : b.paymentMode === 'offline'
-                                  ? 'Payment complete'
-                                  : 'Mark served'}
-                            </button>
+                            <div className="fs-actions">
+                              <button
+                                type="button"
+                                className="btn btn--gold btn--sm"
+                                onClick={() => markDone(b)}
+                                disabled={busyId === b.id}
+                              >
+                                {busyId === b.id
+                                  ? '…'
+                                  : b.paymentMode === 'offline'
+                                    ? 'Payment complete'
+                                    : 'Mark served'}
+                              </button>
+                              <button
+                                type="button"
+                                className="btn btn--outline btn--sm"
+                                onClick={() => doNoShow(b)}
+                                disabled={busyId === b.id}
+                              >
+                                No-show
+                              </button>
+                            </div>
                           ) : (
-                            <span className="ptable__sub">—</span>
+                            <span className="ptable__sub">
+                              {b.noShow ? 'No-show' : '—'}
+                            </span>
                           )}
                         </td>
                       </tr>

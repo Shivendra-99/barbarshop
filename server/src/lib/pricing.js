@@ -39,13 +39,56 @@ export const REFUND_METHODS = {
   upi: { instant: false },
 }
 
-export function refundFor(booking, method) {
+/** The booking's slot start time as epoch ms (date "yyyy-mm-dd" + slot "HH:MM"). */
+export function slotStartMs(booking) {
+  const m = /^(\d{1,2}):(\d{2})/.exec(booking.slot || '')
+  const [y, mo, d] = (booking.date || '').split('-').map(Number)
+  if (!y || !m) return Date.now()
+  return new Date(y, mo - 1, d, Number(m[1]), Number(m[2])).getTime()
+}
+
+/**
+ * Cancellation fee % for a customer-initiated cancel, by how close to the slot:
+ *   • 2h+ before  → 0% (wallet) / 2% (UPI, gateway cost)
+ *   • within 2h   → 10%
+ *   • up to 15m late → 15%
+ * `now` is injectable for testing.
+ */
+export function cancellationFeePct(booking, method, now = Date.now()) {
+  const minsUntil = (slotStartMs(booking) - now) / 60000
+  if (minsUntil >= 120) return method === 'upi' ? 2 : 0
+  if (minsUntil >= 0) return 10
+  return 15 // late (and beyond) — the max customer self-cancel fee
+}
+
+/**
+ * Refund for a customer cancel. Cash bookings never took money, so nothing to
+ * refund. Online: apply the time-based fee; wallet is instant, UPI processes.
+ */
+export function refundFor(booking, method, now = Date.now()) {
   if (booking.paymentMode === 'offline') {
-    return { amount: 0, method: null, status: 'not_applicable' }
+    return { amount: 0, fee: 0, feePct: 0, method: null, status: 'not_applicable' }
   }
+  const feePct = cancellationFeePct(booking, method, now)
+  const fee = Math.round((booking.total * feePct) / 100)
   return {
-    amount: booking.total,
+    amount: booking.total - fee,
+    fee,
+    feePct,
     method,
     status: REFUND_METHODS[method]?.instant ? 'completed' : 'processing',
   }
+}
+
+/**
+ * Refund when the SALON marks a no-show (customer didn't turn up). Online: a
+ * flat 15% penalty, remainder to the customer's WALLET only (never UPI/bank).
+ * Cash: nothing to refund.
+ */
+export function noShowRefund(booking) {
+  if (booking.paymentMode === 'offline') {
+    return { amount: 0, fee: 0, feePct: 0, method: null, status: 'not_applicable' }
+  }
+  const fee = Math.round(booking.total * 0.15)
+  return { amount: booking.total - fee, fee, feePct: 15, method: 'wallet', status: 'completed' }
 }
