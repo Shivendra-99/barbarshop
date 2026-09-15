@@ -5,11 +5,11 @@ import { asyncHandler } from '../middleware/error.js'
 
 const router = Router()
 
-/** Wallet balance + ledger for the signed-in customer. */
+/** Wallet balance + ledger for the signed-in customer or owner. */
 router.get(
   '/',
   requireAuth,
-  requireRole('customer'),
+  requireRole('customer', 'owner'),
   asyncHandler(async (req, res) => {
     const ledger = await WalletTxn.find({ user: req.user._id }).sort({ createdAt: -1 })
     res.json({

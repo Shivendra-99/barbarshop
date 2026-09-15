@@ -127,6 +127,10 @@ export const api = {
 
   // --- Wallet & notifications ---
   wallet: () => request('/wallet'),
+  // Owner withdrawals
+  withdrawals: () => request('/withdrawals'),
+  requestWithdrawal: (amount, method) =>
+    request('/withdrawals', { method: 'POST', body: { amount, method } }),
   notifications: () => request('/notifications'),
   readNotifications: () => request('/notifications/read', { method: 'POST' }),
 }

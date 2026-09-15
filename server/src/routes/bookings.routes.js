@@ -498,6 +498,23 @@ router.patch(
       )
     }
 
+    // Online money was settled to the platform on booking — on completion it
+    // becomes the owner's withdrawable balance (their payout). Cash the owner
+    // already has in hand, so no wallet movement there.
+    if (!cash && booking.salonPayout > 0) {
+      const owner = await User.findById(req.user._id)
+      const balanceAfter = (owner.walletBalance || 0) + booking.salonPayout
+      await User.updateOne({ _id: owner._id }, { walletBalance: balanceAfter })
+      await WalletTxn.create({
+        user: owner._id,
+        type: 'credit',
+        amount: booking.salonPayout,
+        note: `Payout for ${booking.serviceName}`,
+        bookingRef: booking.ref,
+        balanceAfter,
+      })
+    }
+
     await notify([
       {
         audience: `user:${booking.customer.toString()}`,

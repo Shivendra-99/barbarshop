@@ -14,6 +14,7 @@ import geoRoutes from './routes/geo.routes.js'
 import settingsRoutes from './routes/settings.routes.js'
 import notificationRoutes from './routes/notifications.routes.js'
 import walletRoutes from './routes/wallet.routes.js'
+import withdrawalRoutes from './routes/withdrawals.routes.js'
 import { notFound, errorHandler } from './middleware/error.js'
 
 export function createApp() {
@@ -55,6 +56,7 @@ export function createApp() {
   app.use('/api/settings', settingsRoutes)
   app.use('/api/notifications', notificationRoutes)
   app.use('/api/wallet', walletRoutes)
+  app.use('/api/withdrawals', withdrawalRoutes)
 
   app.use(notFound)
   app.use(errorHandler)
