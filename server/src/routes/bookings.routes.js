@@ -346,6 +346,15 @@ router.patch(
       throw new ApiError(400, 'Only a confirmed booking can be rescheduled.')
     }
 
+    // Rescheduling is allowed only up to 2 hours before the current appointment.
+    const start = slotStartMsIST(booking.date, booking.slot)
+    if (Number.isFinite(start) && Date.now() > start - 2 * 60 * 60 * 1000) {
+      throw new ApiError(
+        400,
+        'Rescheduling is allowed only up to 2 hours before your appointment.',
+      )
+    }
+
     const salon = await Salon.findById(booking.salon).catch(() => null)
     const capacity = salon?.capacity || 1
     const newDate = req.body.date

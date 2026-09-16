@@ -36,7 +36,7 @@ router.post(
 
     // Force online: this route only exists to charge upfront.
     const draft = { ...req.body, paymentMode: 'online' }
-    const { salon, service, priced } = await priceBookingDraft(req.user, draft)
+    const { salon, primary, priced } = await priceBookingDraft(req.user, draft)
 
     if (!priced.total || priced.total <= 0) {
       throw new ApiError(400, 'Nothing to pay for this booking.')
@@ -49,7 +49,7 @@ router.post(
       amount: priced.total,
       currency: 'INR',
       receipt: `bk_${Date.now()}`,
-      notes: { salon: salon.name, service: service.name, user: req.user._id.toString() },
+      notes: { salon: salon.name, service: primary.name, user: req.user._id.toString() },
     })
 
     await PaymentIntent.create({
@@ -67,7 +67,7 @@ router.post(
       currency: order.currency,
       keyId: env.razorpay.keyId,
       name: 'SalonSaathi',
-      description: `${service.name} · ${salon.name}`,
+      description: `${primary.name} · ${salon.name}`,
       prefill: { name: req.user.name || '', contact: req.user.phone || '' },
     })
   }),

@@ -7,7 +7,7 @@ import RescheduleDialog from '../components/RescheduleDialog'
 import RatingDialog from '../components/RatingDialog'
 import QueueBadge from '../components/QueueBadge'
 import { formatINR } from '../lib/money'
-import { REFUND_METHODS, refundFor } from '../lib/pricing'
+import { REFUND_METHODS, refundFor, slotStartMs } from '../lib/pricing'
 import { fromISO, startOfToday, toISO, formatTime12, toMins } from '../lib/datetime'
 import './Appointments.css'
 
@@ -305,13 +305,15 @@ export default function Appointments() {
                   <div className="appt__ref">#{b.ref}</div>
                   {!cancelled && tab === 'Upcoming' && (
                     <div className="appt__actions">
-                      <button
-                        type="button"
-                        className="appt__reschedule"
-                        onClick={() => setRescheduling(b)}
-                      >
-                        {t('appt.reschedule')}
-                      </button>
+                      {slotStartMs(b) - Date.now() >= 2 * 60 * 60 * 1000 && (
+                        <button
+                          type="button"
+                          className="appt__reschedule"
+                          onClick={() => setRescheduling(b)}
+                        >
+                          {t('appt.reschedule')}
+                        </button>
+                      )}
                       <button
                         type="button"
                         className="appt__cancel"
