@@ -250,7 +250,7 @@ const EN = {
   'book.pay': 'Pay {amt}',
   'book.confirm': 'Confirm booking',
   'book.confirming': 'Confirming…',
-  'book.bookingAs': 'Booking as {name} · +91 {phone}. Free cancellation up to 4 hours before.',
+  'book.bookingAs': 'Booking as {name} · +91 {phone}. Free cancellation up to 2 hours before.',
   'book.travel': '+{fee} travel',
   'book.confirmed': 'Booking confirmed',
 

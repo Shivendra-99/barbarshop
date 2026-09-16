@@ -104,19 +104,19 @@ export default function Terms() {
         jurisdiction of courts in Pratapgarh, Uttar Pradesh.
       </p>
 
-      <h2 className="simple__heading">13. Contact Us</h2>
+      <h2 className="simple__heading">10. Contact Us</h2>
       <p className="legal__p">
-        If you have any questions about these Terms, contact us:
+        If you have any questions about this Privacy Policy, please contact us:
         <br />
         <strong>SalonSaathi</strong>
         <br />
         Website: <a href="https://salonsaathi.in">https://salonsaathi.in</a>
         <br />
-        Email: <a href="mailto:sonkarrishu904@gmail.com">sonkarrishu904@gmail.com</a>
+        Email: <a href="mailto:supportsalonsaathi@gmail.com">supportsalonsaathi@gmail.com</a>
         <br />
-        Phone: +91 7081126623
+        Phone: +91 7081126830
         <br />
-        Address: Jakhamai, Post Tiwaripur, Kunda, Pratapgarh, UP - 230202, India
+        Address: Golf City, Lucknow, Uttar Pradesh - 226030
       </p>
     </div>
   )

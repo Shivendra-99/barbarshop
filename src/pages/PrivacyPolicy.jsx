@@ -98,11 +98,11 @@ export default function PrivacyPolicy() {
         <br />
         Website: <a href="https://salonsaathi.in">https://salonsaathi.in</a>
         <br />
-        Email: <a href="mailto:sonkarrishu904@gmail.com">sonkarrishu904@gmail.com</a>
+        Email: <a href="mailto:supportsalonsaathi@gmail.com">supportsalonsaathi@gmail.com</a>
         <br />
-        Phone: +91 7081126623
+        Phone: +91 7081126830
         <br />
-        Address: Jakhamai, Post Tiwaripur, Kunda, Pratapgarh, UP - 230202, India
+        Address: Golf City, Lucknow, Uttar Pradesh - 226030
       </p>
     </div>
   )
