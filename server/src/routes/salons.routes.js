@@ -63,6 +63,25 @@ const editSchema = z.object({
   photo: z.string().max(1500000).nullable().optional(),
 })
 
+/** "HH:MM" → minutes since midnight, or null if unparseable. */
+const toMins = (t) => {
+  const m = /^(\d{1,2}):(\d{2})$/.exec(String(t || '').trim())
+  return m ? Number(m[1]) * 60 + Number(m[2]) : null
+}
+
+/**
+ * The salon must close after it opens — otherwise slot generation produces zero
+ * bookable times (this is what made an 8 AM "close" show no slots). Overnight
+ * hours aren't supported by the slot engine, so this guard matches reality.
+ */
+function assertHoursValid(opens, closes) {
+  const o = toMins(opens)
+  const c = toMins(closes)
+  if (o != null && c != null && c <= o) {
+    throw new ApiError(400, 'Closing time must be after the opening time.')
+  }
+}
+
 // Fields an owner may change on their own salon (a subset of the founder's).
 const OWNER_EDITABLE = new Set([
   'name', 'area', 'address', 'phone', 'opens', 'closes', 'serviceModes',
@@ -186,6 +205,8 @@ router.post(
   asyncHandler(async (req, res) => {
     const { services, addressELoc, ownerId, ...salonBody } = req.body
 
+    assertHoursValid(salonBody.opens, salonBody.closes)
+
     // Resolve who owns the salon and whether it's auto-approved.
     let ownerObjectId = req.user._id
     let status = 'pending'
@@ -273,6 +294,9 @@ router.patch(
         Object.entries(req.body).filter(([k]) => OWNER_EDITABLE.has(k)),
       )
     }
+
+    // Guard the effective hours (a PATCH may change only one of the two).
+    assertHoursValid(changes.opens ?? salon.opens, changes.closes ?? salon.closes)
 
     Object.assign(salon, changes)
     await salon.save()

@@ -69,9 +69,19 @@ export default function SalonEditDialog({ salon, role = 'founder', onClose, onSa
   const removeClosedDate = (d) =>
     setForm((f) => ({ ...f, closedDates: f.closedDates.filter((x) => x !== d) }))
 
+  const toMins = (t) => {
+    const m = /^(\d{1,2}):(\d{2})$/.exec(String(t || '').trim())
+    return m ? Number(m[1]) * 60 + Number(m[2]) : null
+  }
+  const hoursValid = (() => {
+    const o = toMins(form.opens)
+    const c = toMins(form.closes)
+    return o == null || c == null || c > o
+  })()
+
   const save = async () => {
     const serviceModes = [form.atSalon && 'salon', form.home && 'home'].filter(Boolean)
-    if (!serviceModes.length || busy) return
+    if (!serviceModes.length || !hoursValid || busy) return
     setBusy(true)
     try {
       const changes = {
@@ -181,6 +191,11 @@ export default function SalonEditDialog({ salon, role = 'founder', onClose, onSa
               onChange={(v) => setForm((f) => ({ ...f, closes: v }))}
             />
           </label>
+          {!hoursValid && (
+            <span className="field__error pmodal__full">
+              Closing time must be after the opening time (e.g. 10:00 AM – 8:00 PM).
+            </span>
+          )}
           <label className="field">
             <span className="field__label">Slot length</span>
             <select className="field__input" value={form.slotMinutes} onChange={set('slotMinutes')}>
@@ -284,7 +299,7 @@ export default function SalonEditDialog({ salon, role = 'founder', onClose, onSa
           <button type="button" className="btn btn--outline" onClick={onClose}>
             Cancel
           </button>
-          <button type="button" className="btn btn--gold" onClick={save} disabled={busy}>
+          <button type="button" className="btn btn--gold" onClick={save} disabled={busy || !hoursValid}>
             {busy ? 'Saving…' : 'Save changes'}
           </button>
         </div>
