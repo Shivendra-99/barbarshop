@@ -15,11 +15,14 @@ const serviceBody = z.object({
   desc: z.string().trim().max(300).optional().default(''),
 })
 
-/** Loads a service and asserts the caller owns its salon. */
-async function ownedService(req) {
+/**
+ * Loads a service and asserts the caller may manage it. Owners can only touch
+ * their own services; the founder (super admin) can manage any salon's menu.
+ */
+async function manageableService(req) {
   const service = await Service.findById(req.params.id).catch(() => null)
   if (!service) throw new ApiError(404, 'Service not found.')
-  if (service.owner.toString() !== req.user._id.toString()) {
+  if (req.user.role !== 'founder' && service.owner.toString() !== req.user._id.toString()) {
     throw new ApiError(403, 'That service is not yours.')
   }
   return service
@@ -35,50 +38,51 @@ router.get(
   }),
 )
 
-/** Owner: add a service to one of their salons. */
+/** Owner (own salon) or founder (any salon): add a service to a salon. */
 router.post(
   '/',
   requireAuth,
-  requireRole('owner'),
+  requireRole('owner', 'founder'),
   validate(serviceBody.extend({ salonId: z.string().min(1) })),
   asyncHandler(async (req, res) => {
     const salon = await Salon.findById(req.body.salonId).catch(() => null)
     if (!salon) throw new ApiError(404, 'Salon not found.')
-    if (salon.owner.toString() !== req.user._id.toString()) {
+    if (req.user.role !== 'founder' && salon.owner.toString() !== req.user._id.toString()) {
       throw new ApiError(403, 'That salon is not yours.')
     }
     const { salonId, ...body } = req.body
     const service = await Service.create({
       ...body,
       salon: salon._id,
-      owner: req.user._id,
+      // Attribute the service to the salon's owner even when the founder adds it.
+      owner: salon.owner,
       category: salon.category,
     })
     res.status(201).json({ service: service.toPublic() })
   }),
 )
 
-/** Owner: edit one of their services. */
+/** Owner (own) or founder (any): edit a service. */
 router.patch(
   '/:id',
   requireAuth,
-  requireRole('owner'),
+  requireRole('owner', 'founder'),
   validate(serviceBody.partial()),
   asyncHandler(async (req, res) => {
-    const service = await ownedService(req)
+    const service = await manageableService(req)
     Object.assign(service, req.body)
     await service.save()
     res.json({ service: service.toPublic() })
   }),
 )
 
-/** Owner: remove one of their services. */
+/** Owner (own) or founder (any): remove a service. */
 router.delete(
   '/:id',
   requireAuth,
-  requireRole('owner'),
+  requireRole('owner', 'founder'),
   asyncHandler(async (req, res) => {
-    const service = await ownedService(req)
+    const service = await manageableService(req)
     await service.deleteOne()
     res.json({ ok: true, id: req.params.id })
   }),

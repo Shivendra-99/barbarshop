@@ -28,6 +28,7 @@ import OwnerAddSalon from './panel/OwnerAddSalon'
 import OwnerServices from './panel/OwnerServices'
 import OwnerBookings from './panel/OwnerBookings'
 import OwnerWallet from './panel/OwnerWallet'
+import OwnerProfile from './panel/OwnerProfile'
 
 export default function App() {
   return (
@@ -121,6 +122,7 @@ export default function App() {
           <Route path="services" element={<OwnerServices />} />
           <Route path="bookings" element={<OwnerBookings />} />
           <Route path="wallet" element={<OwnerWallet />} />
+          <Route path="profile" element={<OwnerProfile />} />
         </Route>
       </Routes>
     </>

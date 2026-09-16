@@ -132,6 +132,38 @@
   border-radius: var(--r-sm);
 }
 
+/* Language switch (EN / हिं) */
+.hdr__lang {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+  overflow: hidden;
+  height: 40px;
+}
+
+.hdr__langBtn {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding: 0 12px;
+  height: 100%;
+  cursor: pointer;
+  transition: background var(--dur-fast) ease, color var(--dur-fast) ease;
+}
+
+.hdr__langBtn:hover {
+  color: var(--heading);
+}
+
+.hdr__langBtn.is-active {
+  background: var(--gold);
+  color: #1a1206;
+}
+
 .hdr__ctaIcon {
   width: 14px;
   height: 14px;

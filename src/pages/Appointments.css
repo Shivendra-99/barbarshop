@@ -119,6 +119,25 @@
   word-break: break-all;
 }
 
+.appt__call {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 6px 12px;
+  border: 1px solid var(--gold-line, var(--line));
+  border-radius: var(--r-pill, 999px);
+  color: var(--gold);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.15s ease;
+}
+
+.appt__call:hover {
+  background: var(--gold-wash);
+}
+
 .appt__items {
   list-style: none;
   margin: 2px 0 0;

@@ -19,6 +19,10 @@ const salonSchema = new mongoose.Schema(
     },
     owner: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
 
+    // Public contact number customers call after booking ("Call Salon"). The
+    // owner sets it in My Profile or per-salon in the salon dashboard.
+    phone: { type: String, default: '' },
+
     serviceModes: { type: [String], default: ['salon'] }, // 'salon' | 'home'
     homeServiceFee: { type: Number, default: 0 },
 
@@ -64,6 +68,7 @@ salonSchema.methods.toPublic = function toPublic() {
     address: this.address,
     location: this.location ?? { eLoc: null, lat: null, lng: null },
     ownerId: this.owner?.toString?.() ?? this.owner,
+    phone: this.phone ?? '',
     serviceModes: this.serviceModes,
     homeServiceFee: this.homeServiceFee,
     photo: this.photo ?? null,

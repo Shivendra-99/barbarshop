@@ -1,36 +1,41 @@
 import { BRAND, FAQS, SUPPORT } from '../data/seed'
 import { COMMISSION_RATE, FIRST_BOOKING_DISCOUNT_RATE } from '../lib/pricing'
+import { useT } from '../lib/i18n'
+import SupportChat from '../components/SupportChat'
 import './Simple.css'
 
-const HOW_IT_PAYS = [
-  {
-    title: 'Pay online',
-    body: `Settled to ${BRAND.name} at the time of booking. Your first booking gets ${FIRST_BOOKING_DISCOUNT_RATE * 100}% off — once per customer, never on repeat bookings.`,
-  },
-  {
-    title: 'Pay at salon',
-    body: 'Cash goes directly to the salon. The booking still records the amount so both you and the salon have a record of it.',
-  },
-  {
-    title: 'Commission',
-    body:
-      COMMISSION_RATE === 0
-        ? 'Salons keep 100% of the service price. There is no platform commission today.'
-        : `Salons keep ${(1 - COMMISSION_RATE) * 100}% of the service price.`,
-  },
-]
-
 export default function Help() {
+  const t = useT()
+
+  const howItPays = [
+    {
+      title: t('help.payOnline'),
+      body: t('help.payOnlineBody', {
+        brand: BRAND.name,
+        pct: FIRST_BOOKING_DISCOUNT_RATE * 100,
+      }),
+    },
+    {
+      title: t('help.payAtSalon'),
+      body: t('help.payAtSalonBody'),
+    },
+    {
+      title: t('help.commission'),
+      body:
+        COMMISSION_RATE === 0
+          ? t('help.commissionFree')
+          : t('help.commissionRate', { pct: (1 - COMMISSION_RATE) * 100 }),
+    },
+  ]
+
   return (
     <div className="shell shell--narrow simple">
-      <h1 className="display simple__title">Help &amp; support</h1>
-      <p className="lede simple__lede">
-        Everything about booking, paying and cancelling on {BRAND.name}.
-      </p>
+      <h1 className="display simple__title">{t('help.title')}</h1>
+      <p className="lede simple__lede">{t('help.lede', { brand: BRAND.name })}</p>
 
-      <h2 className="simple__heading">How payment works</h2>
+      <h2 className="simple__heading">{t('help.howPayment')}</h2>
       <div className="payGrid">
-        {HOW_IT_PAYS.map((p) => (
+        {howItPays.map((p) => (
           <div key={p.title} className="card payGrid__item">
             <h3 className="payGrid__title">{p.title}</h3>
             <p className="payGrid__body">{p.body}</p>
@@ -38,12 +43,12 @@ export default function Help() {
         ))}
       </div>
 
-      <div className="panel wa-panel">
+      <h2 className="simple__heading">{t('help.needHelp')}</h2>
+      <SupportChat />
+
+      <div className="panel wa-panel" style={{ marginTop: 20 }}>
         <div>
-          <h2 className="simple__heading" style={{ marginTop: 0 }}>Need help? Chat with us</h2>
-          <p className="panel__text">
-            Message our support team on WhatsApp — we usually reply within a few minutes.
-          </p>
+          <p className="panel__text">{t('help.waText')}</p>
           <p className="panel__text panel__text--fine">{SUPPORT.whatsappDisplay}</p>
         </div>
         <a
@@ -58,20 +63,19 @@ export default function Help() {
               d="M12 2a10 10 0 0 0-8.6 15l-1.3 4.9 5-1.3A10 10 0 1 0 12 2Zm5.8 14.2c-.2.7-1.4 1.3-2 1.4-.5.1-1.2.1-1.9-.1-.4-.1-1-.3-1.7-.6-3-1.3-4.9-4.3-5.1-4.5-.1-.2-1.2-1.6-1.2-3 0-1.4.7-2.1 1-2.4.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.8 2c.1.2.1.4 0 .5l-.4.5-.3.3c-.2.2-.3.4-.2.6.2.4.8 1.3 1.6 2 1 .9 1.9 1.2 2.2 1.3.2.1.4.1.6-.1l.7-.9c.2-.2.4-.2.6-.1l1.9.9c.3.1.4.2.5.3.1.2.1.8-.1 1.5Z"
             />
           </svg>
-          Chat on WhatsApp
+          {t('help.waBtn')}
         </a>
       </div>
 
-      <h2 className="simple__heading">Common questions</h2>
+      <h2 className="simple__heading">{t('help.commonQuestions')}</h2>
       <dl className="helpFaq">
-        {FAQS.map((f) => (
+        {FAQS.map((f, i) => (
           <div key={f.q} className="helpFaq__item">
-            <dt className="helpFaq__q">{f.q}</dt>
-            <dd className="helpFaq__a">{f.a}</dd>
+            <dt className="helpFaq__q">{t(`faq.${i + 1}.q`)}</dt>
+            <dd className="helpFaq__a">{t(`faq.${i + 1}.a`)}</dd>
           </div>
         ))}
       </dl>
-
     </div>
   )
 }

@@ -242,8 +242,8 @@ export function AppProvider({ children }) {
   )
 
   const markNoShow = useCallback(
-    async (booking) => {
-      const { booking: updated } = await api.noShowBooking(booking.id)
+    async (booking, reason) => {
+      const { booking: updated } = await api.noShowBooking(booking.id, reason)
       setOwnerBookings((prev) => prev.map((b) => (b.id === updated.id ? updated : b)))
       loadNotifications().catch(() => {})
       return updated
@@ -283,6 +283,17 @@ export function AppProvider({ children }) {
       return updated
     },
     [role, loadOwner, loadFounder, loadPublicSalons],
+  )
+
+  /** Owner: set their customer-facing contact number on all their salons. */
+  const setOwnerContact = useCallback(
+    async (phone) => {
+      const { salons } = await api.setOwnerContact(phone)
+      setMySalons(enrichList(salons))
+      loadPublicSalons().catch(() => {})
+      return phone
+    },
+    [loadPublicSalons],
   )
 
   const updateSettings = useCallback(async (changes) => {
@@ -379,6 +390,7 @@ export function AppProvider({ children }) {
       submitSalon,
       setSalonStatus,
       updateSalon,
+      setOwnerContact,
 
       // platform settings
       settings,
@@ -400,7 +412,7 @@ export function AppProvider({ children }) {
       ready, salonsReady, session, role, requestOtp, verifyOtp, widgetLogin, logout, setName, allSalons, publicSalons,
       findSalon, mySalons, pendingSalons, allBookings, myBookings, ownerBookings, createBooking,
       createBookingOnline,
-      cancelBooking, rescheduleBooking, completeBooking, markNoShow, rateBooking, submitSalon, setSalonStatus, updateSalon, settings, updateSettings, walletBalance, myLedger, notifications,
+      cancelBooking, rescheduleBooking, completeBooking, markNoShow, rateBooking, submitSalon, setSalonStatus, updateSalon, setOwnerContact, settings, updateSettings, walletBalance, myLedger, notifications,
       unreadCount, markRead, platformStats,
     ],
   )

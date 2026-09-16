@@ -182,6 +182,7 @@ export async function createBookingRecord(user, body, payment = {}) {
       service: primary._id,
       items,
       salonName: salon.name,
+      salonPhone: salon.phone || null,
       serviceName,
       staffName: body.staffName ?? null,
       mode: body.mode,
@@ -617,10 +618,34 @@ router.post(
 
 /* ---- Owner: mark a customer no-show (didn't turn up after 15 min) ---- */
 
+// Preset no-show reasons — the owner picks one, no free typing.
+export const NO_SHOW_REASONS = [
+  'Customer did not arrive',
+  'Customer arrived too late',
+  'Customer was unreachable',
+]
+
+const NO_SHOW_GRACE_MS = 15 * 60 * 1000
+const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000
+
+/**
+ * Epoch ms of a booking's slot start, read as India time (the app is IST-only).
+ * date "yyyy-mm-dd" + slot "HH:MM" (24h). TZ-safe on any server (Vercel = UTC).
+ */
+function slotStartMsIST(date, slot) {
+  const [y, mo, d] = (date || '').split('-').map(Number)
+  const m = /^(\d{1,2}):(\d{2})/.exec(slot || '')
+  if (!y || !m) return NaN
+  return Date.UTC(y, mo - 1, d, Number(m[1]), Number(m[2])) - IST_OFFSET_MS
+}
+
+const noShowSchema = z.object({ reason: z.string().trim().max(80).optional() })
+
 router.post(
   '/:id/no-show',
   requireAuth,
   requireRole('owner'),
+  validate(noShowSchema),
   asyncHandler(async (req, res) => {
     const booking = await Booking.findById(req.params.id).catch(() => null)
     if (!booking) throw new ApiError(404, 'Booking not found.')
@@ -631,10 +656,23 @@ router.post(
       throw new ApiError(400, 'Only a confirmed booking can be marked no-show.')
     }
 
+    // A no-show can only be recorded once the customer is 15 minutes late.
+    const start = slotStartMsIST(booking.date, booking.slot)
+    if (Number.isFinite(start) && Date.now() < start + NO_SHOW_GRACE_MS) {
+      throw new ApiError(
+        400,
+        'You can mark a no-show only 15 minutes after the booking time.',
+      )
+    }
+
+    // Store the chosen reason if it's one of the presets; ignore anything else.
+    const reason = NO_SHOW_REASONS.includes(req.body.reason) ? req.body.reason : null
+
     // Online: 15% penalty, 85% to the customer's WALLET only. Cash: nothing paid.
     const refund = noShowRefund(booking)
     booking.status = 'cancelled'
     booking.noShow = true
+    booking.noShowReason = reason
     booking.refund = refund
     booking.cancelledAt = new Date()
     await booking.save()
@@ -677,7 +715,9 @@ router.post(
         audience: `owner:${req.user._id.toString()}`,
         tone: 'info',
         title: 'No-show recorded',
-        body: `${booking.serviceName} · ${booking.dateLabel}, ${booking.slot}`,
+        body: `${booking.serviceName} · ${booking.dateLabel}, ${booking.slot}${
+          reason ? ` · ${reason}` : ''
+        }`,
       },
     ])
 
@@ -705,8 +745,10 @@ router.get(
   requireRole('owner'),
   asyncHandler(async (req, res) => {
     const salonIds = await Salon.find({ owner: req.user._id }).distinct('_id')
-    const bookings = await Booking.find({ salon: { $in: salonIds } }).sort({ createdAt: -1 })
-    res.json({ bookings: bookings.map((b) => b.toPublic()) })
+    const bookings = await Booking.find({ salon: { $in: salonIds } })
+      .populate('customer', 'name phone')
+      .sort({ createdAt: -1 })
+    res.json({ bookings: bookings.map((b) => b.toPublic({ includeCustomer: true })) })
   }),
 )
 

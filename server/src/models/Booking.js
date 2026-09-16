@@ -16,6 +16,9 @@ const bookingSchema = new mongoose.Schema(
       default: [],
     },
     staffName: { type: String, default: null },
+    // Snapshot of the salon's contact number at booking time, so "Call Salon"
+    // works in My Bookings without a separate salon lookup.
+    salonPhone: { type: String, default: null },
 
     mode: { type: String, enum: ['salon', 'home'], required: true },
     modeLabel: String,
@@ -67,8 +70,10 @@ const bookingSchema = new mongoose.Schema(
     // owner must enter it to mark the booking COMPLETED (proof of service).
     completionOtp: { type: String, default: null },
     completionOtpVerified: { type: Boolean, default: false },
-    // True when the salon cancelled this as a customer no-show.
+    // True when the salon cancelled this as a customer no-show, plus the reason
+    // the owner picked (one of a few preset reasons — no free typing).
     noShow: { type: Boolean, default: false },
+    noShowReason: { type: String, default: null },
     refund: {
       amount: Number,
       fee: Number,
@@ -95,19 +100,29 @@ bookingSchema.index(
 
 // `includeOtp` is set only for the customer's own views — never owner/founder,
 // so the completion OTP stays secret from the salon until the customer shares it.
-bookingSchema.methods.toPublic = function toPublic({ includeOtp = false } = {}) {
+// `includeCustomer` adds the customer's name+phone for the owner's booking list
+// (revealed behind a "Click to view number" tap in the UI).
+bookingSchema.methods.toPublic = function toPublic({
+  includeOtp = false,
+  includeCustomer = false,
+} = {}) {
+  // customer may be a populated User doc (owner views) or a plain id.
+  const cust = this.customer && this.customer.name ? this.customer : null
   return {
     id: this._id.toString(),
     completionOtp: includeOtp ? this.completionOtp ?? null : undefined,
     completionOtpVerified: this.completionOtpVerified ?? false,
     ref: this.ref,
-    customerId: this.customer?.toString?.() ?? this.customer,
+    customerId: cust ? cust._id.toString() : this.customer?.toString?.() ?? this.customer,
+    customerName: includeCustomer ? cust?.name ?? null : undefined,
+    customerPhone: includeCustomer ? cust?.phone ?? null : undefined,
     salonId: this.salon?.toString?.() ?? this.salon,
     serviceId: this.service?.toString?.() ?? this.service,
     salonName: this.salonName,
     serviceName: this.serviceName,
     items: (this.items ?? []).map((i) => ({ name: i.name, amount: i.amount, mins: i.mins })),
     staffName: this.staffName,
+    salonPhone: this.salonPhone ?? null,
     mode: this.mode,
     modeLabel: this.modeLabel,
     address: this.address,
@@ -130,6 +145,7 @@ bookingSchema.methods.toPublic = function toPublic({ includeOtp = false } = {}) 
     homeServiceFee: this.homeServiceFee,
     status: this.status,
     noShow: this.noShow ?? false,
+    noShowReason: this.noShowReason ?? null,
     refund: this.refund,
     rating: this.rating,
     review: this.review,

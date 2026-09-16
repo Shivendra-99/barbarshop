@@ -11,6 +11,8 @@ export default function Confirmed() {
   if (!booking) return <Navigate to="/appointments" replace />
 
   const salon = publicSalons.find((s) => s.id === booking.salonId)
+  // Live salon number wins; fall back to the snapshot saved on the booking.
+  const salonPhone = salon?.phone || booking.salonPhone || ''
 
   const items = booking.items ?? []
   // A real Razorpay payment carries a paymentId; the demo online flow doesn't.
@@ -140,9 +142,15 @@ export default function Confirmed() {
           <Link to="/appointments" className="btn btn--gold done__action">
             My bookings
           </Link>
-          <Link to="/salons" className="btn btn--outline done__action">
-            Book another
-          </Link>
+          {salonPhone ? (
+            <a href={`tel:+91${salonPhone}`} className="btn btn--outline done__action">
+              Call salon
+            </a>
+          ) : (
+            <Link to="/salons" className="btn btn--outline done__action">
+              Book another
+            </Link>
+          )}
         </div>
 
         <p className="done__fine">

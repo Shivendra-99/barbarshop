@@ -1,23 +1,41 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useApp } from '../store/AppStore'
 import { useToast } from '../components/Toast'
-import { useConfirm } from '../components/Confirm'
 import { formatINR } from '../lib/money'
+import { slotStartMs } from '../lib/pricing'
 import './panel-ui.css'
 
 const FILTERS = ['All', 'Upcoming', 'Cancelled']
 
+// Preset no-show reasons — the owner taps one, no typing needed.
+const NO_SHOW_REASONS = [
+  'Customer did not arrive',
+  'Customer arrived too late',
+  'Customer was unreachable',
+]
+
+// A no-show can only be recorded once the customer is 15 minutes late.
+const NO_SHOW_GRACE_MS = 15 * 60 * 1000
+
 export default function OwnerBookings() {
   const { ownerBookings, mySalons, completeBooking, markNoShow } = useApp()
   const { push } = useToast()
-  const confirm = useConfirm()
   const [filter, setFilter] = useState('All')
-  const [busyId, setBusyId] = useState(null)
   const [otpFor, setOtpFor] = useState(null) // booking awaiting OTP to complete
   const [otpValue, setOtpValue] = useState('')
   const [otpErr, setOtpErr] = useState('')
   const [otpBusy, setOtpBusy] = useState(false)
+  const [noShowFor, setNoShowFor] = useState(null) // booking awaiting a reason
+  const [noShowBusy, setNoShowBusy] = useState(false)
+  const [revealed, setRevealed] = useState(() => new Set()) // booking ids showing the number
+
+  // A ticking clock so the 15-minute no-show gate enables on its own.
+  const [now, setNow] = useState(() => Date.now())
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 30000)
+    return () => clearInterval(t)
+  }, [])
 
   const submitComplete = async () => {
     const b = otpFor
@@ -40,26 +58,18 @@ export default function OwnerBookings() {
     }
   }
 
-  const doNoShow = async (b) => {
-    const ok = await confirm({
-      title: 'Mark as no-show?',
-      message: `Confirm ${b.serviceName} (#${b.ref}) as a no-show. ${
-        b.paymentMode === 'online'
-          ? 'A 15% penalty applies; 85% is refunded to the customer’s wallet.'
-          : 'This counts as a strike against the customer’s cash bookings.'
-      }`,
-      confirmLabel: 'Mark no-show',
-      tone: 'danger',
-    })
-    if (!ok) return
-    setBusyId(b.id)
+  const submitNoShow = async (reason) => {
+    const b = noShowFor
+    if (!b || noShowBusy) return
+    setNoShowBusy(true)
     try {
-      await markNoShow(b)
-      push({ tone: 'info', title: 'No-show recorded', body: `#${b.ref}` })
+      await markNoShow(b, reason)
+      push({ tone: 'info', title: 'No-show recorded', body: `#${b.ref} · ${reason}` })
+      setNoShowFor(null)
     } catch (err) {
       push({ tone: 'warn', title: 'Could not update', body: err.message })
     } finally {
-      setBusyId(null)
+      setNoShowBusy(false)
     }
   }
 
@@ -68,6 +78,14 @@ export default function OwnerBookings() {
     setOtpErr('')
     setOtpFor(b)
   }
+
+  const toggleNumber = (id) =>
+    setRevealed((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
 
   const rows = useMemo(() => {
     switch (filter) {
@@ -124,6 +142,7 @@ export default function OwnerBookings() {
                 <thead>
                   <tr>
                     <th>Booking</th>
+                    <th>Customer</th>
                     <th>Salon</th>
                     <th>Customer slot</th>
                     <th>Where</th>
@@ -138,11 +157,33 @@ export default function OwnerBookings() {
                     const cancelled = b.status === 'cancelled'
                     const paid = b.paymentStatus === 'paid'
                     const actionable = !cancelled && b.status !== 'completed'
+                    const noShowReady = now >= slotStartMs(b) + NO_SHOW_GRACE_MS
+                    const showNum = revealed.has(b.id)
                     return (
                       <tr key={b.id}>
                         <td>
                           <div className="ptable__strong">#{b.ref}</div>
                           <div className="ptable__sub">{b.serviceName}</div>
+                        </td>
+                        <td>
+                          <div className="ptable__strong">{b.customerName ?? '—'}</div>
+                          {b.customerPhone ? (
+                            showNum ? (
+                              <a className="ptable__mono" href={`tel:+91${b.customerPhone}`}>
+                                +91 {b.customerPhone}
+                              </a>
+                            ) : (
+                              <button
+                                type="button"
+                                className="linkbtn"
+                                onClick={() => toggleNumber(b.id)}
+                              >
+                                Click to view number
+                              </button>
+                            )
+                          ) : (
+                            <div className="ptable__sub">No number</div>
+                          )}
                         </td>
                         <td>{b.salonName}</td>
                         <td>
@@ -172,6 +213,11 @@ export default function OwnerBookings() {
                           >
                             {cancelled ? 'Cancelled' : b.status === 'completed' ? 'Completed' : 'Confirmed'}
                           </span>
+                          {cancelled && b.noShow && (
+                            <div className="ptable__sub">
+                              No-show{b.noShowReason ? ` · ${b.noShowReason}` : ''}
+                            </div>
+                          )}
                         </td>
                         <td>
                           {actionable ? (
@@ -180,23 +226,25 @@ export default function OwnerBookings() {
                                 type="button"
                                 className="btn btn--gold btn--sm"
                                 onClick={() => openComplete(b)}
-                                disabled={busyId === b.id}
                               >
                                 {b.paymentMode === 'offline' ? 'Payment complete' : 'Mark served'}
                               </button>
                               <button
                                 type="button"
                                 className="btn btn--outline btn--sm"
-                                onClick={() => doNoShow(b)}
-                                disabled={busyId === b.id}
+                                onClick={() => setNoShowFor(b)}
+                                disabled={!noShowReady}
+                                title={
+                                  noShowReady
+                                    ? 'Mark this customer as a no-show'
+                                    : 'Available 15 minutes after the booking time'
+                                }
                               >
                                 No-show
                               </button>
                             </div>
                           ) : (
-                            <span className="ptable__sub">
-                              {b.noShow ? 'No-show' : '—'}
-                            </span>
+                            <span className="ptable__sub">{b.noShow ? 'No-show' : '—'}</span>
                           )}
                         </td>
                       </tr>
@@ -249,6 +297,48 @@ export default function OwnerBookings() {
                 disabled={otpBusy || otpValue.length < 4}
               >
                 {otpBusy ? 'Verifying…' : 'Verify & complete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {noShowFor && (
+        <div className="pmodal" role="presentation" onMouseDown={() => !noShowBusy && setNoShowFor(null)}>
+          <div
+            className="pmodal__box pmodal__box--sm"
+            role="dialog"
+            aria-modal="true"
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            <h3 className="pmodal__title">Mark as no-show</h3>
+            <p className="pmodal__text">
+              Pick a reason for {noShowFor.serviceName} (#{noShowFor.ref}).
+              {noShowFor.paymentMode === 'online'
+                ? ' A 15% penalty applies; 85% is refunded to the customer’s wallet.'
+                : ' This counts as a strike against the customer’s cash bookings.'}
+            </p>
+            <div className="reason-list">
+              {NO_SHOW_REASONS.map((r) => (
+                <button
+                  key={r}
+                  type="button"
+                  className="reason-btn"
+                  onClick={() => submitNoShow(r)}
+                  disabled={noShowBusy}
+                >
+                  {r}
+                </button>
+              ))}
+            </div>
+            <div className="pmodal__actions">
+              <button
+                type="button"
+                className="btn btn--outline"
+                onClick={() => setNoShowFor(null)}
+                disabled={noShowBusy}
+              >
+                Cancel
               </button>
             </div>
           </div>

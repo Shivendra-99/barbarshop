@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { CATEGORIES } from '../data/seed'
 import { fileToCompressedDataUrl } from '../lib/image'
+import TimeField12 from '../components/TimeField12'
+import ServiceEditor from './ServiceEditor'
 import './panel-ui.css'
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
@@ -17,6 +19,7 @@ export default function SalonEditDialog({ salon, role = 'founder', onClose, onSa
     category: salon.category,
     area: salon.area,
     address: salon.address,
+    phone: salon.phone ?? '',
     opens: salon.opens,
     closes: salon.closes,
     homeServiceFee: salon.homeServiceFee ?? 0,
@@ -75,6 +78,7 @@ export default function SalonEditDialog({ salon, role = 'founder', onClose, onSa
         name: form.name.trim(),
         area: form.area.trim(),
         address: form.address.trim(),
+        phone: form.phone.trim(),
         opens: form.opens,
         closes: form.closes,
         homeServiceFee: Number(form.homeServiceFee) || 0,
@@ -151,13 +155,31 @@ export default function SalonEditDialog({ salon, role = 'founder', onClose, onSa
             <span className="field__label">Address</span>
             <input className="field__input" value={form.address} onChange={set('address')} />
           </label>
+          <label className="field pmodal__full">
+            <span className="field__label">Contact number (shown to customers as “Call salon”)</span>
+            <input
+              className="field__input"
+              type="tel"
+              inputMode="numeric"
+              maxLength={10}
+              value={form.phone}
+              onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value.replace(/\D/g, '').slice(0, 10) }))}
+              placeholder="10-digit mobile number"
+            />
+          </label>
           <label className="field">
             <span className="field__label">Opens</span>
-            <input type="time" className="field__input" value={form.opens} onChange={set('opens')} />
+            <TimeField12
+              value={form.opens}
+              onChange={(v) => setForm((f) => ({ ...f, opens: v }))}
+            />
           </label>
           <label className="field">
             <span className="field__label">Closes</span>
-            <input type="time" className="field__input" value={form.closes} onChange={set('closes')} />
+            <TimeField12
+              value={form.closes}
+              onChange={(v) => setForm((f) => ({ ...f, closes: v }))}
+            />
           </label>
           <label className="field">
             <span className="field__label">Slot length</span>
@@ -248,6 +270,14 @@ export default function SalonEditDialog({ salon, role = 'founder', onClose, onSa
           <label>
             <input type="checkbox" checked={form.home} onChange={set('home')} /> Home service
           </label>
+        </div>
+
+        {/* Menu — add, edit or remove services right here. Saves immediately,
+            independent of the salon-details "Save changes" button below. */}
+        <div className="se-block">
+          <span className="field__label">Services</span>
+          <span className="se-hint">Changes to the menu are saved instantly.</span>
+          <ServiceEditor salonId={salon.id} />
         </div>
 
         <div className="pmodal__actions">

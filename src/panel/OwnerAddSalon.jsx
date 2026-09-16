@@ -4,6 +4,7 @@ import { useApp } from '../store/AppStore'
 import { useToast } from '../components/Toast'
 import { useConfirm } from '../components/Confirm'
 import AddressAutocomplete from '../components/AddressAutocomplete'
+import TimeField12 from '../components/TimeField12'
 import { CATEGORIES, CITIES, normalizeCityId } from '../data/seed'
 import { api } from '../lib/api'
 import { formatINR } from '../lib/money'
@@ -22,6 +23,7 @@ const EMPTY = {
   ownerId: '',
   area: '',
   address: '',
+  phone: '',
   addressELoc: null,
   opens: '10:00',
   closes: '20:00',
@@ -140,6 +142,7 @@ export default function OwnerAddSalon({ asFounder = false }) {
         ownerId: asFounder ? form.ownerId : undefined,
         area: form.area.trim(),
         address: form.address.trim(),
+        phone: form.phone.trim() || undefined,
         addressELoc: form.addressELoc || undefined,
         opens: form.opens,
         closes: form.closes,
@@ -278,6 +281,23 @@ export default function OwnerAddSalon({ asFounder = false }) {
             {err('area') && <span className="field__error">{errors.area}</span>}
           </label>
 
+          <label className="field" htmlFor="s-phone">
+            <span className="field__label">Contact number</span>
+            <input
+              id="s-phone"
+              className="field__input"
+              type="tel"
+              inputMode="numeric"
+              maxLength={10}
+              value={form.phone}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, phone: e.target.value.replace(/\D/g, '').slice(0, 10) }))
+              }
+              placeholder="10-digit mobile number"
+            />
+            <span className="field__hint">Shown to customers as “Call salon” after booking.</span>
+          </label>
+
           <label className="field addForm__full" htmlFor="s-address">
             <span className="field__label">Full address</span>
             <AddressAutocomplete
@@ -300,12 +320,20 @@ export default function OwnerAddSalon({ asFounder = false }) {
 
           <label className="field" htmlFor="s-opens">
             <span className="field__label">Opens</span>
-            <input id="s-opens" type="time" className="field__input" value={form.opens} onChange={set('opens')} />
+            <TimeField12
+              id="s-opens"
+              value={form.opens}
+              onChange={(v) => setForm((f) => ({ ...f, opens: v }))}
+            />
           </label>
 
           <label className="field" htmlFor="s-closes">
             <span className="field__label">Closes</span>
-            <input id="s-closes" type="time" className="field__input" value={form.closes} onChange={set('closes')} />
+            <TimeField12
+              id="s-closes"
+              value={form.closes}
+              onChange={(v) => setForm((f) => ({ ...f, closes: v }))}
+            />
           </label>
         </div>
 

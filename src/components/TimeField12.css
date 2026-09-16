@@ -1,0 +1,23 @@
+.tf12 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tf12__sel {
+  padding-left: 10px;
+  padding-right: 8px;
+  min-width: 0;
+  flex: 1 1 auto;
+  text-align: center;
+}
+
+.tf12__ampm {
+  flex: 0 0 auto;
+  min-width: 68px;
+}
+
+.tf12__colon {
+  font-weight: 700;
+  opacity: 0.6;
+}

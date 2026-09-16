@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { useApp } from '../store/AppStore'
-import { usePrefs, THEMES } from '../store/Prefs'
+import { usePrefs, THEMES, LANGS } from '../store/Prefs'
+import { useT } from '../lib/i18n'
 import { BRAND } from '../data/seed'
 import LogoMark from './LogoMark'
 import { api } from '../lib/api'
@@ -29,10 +30,10 @@ const THEME_ICONS = {
 }
 
 const LINKS = [
-  { to: '/', label: 'Home', end: true },
-  { to: '/salons', label: 'Book' },
-  { to: '/appointments', label: 'My bookings' },
-  { to: '/help', label: 'Help' },
+  { to: '/', key: 'nav.home', end: true },
+  { to: '/salons', key: 'nav.book' },
+  { to: '/appointments', key: 'nav.mybookings' },
+  { to: '/help', key: 'nav.help' },
 ]
 
 function Panel({ open, onClose, children, className }) {
@@ -66,8 +67,18 @@ export default function Header({ city, onCityChange }) {
   const navigate = useNavigate()
   const { isSignedIn, session, logout, unreadCount, myNotifications, markRead, walletBalance } =
     useApp()
-  const { theme, setTheme, resolvedTheme, cities, setCityFromPincode, detectLocation, detecting } =
-    usePrefs()
+  const {
+    theme,
+    setTheme,
+    resolvedTheme,
+    cities,
+    setCityFromPincode,
+    detectLocation,
+    detecting,
+    lang,
+    setLang,
+  } = usePrefs()
+  const t = useT()
   // Combined location search: type a city name OR a 6-digit PIN.
   const [query, setQuery] = useState('')
   const [results, setResults] = useState([])
@@ -178,8 +189,8 @@ export default function Header({ city, onCityChange }) {
                     setQuery(e.target.value)
                     setLocErr('')
                   }}
-                  placeholder="Search city or PIN code"
-                  aria-label="Search city or PIN code"
+                  placeholder={t('city.searchPlaceholder')}
+                  aria-label={t('city.searchPlaceholder')}
                   autoComplete="off"
                 />
               </div>
@@ -195,13 +206,15 @@ export default function Header({ city, onCityChange }) {
                   <circle cx="8" cy="8" r="5.4" fill="none" stroke="currentColor" strokeWidth="1.2" />
                   <path d="M8 .8v2M8 13.2v2M.8 8h2M13.2 8h2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
                 </svg>
-                {detecting ? 'Detecting…' : 'Use my current location'}
+                {detecting ? t('city.detecting') : t('city.useLocation')}
               </button>
 
               {query.trim() ? (
                 <ul role="listbox" aria-label="Search results">
-                  {searching && <li className="pop__note">Searching…</li>}
-                  {!searching && results.length === 0 && <li className="pop__note">No matches</li>}
+                  {searching && <li className="pop__note">{t('city.searching')}</li>}
+                  {!searching && results.length === 0 && (
+                    <li className="pop__note">{t('city.noMatches')}</li>
+                  )}
                   {results.map((r, i) => (
                     <li key={`${r.city}-${r.pincode || i}`} role="none">
                       <button type="button" role="option" className="pop__opt" onClick={() => pick(r)}>
@@ -267,11 +280,25 @@ export default function Header({ city, onCityChange }) {
               className={({ isActive }) => `hdr__link${isActive ? ' is-active' : ''}`}
               onClick={() => setMobileOpen(false)}
             >
-              {l.label}
+              {t(l.key)}
             </NavLink>
           ))}
 
           <div className="hdr__actions">
+            <div className="hdr__lang" role="group" aria-label={t('menu.language')}>
+              {LANGS.map((l) => (
+                <button
+                  key={l.id}
+                  type="button"
+                  className={`hdr__langBtn${lang === l.id ? ' is-active' : ''}`}
+                  aria-pressed={lang === l.id}
+                  onClick={() => setLang(l.id)}
+                >
+                  {l.short}
+                </button>
+              ))}
+            </div>
+
             <div className="sel-wrap">
               <button
                 type="button"
@@ -286,28 +313,28 @@ export default function Header({ city, onCityChange }) {
                 </svg>
               </button>
               <Panel open={menu === 'theme'} onClose={close} className="pop--theme">
-                <div className="pop__head">Appearance</div>
-                <ul role="listbox" aria-label="Appearance">
-                  {THEMES.map((t) => (
-                    <li key={t.id} role="none">
+                <div className="pop__head">{t('menu.appearance')}</div>
+                <ul role="listbox" aria-label={t('menu.appearance')}>
+                  {THEMES.map((th) => (
+                    <li key={th.id} role="none">
                       <button
                         type="button"
                         role="option"
-                        aria-selected={theme === t.id}
-                        aria-label={t.label}
-                        className={`pop__link${theme === t.id ? ' is-selected' : ''}`}
+                        aria-selected={theme === th.id}
+                        aria-label={t(`theme.${th.id}`)}
+                        className={`pop__link${theme === th.id ? ' is-selected' : ''}`}
                         onClick={() => {
-                          setTheme(t.id)
+                          setTheme(th.id)
                           close()
                         }}
                       >
-                        <span>{t.label}</span>
-                        {t.id === 'system' && (
+                        <span>{t(`theme.${th.id}`)}</span>
+                        {th.id === 'system' && (
                           <span className="pop__hint">
-                            Currently {resolvedTheme}
+                            {t('menu.currently', { x: t(`theme.${resolvedTheme}`) })}
                           </span>
                         )}
-                        {theme === t.id && (
+                        {theme === th.id && (
                           <svg className="pop__tick" viewBox="0 0 14 14" aria-hidden="true">
                             <path
                               d="M2 7.5 5.5 11 12 3.5"
@@ -354,9 +381,9 @@ export default function Header({ city, onCityChange }) {
                   {unreadCount > 0 && <span className="hdr__dot">{unreadCount}</span>}
                 </button>
                 <Panel open={menu === 'bell'} onClose={close} className="pop--bell">
-                  <div className="pop__head">Notifications</div>
+                  <div className="pop__head">{t('menu.notifications')}</div>
                   {myNotifications.length === 0 ? (
-                    <p className="pop__empty">Nothing yet. Your bookings will show up here.</p>
+                    <p className="pop__empty">{t('menu.notifEmpty')}</p>
                   ) : (
                     <ul className="pop__list">
                       {myNotifications.slice(0, 8).map((n) => (
@@ -395,26 +422,26 @@ export default function Header({ city, onCityChange }) {
                   </div>
                   {session.role === 'founder' && (
                     <Link to="/admin" className="pop__link" onClick={close}>
-                      Admin dashboard
+                      {t('menu.adminDashboard')}
                     </Link>
                   )}
                   {session.role === 'owner' && (
                     <Link to="/owner" className="pop__link" onClick={close}>
-                      Owner dashboard
+                      {t('menu.ownerDashboard')}
                     </Link>
                   )}
                   <Link to="/appointments" className="pop__link" onClick={close}>
-                    My bookings
+                    {t('nav.mybookings')}
                   </Link>
                   <Link to="/wallet" className="pop__link" onClick={close}>
-                    Wallet
+                    {t('menu.wallet')}
                     <span className="pop__badge money">{formatINR(walletBalance)}</span>
                   </Link>
                   <Link to="/account" className="pop__link" onClick={close}>
-                    Account
+                    {t('menu.account')}
                   </Link>
                   <button type="button" className="pop__link pop__link--danger" onClick={signOut}>
-                    Log out
+                    {t('menu.logout')}
                   </button>
                 </Panel>
               </div>
@@ -428,7 +455,7 @@ export default function Header({ city, onCityChange }) {
                   <circle cx="8" cy="5.5" r="2.8" fill="currentColor" />
                   <path d="M2.5 14c.6-3 2.9-4.5 5.5-4.5S13 11 13.5 14Z" fill="currentColor" />
                 </svg>
-                Login
+                {t('cta.login')}
               </Link>
             )}
           </div>

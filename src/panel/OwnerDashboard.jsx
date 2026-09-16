@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useApp } from '../store/AppStore'
 import { useToast } from '../components/Toast'
-import SalonQrDialog from '../components/SalonQrDialog'
 import SalonEditDialog from './SalonEditDialog'
 import { CITIES, categoryById } from '../data/seed'
 import { formatINR, formatCompactINR } from '../lib/money'
@@ -30,7 +29,6 @@ function Kpi({ label, value, delta }) {
 export default function OwnerDashboard() {
   const { mySalons, ownerBookings, session, updateSalon } = useApp()
   const { push } = useToast()
-  const [qrSalon, setQrSalon] = useState(null)
   const [editing, setEditing] = useState(null)
 
   const saveEdit = async (changes) => {
@@ -143,15 +141,6 @@ export default function OwnerDashboard() {
                         >
                           Edit
                         </button>
-                        {s.status === 'approved' && (
-                          <button
-                            type="button"
-                            className="btn btn--outline btn--sm"
-                            onClick={() => setQrSalon(s)}
-                          >
-                            QR
-                          </button>
-                        )}
                       </div>
                     </td>
                   </tr>
@@ -161,8 +150,6 @@ export default function OwnerDashboard() {
           </div>
         )}
       </div>
-
-      {qrSalon && <SalonQrDialog salon={qrSalon} onClose={() => setQrSalon(null)} />}
 
       {editing && (
         <SalonEditDialog

@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom'
 import { useApp } from '../store/AppStore'
+import { useT } from '../lib/i18n'
 import './BottomNav.css'
 
 const ICONS = {
@@ -67,13 +68,14 @@ function Tab({ to, end, icon, label }) {
  */
 export default function BottomNav() {
   const { isSignedIn } = useApp()
+  const t = useT()
 
   return (
     <nav className="btmnav" aria-label="Primary">
-      <Tab to="/" end icon="home" label="Home" />
-      <Tab to="/salons" icon="book" label="Book" />
-      <Tab to="/help" icon="help" label="Help" />
-      <Tab to={isSignedIn ? '/account' : '/login'} icon="account" label="Account" />
+      <Tab to="/" end icon="home" label={t('nav.home')} />
+      <Tab to="/salons" icon="book" label={t('nav.book')} />
+      <Tab to="/help" icon="help" label={t('nav.help')} />
+      <Tab to={isSignedIn ? '/account' : '/login'} icon="account" label={t('nav.account')} />
     </nav>
   )
 }

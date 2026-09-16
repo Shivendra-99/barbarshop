@@ -11,6 +11,11 @@ export const THEMES = [
   { id: 'system', label: 'System' },
 ]
 
+export const LANGS = [
+  { id: 'en', label: 'English', short: 'EN' },
+  { id: 'hi', label: 'हिन्दी', short: 'हिं' },
+]
+
 /**
  * Search and display preferences. Kept apart from AppStore because these are
  * view preferences, not domain records, and persist independently of the
@@ -28,10 +33,16 @@ export function PrefsProvider({ children }) {
   const [recentCities, setRecentCities] = useState(() => load('prefs:recentCities', []))
   const [category, setCategory] = useState(() => load('prefs:category', null))
   const [theme, setTheme] = useState(() => load('prefs:theme', 'system'))
+  // Interface language: 'en' | 'hi'. Persists across sessions.
+  const [lang, setLang] = useState(() => load('prefs:lang', 'en'))
 
   useEffect(() => save('prefs:cityObj', city), [city])
   useEffect(() => save('prefs:recentCities', recentCities), [recentCities])
   useEffect(() => save('prefs:category', category), [category])
+  useEffect(() => {
+    save('prefs:lang', lang)
+    document.documentElement.lang = lang
+  }, [lang])
 
   // Seeded cities first, then any the user added via PIN.
   const cities = useMemo(() => {
@@ -127,8 +138,10 @@ export function PrefsProvider({ children }) {
       theme,
       setTheme,
       resolvedTheme,
+      lang,
+      setLang,
     }),
-    [city, cities, setCity, setCityFromPincode, detectLocation, detecting, category, theme, resolvedTheme],
+    [city, cities, setCity, setCityFromPincode, detectLocation, detecting, category, theme, resolvedTheme, lang],
   )
 
   return <PrefsContext.Provider value={value}>{children}</PrefsContext.Provider>

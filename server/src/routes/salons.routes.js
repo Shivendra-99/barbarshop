@@ -27,6 +27,8 @@ const createSchema = z.object({
   pin: z.string().trim().regex(/^\d{6}$/).optional(),
   area: z.string().trim().min(2),
   address: z.string().trim().min(8),
+  // Public contact number (10 digits) or empty. Optional at creation.
+  phone: z.string().trim().regex(/^(\d{10})?$/, 'Enter a valid 10-digit number.').optional(),
   serviceModes: z.array(z.enum(['salon', 'home'])).min(1),
   homeServiceFee: z.number().int().min(0).max(5000).default(0),
   opens: z.string().default('10:00'),
@@ -46,6 +48,7 @@ const editSchema = z.object({
   category: z.enum(['mens', 'unisex', 'parlour']).optional(),
   area: z.string().trim().min(2).optional(),
   address: z.string().trim().min(8).optional(),
+  phone: z.string().trim().regex(/^(\d{10})?$/, 'Enter a valid 10-digit number.').optional(),
   opens: z.string().optional(),
   closes: z.string().optional(),
   serviceModes: z.array(z.enum(['salon', 'home'])).min(1).optional(),
@@ -62,7 +65,7 @@ const editSchema = z.object({
 
 // Fields an owner may change on their own salon (a subset of the founder's).
 const OWNER_EDITABLE = new Set([
-  'name', 'area', 'address', 'opens', 'closes', 'serviceModes',
+  'name', 'area', 'address', 'phone', 'opens', 'closes', 'serviceModes',
   'homeServiceFee', 'slotMinutes', 'daysOff', 'closedDates', 'photo', 'capacity',
 ])
 
@@ -123,6 +126,26 @@ router.get(
   asyncHandler(async (req, res) => {
     const salons = await Salon.find({ owner: req.user._id }).sort({ createdAt: -1 })
     res.json({ salons: await withFrom(salons) })
+  }),
+)
+
+/* ---- Owner: set the customer-facing contact number on all their salons ----
+   Backs the "My Profile" number so an owner can add it once. Declared before
+   ":id" so "/mine/contact" isn't swallowed by the id route. */
+
+const contactSchema = z.object({
+  phone: z.string().trim().regex(/^(\d{10})?$/, 'Enter a valid 10-digit number.'),
+})
+
+router.patch(
+  '/mine/contact',
+  requireAuth,
+  requireRole('owner'),
+  validate(contactSchema),
+  asyncHandler(async (req, res) => {
+    await Salon.updateMany({ owner: req.user._id }, { phone: req.body.phone })
+    const salons = await Salon.find({ owner: req.user._id }).sort({ createdAt: -1 })
+    res.json({ phone: req.body.phone, salons: await withFrom(salons) })
   }),
 )
 

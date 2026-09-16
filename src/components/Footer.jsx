@@ -1,60 +1,62 @@
 import { Link } from 'react-router-dom'
 import { BRAND, TRUST_POINTS } from '../data/seed'
 import { useApp } from '../store/AppStore'
+import { useT } from '../lib/i18n'
 import LogoMark from './LogoMark'
 import './Footer.css'
 
 const COLUMNS = [
   {
-    title: 'Menu',
+    titleKey: 'ftr.menu',
     links: [
-      { label: 'Home', to: '/' },
-      { label: 'Book', to: '/salons' },
-      { label: 'Help', to: '/help' },
-      { label: 'Account', to: 'account' },
+      { key: 'nav.home', to: '/' },
+      { key: 'nav.book', to: '/salons' },
+      { key: 'nav.help', to: '/help' },
+      { key: 'nav.account', to: 'account' },
     ],
   },
   {
-    title: 'Book',
+    titleKey: 'ftr.book',
     links: [
-      { label: 'All salons', to: '/salons' },
-      { label: 'My bookings', to: '/appointments' },
-      { label: 'Wallet', to: '/wallet' },
+      { key: 'ftr.allSalons', to: '/salons' },
+      { key: 'ftr.myBookings', to: '/appointments' },
+      { key: 'ftr.wallet', to: '/wallet' },
     ],
   },
   {
-    title: 'For salons',
+    titleKey: 'ftr.forSalons',
     links: [
-      { label: 'List your salon', to: '/owner/add' },
-      { label: 'Owner dashboard', to: '/owner' },
-      { label: 'Admin', to: '/admin' },
+      { key: 'ftr.listSalon', to: '/owner/add' },
+      { key: 'ftr.ownerDashboard', to: '/owner' },
+      { key: 'ftr.admin', to: '/admin' },
     ],
   },
   {
-    title: 'Company',
+    titleKey: 'ftr.company',
     links: [
-      { label: 'Help centre', to: '/help' },
-      { label: 'About Us', to: '/about-us' },
-      { label: 'Contact Us', to: '/contact-us' },
-      { label: 'Refund Policy', to: '/refund-policy' },
-      { label: 'Privacy Policy', to: '/privacy-policy' },
-      { label: 'Terms & Conditions', to: '/terms-and-conditions' },
+      { key: 'ftr.helpCentre', to: '/help' },
+      { key: 'ftr.about', to: '/about-us' },
+      { key: 'ftr.contact', to: '/contact-us' },
+      { key: 'ftr.refund', to: '/refund-policy' },
+      { key: 'ftr.privacy', to: '/privacy-policy' },
+      { key: 'ftr.terms', to: '/terms-and-conditions' },
     ],
   },
 ]
 
 export default function Footer() {
   const { isSignedIn } = useApp()
+  const t = useT()
   const resolve = (to) => (to === 'account' ? (isSignedIn ? '/account' : '/login') : to)
 
   return (
     <footer className="ftr">
       <div className="ftr__trust">
         <div className="shell ftr__trustRow">
-          {TRUST_POINTS.map((t) => (
-            <span key={t} className="ftr__trustItem">
+          {TRUST_POINTS.map((point, i) => (
+            <span key={point} className="ftr__trustItem">
               <span className="ftr__trustDot" aria-hidden="true" />
-              {t}
+              {t(`trust.${i + 1}`)}
             </span>
           ))}
         </div>
@@ -66,15 +68,15 @@ export default function Footer() {
             <LogoMark className="ftr__mark" />
             {BRAND.name}
           </div>
-          <p className="ftr__blurb">{BRAND.tagline}</p>
+          <p className="ftr__blurb">{t('home.tagline')}</p>
         </div>
         {COLUMNS.map((col) => (
-          <div key={col.title}>
-            <div className="ftr__heading">{col.title}</div>
+          <div key={col.titleKey}>
+            <div className="ftr__heading">{t(col.titleKey)}</div>
             <ul className="ftr__links">
               {col.links.map((l) => (
-                <li key={l.label}>
-                  <Link to={resolve(l.to)}>{l.label}</Link>
+                <li key={l.key}>
+                  <Link to={resolve(l.to)}>{t(l.key)}</Link>
                 </li>
               ))}
             </ul>
@@ -85,9 +87,9 @@ export default function Footer() {
       <div className="shell ftr__base">
         <div>© {new Date().getFullYear()} {BRAND.name}</div>
         <div className="ftr__legal">
-          <Link to="/privacy-policy">Privacy Policy</Link>
+          <Link to="/privacy-policy">{t('ftr.privacy')}</Link>
           <span aria-hidden="true"> · </span>
-          <Link to="/terms-and-conditions">Terms &amp; Conditions</Link>
+          <Link to="/terms-and-conditions">{t('ftr.terms')}</Link>
         </div>
       </div>
     </footer>

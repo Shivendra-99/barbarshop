@@ -81,6 +81,9 @@ export const api = {
   setSalonStatus: (id, status) =>
     request(`/salons/${id}/status`, { method: 'PATCH', body: { status } }),
   updateSalon: (id, body) => request(`/salons/${id}`, { method: 'PATCH', body }),
+  // Owner: set the customer-facing contact number across all their salons.
+  setOwnerContact: (phone) =>
+    request('/salons/mine/contact', { method: 'PATCH', body: { phone } }),
 
   // --- Services (per salon, owner-managed) ---
   salonServices: (salonId) => request(`/services?salon=${salonId}`, { auth: false }),
@@ -103,7 +106,8 @@ export const api = {
   allBookings: () => request('/bookings/all'),
   cancelBooking: (id, method) =>
     request(`/bookings/${id}/cancel`, { method: 'POST', body: { method } }),
-  noShowBooking: (id) => request(`/bookings/${id}/no-show`, { method: 'POST' }),
+  noShowBooking: (id, reason) =>
+    request(`/bookings/${id}/no-show`, { method: 'POST', body: reason ? { reason } : {} }),
   rescheduleBooking: (id, body) =>
     request(`/bookings/${id}/reschedule`, { method: 'PATCH', body }),
   completeBooking: (id, otp) =>

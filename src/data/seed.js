@@ -341,6 +341,9 @@ export const SUPPORT = {
   whatsappNumber: '917081126830',
   whatsappUrl: (msg = 'Hi SalonSaathi, I need help with') =>
     `https://wa.me/917081126830?text=${encodeURIComponent(msg)}`,
+  phoneDisplay: '+91 70811 26830',
+  phoneTel: '+917081126830',
+  email: 'supportsalonsaathi@gmail.com',
 }
 
 export const TRUST_POINTS = [

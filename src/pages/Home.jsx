@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import Reveal from '../components/Reveal'
 import { useApp } from '../store/AppStore'
 import { usePrefs } from '../store/Prefs'
-import { BRAND, CATEGORIES, FAQS, STEPS, TESTIMONIALS } from '../data/seed'
+import { useT } from '../lib/i18n'
+import { CATEGORIES, FAQS, STEPS, TESTIMONIALS } from '../data/seed'
 import { IMG_MENS_INTERIOR, IMG_UNISEX, IMG_PARLOUR } from '../assets'
 import { formatINR } from '../lib/money'
 import './Home.css'
@@ -18,6 +19,7 @@ export default function Home() {
   const navigate = useNavigate()
   const { publicSalons, isFirstBooking, isSignedIn, settings } = useApp()
   const { city, setCategory } = usePrefs()
+  const t = useT()
   const [openFaq, setOpenFaq] = useState(0)
 
   const inCity = publicSalons.filter((s) => s.city === city.id)
@@ -44,15 +46,12 @@ export default function Home() {
 
         <div className="shell choose__inner">
           <div className="choose__head anim-up">
-            <div className="eyebrow">{BRAND.tagline}</div>
-            <h1 className="display choose__title">Choose Your Salon</h1>
-            <p className="lede choose__lede">
-              Select your preferred salon experience for tailored services &amp; expert care
-              in {city.label}.
-            </p>
+            <div className="eyebrow">{t('home.tagline')}</div>
+            <h1 className="display choose__title">{t('home.chooseTitle')}</h1>
+            <p className="lede choose__lede">{t('home.chooseLede', { city: city.label })}</p>
             {!isSignedIn && (
               <p className="choose__offer">
-                <strong>10% off</strong> your first booking when you pay online
+                <strong>{t('home.offerStrong')}</strong> {t('home.offerRest')}
               </p>
             )}
           </div>
@@ -68,15 +67,15 @@ export default function Home() {
                   type="button"
                   className="pick__btn"
                   onClick={() => goCategory(cat.id)}
-                  aria-label={`${cat.label} — ${cat.blurb}`}
+                  aria-label={`${t(`cat.${cat.id}.label`)} — ${t(`cat.${cat.id}.blurb`)}`}
                 >
                   <span className="pick__media">
                     <img src={CARD_IMAGES[cat.id]} alt="" aria-hidden="true" />
                   </span>
                   <span className="pick__body">
-                    <span className="pick__name">{cat.label}</span>
-                    <span className="pick__blurb">{cat.blurb}</span>
-                    <span className="pick__cta">Explore →</span>
+                    <span className="pick__name">{t(`cat.${cat.id}.label`)}</span>
+                    <span className="pick__blurb">{t(`cat.${cat.id}.blurb`)}</span>
+                    <span className="pick__cta">{t('home.explore')}</span>
                   </span>
                 </button>
               </Reveal>
@@ -87,19 +86,19 @@ export default function Home() {
         {/* ---- Featured: beauty parlour ---- */}
         <div className="feature">
           <div className="shell">
-            <div className="feature__label">Featured services</div>
+            <div className="feature__label">{t('home.featured')}</div>
             <Reveal className="feature__card">
               <img className="feature__img" src={CARD_IMAGES.parlour} alt="" aria-hidden="true" />
               <div className="feature__scrim" />
               <div className="feature__content">
-                <h2 className="display feature__title">{parlour.label}</h2>
-                <p className="feature__text">{parlour.blurb}</p>
+                <h2 className="display feature__title">{t('cat.parlour.label')}</h2>
+                <p className="feature__text">{t('cat.parlour.blurb')}</p>
                 <button
                   type="button"
                   className="btn btn--gold"
                   onClick={() => goCategory(parlour.id)}
                 >
-                  Book now →
+                  {t('home.bookNow')}
                 </button>
               </div>
             </Reveal>
@@ -111,22 +110,21 @@ export default function Home() {
       <section className="shell section">
         <Reveal className="section__head">
           <div>
-            <div className="eyebrow">Top rated</div>
-            <h2 className="section-title">Salons in {city.label}</h2>
+            <div className="eyebrow">{t('home.topRated')}</div>
+            <h2 className="section-title">{t('home.salonsIn', { city: city.label })}</h2>
           </div>
           {!showComingSoon && (
             <button type="button" className="section__more" onClick={() => navigate('/salons')}>
-              View all {inCity.length}
+              {t('home.viewAll', { n: inCity.length })}
             </button>
           )}
         </Reveal>
 
         {showComingSoon && (
           <div className="empty">
-            <h3 className="empty__title">Coming soon in {city.label}</h3>
+            <h3 className="empty__title">{t('home.comingSoonTitle', { city: city.label })}</h3>
             <p className="empty__text">
-              {settings.comingSoonMessage ||
-                'We’re onboarding great salons near you — check back soon.'}
+              {settings.comingSoonMessage || t('home.comingSoonText')}
             </p>
           </div>
         )}
@@ -154,17 +152,21 @@ export default function Home() {
                     <span className="salonCard__rating">★ {salon.rating.toFixed(1)}</span>
                   </span>
                   <span className="salonCard__meta">
-                    {salon.area} · {salon.dist} · {salon.reviews} reviews
+                    {salon.area} · {salon.dist} · {salon.reviews} {t('card.reviews')}
                   </span>
                   <span className="salonCard__modes">
-                    {salon.serviceModes.includes('salon') && <span className="tag">At salon</span>}
-                    {salon.serviceModes.includes('home') && <span className="tag">Home service</span>}
+                    {salon.serviceModes.includes('salon') && (
+                      <span className="tag">{t('card.atSalon')}</span>
+                    )}
+                    {salon.serviceModes.includes('home') && (
+                      <span className="tag">{t('card.homeService')}</span>
+                    )}
                   </span>
                   <span className="salonCard__foot">
                     <span className="salonCard__price money">
-                      from <strong>{formatINR(salon.from)}</strong>
+                      {t('card.from')} <strong>{formatINR(salon.from)}</strong>
                     </span>
-                    <span className="salonCard__open">Open till {salon.closes}</span>
+                    <span className="salonCard__open">{t('card.openTill', { t: salon.closes })}</span>
                   </span>
                 </span>
               </button>
@@ -177,8 +179,8 @@ export default function Home() {
       <section className="how">
         <div className="shell">
           <Reveal className="section__centered">
-            <div className="eyebrow">How it works</div>
-            <h2 className="section-title">Three steps, sixty seconds</h2>
+            <div className="eyebrow">{t('home.howItWorks')}</div>
+            <h2 className="section-title">{t('home.threeSteps')}</h2>
           </Reveal>
           <div className="grid3 how__steps">
             {STEPS.map((step, i) => (
@@ -188,8 +190,8 @@ export default function Home() {
                 style={{ transitionDelay: `${i * 90}ms` }}
               >
                 <div className="how__n">{step.n}</div>
-                <h3 className="how__stepTitle">{step.title}</h3>
-                <p className="how__stepBody">{step.body}</p>
+                <h3 className="how__stepTitle">{t(`step.${i + 1}.title`)}</h3>
+                <p className="how__stepBody">{t(`step.${i + 1}.body`)}</p>
               </Reveal>
             ))}
           </div>
@@ -199,22 +201,22 @@ export default function Home() {
       {/* ---------------- Testimonials ---------------- */}
       <section className="shell section">
         <Reveal className="section__centered">
-          <div className="eyebrow">Testimonials</div>
-          <h2 className="section-title">What members say</h2>
+          <div className="eyebrow">{t('home.testimonials')}</div>
+          <h2 className="section-title">{t('home.whatMembersSay')}</h2>
         </Reveal>
         <div className="grid3">
-          {TESTIMONIALS.map((t, i) => (
+          {TESTIMONIALS.map((item, i) => (
             <Reveal
-              key={t.name}
+              key={item.name}
               className="card quote"
               style={{ transitionDelay: `${i * 90}ms` }}
             >
               <div className="quote__stars" aria-label="Rated 5 out of 5">
                 ★★★★★
               </div>
-              <blockquote className="quote__text">“{t.quote}”</blockquote>
-              <div className="quote__name">{t.name}</div>
-              <div className="quote__meta">{t.meta}</div>
+              <blockquote className="quote__text">“{t(`tst.${i + 1}.quote`)}”</blockquote>
+              <div className="quote__name">{item.name}</div>
+              <div className="quote__meta">{t(`tst.${i + 1}.meta`)}</div>
             </Reveal>
           ))}
         </div>
@@ -222,7 +224,7 @@ export default function Home() {
 
       {/* ---------------- FAQ ---------------- */}
       <section className="shell shell--narrow faq">
-        <h2 className="section-title faq__title">Frequently asked</h2>
+        <h2 className="section-title faq__title">{t('home.faqTitle')}</h2>
         <div className="faq__list">
           {FAQS.map((f, i) => {
             const open = openFaq === i
@@ -234,13 +236,15 @@ export default function Home() {
                   aria-expanded={open}
                   onClick={() => setOpenFaq(open ? -1 : i)}
                 >
-                  <span className={open ? 'faq__qText is-open' : 'faq__qText'}>{f.q}</span>
+                  <span className={open ? 'faq__qText is-open' : 'faq__qText'}>
+                    {t(`faq.${i + 1}.q`)}
+                  </span>
                   <span className={open ? 'faq__plus is-open' : 'faq__plus'} aria-hidden="true">
                     +
                   </span>
                 </button>
                 <div className={open ? 'faq__panel is-open' : 'faq__panel'}>
-                  <div className="faq__a">{f.a}</div>
+                  <div className="faq__a">{t(`faq.${i + 1}.a`)}</div>
                 </div>
               </div>
             )
