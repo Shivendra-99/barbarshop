@@ -36,9 +36,11 @@
   margin-bottom: 14px;
 }
 
-.salon__name {
+.salon__name,
+.display.salon__name {
+  font-family: var(--font-display);
   font-size: clamp(32px, 5vw, 54px);
-  color: #fff;
+  color: #fff !important;
 }
 
 .salon__facts {

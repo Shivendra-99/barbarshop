@@ -91,7 +91,7 @@ export default function Home() {
               <img className="feature__img" src={CARD_IMAGES.parlour} alt="" aria-hidden="true" />
               <div className="feature__scrim" />
               <div className="feature__content">
-                <h2 className="display feature__title">{t('cat.parlour.label')}</h2>
+                <h2 className="feature__title">{t('cat.parlour.label')}</h2>
                 <p className="feature__text">{t('cat.parlour.blurb')}</p>
                 <button
                   type="button"

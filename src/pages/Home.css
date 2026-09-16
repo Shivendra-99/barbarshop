@@ -236,10 +236,15 @@
   max-width: 520px;
 }
 
-.feature__title {
+.feature__title,
+.feature__content .feature__title,
+.display.feature__title {
+  font-family: var(--font-display);
   font-size: clamp(30px, 4vw, 44px);
-  color: var(--gold-light);
-  font-weight: 800;
+  color: var(--gold-light) !important;
+  font-weight: 700;
+  line-height: 1.15;
+  margin: 0;
   letter-spacing: 0.01em;
   text-shadow: 0 1px 18px rgba(0, 0, 0, 0.35);
 }
