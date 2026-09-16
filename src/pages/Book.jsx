@@ -426,7 +426,7 @@ export default function Book() {
                       aria-pressed={slot === s.label}
                       onClick={() => setSlot(s.label)}
                     >
-                      {s.label}
+                      {formatTime12(s.label)}
                     </button>
                   ))}
                 </div>

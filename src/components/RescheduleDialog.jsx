@@ -189,7 +189,7 @@ export default function RescheduleDialog({ booking, onClose, onConfirm }) {
               disabled={s.busy}
               onClick={() => setSlot(s.label)}
             >
-              {s.label}
+              {formatTime12(s.label)}
             </button>
           ))}
         </div>
