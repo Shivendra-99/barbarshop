@@ -484,6 +484,10 @@
   line-height: 1.55;
 }
 
+.pay__hint--warn {
+  color: var(--danger, #c0392b);
+}
+
 /* ---------------- Summary ---------------- */
 
 .summary {

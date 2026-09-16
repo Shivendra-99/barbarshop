@@ -33,12 +33,26 @@ export default function Book() {
   // Whether real online payments (Razorpay) are configured on the backend.
   // When off, "Pay online" still works as the instant demo flow.
   const [payEnabled, setPayEnabled] = useState(false)
+  const [payChecked, setPayChecked] = useState(false)
   useEffect(() => {
     let alive = true
     api
       .paymentConfig()
-      .then((c) => alive && setPayEnabled(Boolean(c.enabled)))
-      .catch(() => alive && setPayEnabled(false))
+      .then((c) => {
+        if (!alive) return
+        const enabled = Boolean(c.enabled)
+        setPayEnabled(enabled)
+        setPayChecked(true)
+        // No real gateway → don't offer "Pay online" (which would otherwise
+        // confirm a booking as paid without actually charging). Fall back to cash.
+        if (!enabled) setPaymentMode('offline')
+      })
+      .catch(() => {
+        if (!alive) return
+        setPayEnabled(false)
+        setPayChecked(true)
+        setPaymentMode('offline')
+      })
     return () => {
       alive = false
     }
@@ -147,11 +161,14 @@ export default function Book() {
     offerPercent: salon?.offerActive ? salon.offerPercent : 0,
   })
 
+  // Cash-blocked customer AND no online gateway → they can't pay at all.
+  const noPayMethod = payChecked && !payEnabled && Boolean(session?.cashBlocked)
+
   const missing = []
   if (selected.length === 0) missing.push(t('book.missService'))
   if (!slot) missing.push(t('book.missSlot'))
   if (needsAddress && address.trim().length < 10) missing.push(t('book.missAddress'))
-  const ready = missing.length === 0
+  const ready = missing.length === 0 && !noPayMethod
 
   if (!salon && !salonsReady) {
     return (
@@ -439,7 +456,11 @@ export default function Book() {
           <section className="step">
             <h2 className="step__legend">{t('book.step5')}</h2>
             <div className="pay">
-              {Object.values(PAYMENT_MODES).map((p) => {
+              {Object.values(PAYMENT_MODES)
+                // Hide "Pay online" until we confirm the gateway is live, so a
+                // booking can't be confirmed as "paid" without actually charging.
+                .filter((p) => p.id !== 'online' || payEnabled || !payChecked)
+                .map((p) => {
                 const active = paymentMode === p.id
                 const savesNow = p.id === 'online' && isFirstBooking && selected.length > 0
                 const blocked = p.id === 'offline' && session?.cashBlocked
@@ -466,6 +487,12 @@ export default function Book() {
             </div>
             {paymentMode === 'offline' && !session?.cashBlocked && (
               <p className="pay__hint">{t('book.offlineHint')}</p>
+            )}
+            {payChecked && !payEnabled && !session?.cashBlocked && (
+              <p className="pay__hint">{t('book.onlineUnavailable')}</p>
+            )}
+            {noPayMethod && (
+              <p className="pay__hint pay__hint--warn">{t('book.noPayMethod')}</p>
             )}
           </section>
         </div>
@@ -545,9 +572,14 @@ export default function Book() {
             </div>
           </div>
 
-          {touched && !ready && (
+          {touched && missing.length > 0 && (
             <p className="summary__error" role="alert">
               {t('book.pleaseChoose', { x: missing.join(t('book.and')) })}
+            </p>
+          )}
+          {noPayMethod && (
+            <p className="summary__error" role="alert">
+              {t('book.noPayMethod')}
             </p>
           )}
 
@@ -555,7 +587,7 @@ export default function Book() {
             type="button"
             className="btn btn--gold summary__cta"
             onClick={confirm}
-            disabled={submitting}
+            disabled={submitting || noPayMethod}
           >
             {submitting
               ? t('book.confirming')
