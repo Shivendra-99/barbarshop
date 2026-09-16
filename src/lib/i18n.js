@@ -206,7 +206,7 @@ const EN = {
   'salon.fromPrice': 'From {price}',
   'salon.chooseSlot': 'Choose service & slot',
   'salon.loginToBook': 'Login to book',
-  'salon.freeCancel': 'Free cancellation up to 4 hours before your slot.',
+  'salon.freeCancel': 'Free cancellation up to 2 hours before your slot.',
   'salon.openHours': 'Open {opens} – {closes}',
   'salon.ratingReviews': '★ {rating} · {reviews} reviews',
 
@@ -276,7 +276,7 @@ const EN = {
   'done.paymentId': 'Payment ID',
   'done.dueAtSalon': 'Due at salon',
   'done.bookAnother': 'Book another',
-  'done.fine': 'Free cancellation up to 4 hours before your slot. Refunds go to your wallet instantly or back to UPI in 2–3 working days.',
+  'done.fine': 'Free cancellation up to 2 hours before your slot. Refunds go to your wallet instantly or back to UPI in 2–3 working days.',
 
   // --- Appointments (My bookings) ---
   'appt.title': 'My bookings',
