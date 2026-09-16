@@ -2,10 +2,11 @@ import { useEffect, useMemo, useState } from 'react'
 import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useApp } from '../store/AppStore'
 import { useToast } from '../components/Toast'
+import { useT } from '../lib/i18n'
 import AddressAutocomplete from '../components/AddressAutocomplete'
 import { api } from '../lib/api'
 import { formatINR } from '../lib/money'
-import { PAYMENT_MODES, SERVICE_MODES, quote } from '../lib/pricing'
+import { PAYMENT_MODES, quote } from '../lib/pricing'
 import { cityById } from '../data/seed'
 import {
   buildCalendar,
@@ -26,6 +27,7 @@ export default function Book() {
   const { publicSalons, salonsReady, createBooking, createBookingOnline, isFirstBooking, session } =
     useApp()
   const { push } = useToast()
+  const t = useT()
 
   // Whether real online payments (Razorpay) are configured on the backend.
   // When off, "Pay online" still works as the instant demo flow.
@@ -144,9 +146,9 @@ export default function Book() {
   })
 
   const missing = []
-  if (selected.length === 0) missing.push('a service')
-  if (!slot) missing.push('a time slot')
-  if (needsAddress && address.trim().length < 10) missing.push('your address')
+  if (selected.length === 0) missing.push(t('book.missService'))
+  if (!slot) missing.push(t('book.missSlot'))
+  if (needsAddress && address.trim().length < 10) missing.push(t('book.missAddress'))
   const ready = missing.length === 0
 
   if (!salon && !salonsReady) {
@@ -186,7 +188,7 @@ export default function Book() {
 
       push({
         tone: 'success',
-        title: 'Booking confirmed',
+        title: t('book.confirmed'),
         body: `${selected.map((s) => s.name).join(' + ')} · ${formatDateLabel(date)}, ${slot}`,
         meta:
           paymentMode === 'online'
@@ -224,15 +226,15 @@ export default function Book() {
         <div className="eyebrow">
           {salon.name} · {salon.area}
         </div>
-        <h1 className="display book__title">Choose your service &amp; time</h1>
+        <h1 className="display book__title">{t('book.title')}</h1>
       </div>
 
       <div className="book__grid">
         <div className="book__main">
           {/* ---- 01 Service ---- */}
           <section className="step">
-            <h2 className="step__legend">01 — Services</h2>
-            <p className="step__hint">Add one or more services to book together.</p>
+            <h2 className="step__legend">{t('book.step1')}</h2>
+            <p className="step__hint">{t('book.step1hint')}</p>
             <div className="opts">
               {services.map((s) => {
                 const active = selectedIds.includes(s.id)
@@ -250,7 +252,7 @@ export default function Book() {
                     </span>
                     <span className="opt__body">
                       <span className="opt__name">{s.name}</span>
-                      <span className="opt__meta">{s.mins} min</span>
+                      <span className="opt__meta">{s.mins} {t('salon.min')}</span>
                     </span>
                     <span className="opt__price money">{formatINR(s.amount)}</span>
                   </button>
@@ -261,7 +263,7 @@ export default function Book() {
 
           {/* ---- 02 Where ---- */}
           <section className="step">
-            <h2 className="step__legend">02 — Where</h2>
+            <h2 className="step__legend">{t('book.step2')}</h2>
             {offersBoth ? (
               <div className="modes">
                 {salon.serviceModes.map((m) => {
@@ -275,10 +277,10 @@ export default function Book() {
                       aria-pressed={active}
                       onClick={() => setMode(m)}
                     >
-                      <span className="mode__name">{SERVICE_MODES[m].label}</span>
-                      <span className="mode__note">{SERVICE_MODES[m].note}</span>
+                      <span className="mode__name">{t(`mode.${m}`)}</span>
+                      <span className="mode__note">{t(`mode.${m}Note`)}</span>
                       {fee > 0 && (
-                        <span className="mode__fee money">+{formatINR(fee)} travel</span>
+                        <span className="mode__fee money">{t('book.travel', { fee: formatINR(fee) })}</span>
                       )}
                     </button>
                   )
@@ -286,15 +288,14 @@ export default function Book() {
               </div>
             ) : (
               <p className="step__fixed">
-                <strong>{SERVICE_MODES[salon.serviceModes[0]].label}</strong> —{' '}
-                {SERVICE_MODES[salon.serviceModes[0]].note} This salon does not offer the other
-                option.
+                <strong>{t(`mode.${salon.serviceModes[0]}`)}</strong> —{' '}
+                {t(`mode.${salon.serviceModes[0]}Note`)} {t('book.onlyOffered')}
               </p>
             )}
 
             {needsAddress && (
               <label className="field book__address" htmlFor="book-address">
-                <span className="field__label">Your address</span>
+                <span className="field__label">{t('book.yourAddress')}</span>
                 <AddressAutocomplete
                   id="book-address"
                   value={address}
@@ -304,20 +305,17 @@ export default function Book() {
                   }}
                   onSelect={(item) => setAddressELoc(item.eLoc ?? null)}
                   near={salon ? cityById(salon.city).near : undefined}
-                  placeholder="Start typing your address…"
+                  placeholder={t('book.addressPlaceholder')}
                   ariaInvalid={touched && needsAddress && address.trim().length < 10}
                 />
-                <span className="field__hint">
-                  Search and pick your address, then add your flat / house number. The professional
-                  travels here at your slot time.
-                </span>
+                <span className="field__hint">{t('book.addressHint')}</span>
               </label>
             )}
           </section>
 
           {/* ---- 03 Professional ---- */}
           <section className="step">
-            <h2 className="step__legend">03 — Professional</h2>
+            <h2 className="step__legend">{t('book.step3')}</h2>
             <div className="staff">
               <button
                 type="button"
@@ -329,8 +327,8 @@ export default function Book() {
                   ★
                 </span>
                 <span>
-                  <span className="staffPick__name">Any professional</span>
-                  <span className="staffPick__meta">First available</span>
+                  <span className="staffPick__name">{t('book.anyPro')}</span>
+                  <span className="staffPick__meta">{t('book.firstAvail')}</span>
                 </span>
               </button>
               {salon.staff.map((p) => {
@@ -359,7 +357,7 @@ export default function Book() {
 
           {/* ---- 04 When ---- */}
           <section className="step">
-            <h2 className="step__legend">04 — Date &amp; time</h2>
+            <h2 className="step__legend">{t('book.step4')}</h2>
             <div className="when">
               <div className="cal">
                 <div className="cal__head">
@@ -411,7 +409,10 @@ export default function Book() {
 
               <div>
                 <div className="when__count">
-                  {formatDateLabel(date)} · {slots.filter((s) => !s.busy).length} slots open
+                  {t('book.slotsOpen', {
+                    date: formatDateLabel(date),
+                    n: slots.filter((s) => !s.busy).length,
+                  })}
                 </div>
                 <div className="when__slots">
                   {slots.map((s) => (
@@ -427,16 +428,14 @@ export default function Book() {
                     </button>
                   ))}
                 </div>
-                <p className="when__note">
-                  Times shown in IST. Slots update live as other members book.
-                </p>
+                <p className="when__note">{t('book.slotsNote')}</p>
               </div>
             </div>
           </section>
 
           {/* ---- 05 Payment ---- */}
           <section className="step">
-            <h2 className="step__legend">05 — Payment</h2>
+            <h2 className="step__legend">{t('book.step5')}</h2>
             <div className="pay">
               {Object.values(PAYMENT_MODES).map((p) => {
                 const active = paymentMode === p.id
@@ -452,22 +451,19 @@ export default function Book() {
                     onClick={() => setPaymentMode(p.id)}
                   >
                     <span className="pay__top">
-                      <span className="pay__name">{p.label}</span>
-                      {savesNow && <span className="badge badge--gold">10% off</span>}
-                      {blocked && <span className="badge badge--red">Disabled</span>}
+                      <span className="pay__name">{t(`pay.${p.id}`)}</span>
+                      {savesNow && <span className="badge badge--gold">{t('book.tenOff')}</span>}
+                      {blocked && <span className="badge badge--red">{t('book.disabled')}</span>}
                     </span>
                     <span className="pay__note">
-                      {blocked ? 'Disabled after repeated cash cancellations.' : p.note}
+                      {blocked ? t('book.blockedNote') : t(`pay.${p.id}Note`)}
                     </span>
                   </button>
                 )
               })}
             </div>
             {paymentMode === 'offline' && !session?.cashBlocked && (
-              <p className="pay__hint">
-                Your booking is still confirmed instantly. The salon records the cash payment
-                when you arrive.
-              </p>
+              <p className="pay__hint">{t('book.offlineHint')}</p>
             )}
           </section>
         </div>
@@ -475,31 +471,31 @@ export default function Book() {
         {/* ---- Summary ---- */}
         <aside className="summary">
           <div className="summary__head">
-            <div className="eyebrow">Your booking</div>
+            <div className="eyebrow">{t('book.yourBooking')}</div>
           </div>
           <div className="summary__body">
             <div className="summary__row">
-              <span>Salon</span>
+              <span>{t('book.salon')}</span>
               <span className="summary__val">{salon.name}</span>
             </div>
             <div className="summary__row">
-              <span>{selected.length > 1 ? 'Services' : 'Service'}</span>
+              <span>{selected.length > 1 ? t('book.services') : t('book.service')}</span>
               <span className="summary__val">
                 {selected.length ? selected.map((s) => s.name).join(', ') : '—'}
               </span>
             </div>
             <div className="summary__row">
-              <span>Where</span>
-              <span className="summary__val">{SERVICE_MODES[mode].label}</span>
+              <span>{t('book.where')}</span>
+              <span className="summary__val">{t(`mode.${mode}`)}</span>
             </div>
             <div className="summary__row">
-              <span>Professional</span>
+              <span>{t('book.professional')}</span>
               <span className="summary__val">
-                {salon.staff.find((p) => p.id === staffId)?.name ?? 'Any'}
+                {salon.staff.find((p) => p.id === staffId)?.name ?? t('book.any')}
               </span>
             </div>
             <div className="summary__row">
-              <span>When</span>
+              <span>{t('book.when')}</span>
               <span className="summary__val">
                 {formatDateLabel(date)}
                 {slot ? `, ${slot}` : ''}
@@ -516,26 +512,26 @@ export default function Book() {
             ))}
             {selected.length === 0 && (
               <div className="summary__row">
-                <span>Service</span>
+                <span>{t('book.service')}</span>
                 <span className="summary__val money">{formatINR(0)}</span>
               </div>
             )}
             {homeFee > 0 && (
               <div className="summary__row">
-                <span>Home visit</span>
+                <span>{t('book.homeVisit')}</span>
                 <span className="summary__val money">{formatINR(homeFee)}</span>
               </div>
             )}
             {priced.discount > 0 && (
               <div className="summary__row summary__row--save">
-                <span>First booking discount</span>
+                <span>{t('book.firstDiscount')}</span>
                 <span className="summary__val money">−{formatINR(priced.discount)}</span>
               </div>
             )}
 
             <div className="summary__total">
               <span className="summary__totalLabel">
-                {paymentMode === 'online' ? 'Pay now' : 'Pay at salon'}
+                {paymentMode === 'online' ? t('book.payNow') : t('book.payAtSalon')}
               </span>
               <span className="summary__totalVal money">{formatINR(priced.total)}</span>
             </div>
@@ -543,7 +539,7 @@ export default function Book() {
 
           {touched && !ready && (
             <p className="summary__error" role="alert">
-              Please choose {missing.join(' and ')}.
+              {t('book.pleaseChoose', { x: missing.join(t('book.and')) })}
             </p>
           )}
 
@@ -554,15 +550,14 @@ export default function Book() {
             disabled={submitting}
           >
             {submitting
-              ? 'Confirming…'
+              ? t('book.confirming')
               : paymentMode === 'online'
-                ? `Pay ${formatINR(priced.total)}`
-                : 'Confirm booking'}
+                ? t('book.pay', { amt: formatINR(priced.total) })
+                : t('book.confirm')}
           </button>
 
           <p className="summary__fine">
-            Booking as {session?.name} · +91 {session?.phone}. Free cancellation up to 4 hours
-            before.
+            {t('book.bookingAs', { name: session?.name, phone: session?.phone })}
           </p>
         </aside>
       </div>

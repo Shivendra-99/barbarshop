@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useT } from '../lib/i18n'
 
 /** Star-rating dialog. Reuses the .modal styles from Appointments.css. */
 export default function RatingDialog({ booking, onClose, onSubmit }) {
@@ -7,6 +8,7 @@ export default function RatingDialog({ booking, onClose, onSubmit }) {
   const [review, setReview] = useState(booking.review || '')
   const [busy, setBusy] = useState(false)
   const ref = useRef(null)
+  const t = useT()
 
   useEffect(() => {
     ref.current?.focus()
@@ -37,7 +39,7 @@ export default function RatingDialog({ booking, onClose, onSubmit }) {
         onMouseDown={(e) => e.stopPropagation()}
       >
         <h2 className="modal__title" id="rate-title" tabIndex={-1} ref={ref}>
-          Rate {booking.salonName}
+          {t('rate.title', { salon: booking.salonName })}
         </h2>
         <p className="modal__text">
           {booking.serviceName} · {booking.dateLabel}
@@ -65,16 +67,16 @@ export default function RatingDialog({ booking, onClose, onSubmit }) {
           rows={3}
           value={review}
           onChange={(e) => setReview(e.target.value)}
-          placeholder="Add a note about your experience (optional)"
+          placeholder={t('rate.placeholder')}
           maxLength={500}
         />
 
         <div className="modal__actions" style={{ marginTop: 20 }}>
           <button type="button" className="btn btn--outline" onClick={onClose}>
-            Cancel
+            {t('rate.cancel')}
           </button>
           <button type="button" className="btn btn--gold" onClick={submit} disabled={!rating || busy}>
-            {busy ? 'Saving…' : 'Submit rating'}
+            {busy ? t('rate.saving') : t('rate.submit')}
           </button>
         </div>
       </div>

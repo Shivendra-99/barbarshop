@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useApp } from '../store/AppStore'
+import { useT } from '../lib/i18n'
 import { BRAND } from '../data/seed'
 import { load, save } from '../lib/storage'
 import LogoMark from './LogoMark'
@@ -14,6 +15,7 @@ import './IntroGate.css'
 export default function IntroGate() {
   const { session, ready } = useApp()
   const navigate = useNavigate()
+  const t = useT()
   const [dismissed, setDismissed] = useState(() => load('intro:skipped', false))
   const [phone, setPhone] = useState('')
   const [error, setError] = useState('')
@@ -30,7 +32,7 @@ export default function IntroGate() {
   const sendOtp = (e) => {
     e.preventDefault()
     if (!phoneValid) {
-      setError('Enter a valid 10-digit mobile number.')
+      setError(t('login.invalidPhone'))
       return
     }
     save('intro:skipped', true)
@@ -53,14 +55,12 @@ export default function IntroGate() {
 
         <LogoMark className="intro__logo" />
         <div className="intro__name">{BRAND.name}</div>
-        <h2 className="intro__title">Login to continue</h2>
-        <p className="intro__sub">
-          Enter your phone number to receive an OTP and continue booking your salon appointment
-        </p>
+        <h2 className="intro__title">{t('login.title')}</h2>
+        <p className="intro__sub">{t('login.sub')}</p>
 
         <form onSubmit={sendOtp} noValidate>
           <label className="field intro__field" htmlFor="intro-phone">
-            <span className="field__label">Phone Number</span>
+            <span className="field__label">{t('intro.phoneLabel')}</span>
             <div className="intro__phoneRow">
               <span className="intro__cc">🇮🇳 +91</span>
               <input
@@ -71,7 +71,7 @@ export default function IntroGate() {
                   setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))
                   setError('')
                 }}
-                placeholder="Enter 10-digit phone number"
+                placeholder={t('intro.placeholder')}
                 inputMode="numeric"
                 autoComplete="tel-national"
                 autoFocus
@@ -81,12 +81,12 @@ export default function IntroGate() {
           </label>
 
           <button type="submit" className="intro__send" disabled={!phoneValid}>
-            Send OTP <span aria-hidden="true">→</span>
+            {t('login.sendOtp')} <span aria-hidden="true">→</span>
           </button>
         </form>
 
         <button type="button" className="intro__skip" onClick={skip}>
-          Skip for now
+          {t('login.skip')}
         </button>
       </div>
     </div>

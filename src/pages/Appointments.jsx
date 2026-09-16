@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useApp } from '../store/AppStore'
 import { useToast } from '../components/Toast'
+import { useT } from '../lib/i18n'
 import RescheduleDialog from '../components/RescheduleDialog'
 import RatingDialog from '../components/RatingDialog'
 import QueueBadge from '../components/QueueBadge'
@@ -19,6 +20,7 @@ const TABS = ['Upcoming', 'Past']
 function CancelDialog({ booking, onClose, onConfirm }) {
   const [method, setMethod] = useState('wallet')
   const ref = useRef(null)
+  const t = useT()
   const cashBooking = booking.paymentMode === 'offline'
 
   useEffect(() => {
@@ -40,20 +42,17 @@ function CancelDialog({ booking, onClose, onConfirm }) {
         onMouseDown={(e) => e.stopPropagation()}
       >
         <h2 className="modal__title" id="cancel-title" tabIndex={-1} ref={ref}>
-          Cancel this booking?
+          {t('appt.cancelTitle')}
         </h2>
         <p className="modal__text">
           {booking.serviceName} at {booking.salonName} · {booking.dateLabel}, {booking.slot}
         </p>
 
         {cashBooking ? (
-          <p className="modal__note">
-            This is a pay-at-salon booking, so there is nothing to refund — you simply won&rsquo;t
-            be charged.
-          </p>
+          <p className="modal__note">{t('appt.cashRefundNote')}</p>
         ) : (
           <fieldset className="modal__methods">
-            <legend className="modal__legend">Choose your refund</legend>
+            <legend className="modal__legend">{t('appt.chooseRefund')}</legend>
             {Object.values(REFUND_METHODS).map((m) => {
               const r = refundFor(booking, m.id)
               return (
@@ -67,37 +66,36 @@ function CancelDialog({ booking, onClose, onConfirm }) {
                   />
                   <span className="refund__body">
                     <span className="refund__top">
-                      <span className="refund__name">{m.label}</span>
+                      <span className="refund__name">{t(`refund.${m.id}`)}</span>
                       <span className={`badge ${m.instant ? 'badge--green' : 'badge--amber'}`}>
-                        {m.eta}
+                        {t(`refund.${m.id}Eta`)}
                       </span>
                     </span>
                     <span className="refund__amount money">
-                      You get {formatINR(r.amount)}
-                      {r.fee > 0 ? ` · ${r.feePct}% fee (${formatINR(r.fee)})` : ' · no fee'}
+                      {t('appt.youGet', { amount: formatINR(r.amount) })}
+                      {r.fee > 0
+                        ? t('appt.feeLine', { pct: r.feePct, fee: formatINR(r.fee) })
+                        : t('appt.noFee')}
                     </span>
-                    <span className="refund__note">{m.note}</span>
+                    <span className="refund__note">{t(`refund.${m.id}Note`)}</span>
                   </span>
                 </label>
               )
             })}
-            <p className="modal__note modal__note--fine">
-              Fee depends on timing: free up to 2 hours before (UPI 2%), 10% within 2 hours, 15% if
-              you cancel late.
-            </p>
+            <p className="modal__note modal__note--fine">{t('appt.feeFine')}</p>
           </fieldset>
         )}
 
         <div className="modal__actions">
           <button type="button" className="btn btn--outline" onClick={onClose}>
-            Keep booking
+            {t('appt.keepBooking')}
           </button>
           <button
             type="button"
             className="btn btn--danger"
             onClick={() => onConfirm(cashBooking ? 'wallet' : method)}
           >
-            Cancel booking
+            {t('appt.cancelBooking')}
           </button>
         </div>
       </div>
@@ -112,6 +110,7 @@ function CancelDialog({ booking, onClose, onConfirm }) {
 export default function Appointments() {
   const { myBookings, cancelBooking, rescheduleBooking, rateBooking } = useApp()
   const { push } = useToast()
+  const t = useT()
   const [tab, setTab] = useState('Upcoming')
   const [pending, setPending] = useState(null)
   const [rescheduling, setRescheduling] = useState(null)
@@ -196,20 +195,20 @@ export default function Appointments() {
 
   return (
     <div className="shell shell--narrow appts">
-      <h1 className="display appts__title">My bookings</h1>
+      <h1 className="display appts__title">{t('appt.title')}</h1>
 
       <div className="tabs appts__tabs" role="tablist">
-        {TABS.map((t) => (
+        {TABS.map((tabName) => (
           <button
-            key={t}
+            key={tabName}
             type="button"
             role="tab"
             className="tab"
-            aria-selected={tab === t}
-            onClick={() => setTab(t)}
+            aria-selected={tab === tabName}
+            onClick={() => setTab(tabName)}
           >
-            {t}
-            {t === 'Upcoming' && upcoming.length > 0 && (
+            {tabName === 'Upcoming' ? t('appt.upcoming') : t('appt.past')}
+            {tabName === 'Upcoming' && upcoming.length > 0 && (
               <span className="appts__count">{upcoming.length}</span>
             )}
           </button>
@@ -219,15 +218,13 @@ export default function Appointments() {
       {rows.length === 0 ? (
         <div className="empty">
           <h2 className="empty__title">
-            {tab === 'Upcoming' ? 'No upcoming bookings' : 'Nothing here yet'}
+            {tab === 'Upcoming' ? t('appt.noUpcoming') : t('appt.nothingHere')}
           </h2>
           <p className="empty__text">
-            {tab === 'Upcoming'
-              ? 'Book a salon and your appointment will show up here.'
-              : 'Past and cancelled bookings will appear here.'}
+            {tab === 'Upcoming' ? t('appt.noUpcomingText') : t('appt.pastText')}
           </p>
           <Link to="/salons" className="btn btn--gold">
-            Browse salons
+            {t('appt.browse')}
           </Link>
         </div>
       ) : (
@@ -259,17 +256,17 @@ export default function Appointments() {
                     <div className="appt__service">{b.serviceName}</div>
                   )}
                   <div className="appt__meta">
-                    {b.modeLabel}
+                    {t(`mode.${b.mode}`)}
                     {b.staffName ? ` · ${b.staffName}` : ''}
-                    {` · ${b.paymentMode === 'online' ? 'Paid online' : 'Cash at salon'}`}
+                    {` · ${b.paymentMode === 'online' ? t('appt.paidOnline') : t('appt.cashAtSalon')}`}
                   </div>
                   {b.razorpay?.paymentId && (
                     <div className="appt__pay">Razorpay · {b.razorpay.paymentId}</div>
                   )}
                   {b.completionOtp && b.status === 'confirmed' && (
                     <div className="appt__otp">
-                      Service OTP: <strong>{b.completionOtp}</strong>
-                      <span className="appt__otpHint"> — give to salon after service</span>
+                      {t('appt.serviceOtp')} <strong>{b.completionOtp}</strong>
+                      <span className="appt__otpHint">{t('appt.otpHint')}</span>
                     </div>
                   )}
                   {!cancelled && b.salonPhone && (
@@ -280,15 +277,17 @@ export default function Appointments() {
                           d="M6.6 10.8a15.5 15.5 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.24 11.4 11.4 0 0 0 3.6.58 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1 11.4 11.4 0 0 0 .58 3.6 1 1 0 0 1-.24 1Z"
                         />
                       </svg>
-                      Call salon
+                      {t('appt.callSalon')}
                     </a>
                   )}
                   {b.address && <div className="appt__addr">{b.address}</div>}
                   {cancelled && b.refund?.amount > 0 && (
                     <div className="appt__refund">
-                      {formatINR(b.refund.amount)} refunded to{' '}
-                      {REFUND_METHODS[b.refund.method]?.label} ·{' '}
-                      {b.refund.status === 'completed' ? 'Completed' : 'Processing'}
+                      {t('appt.refundedTo', {
+                        amount: formatINR(b.refund.amount),
+                        method: t(`refund.${b.refund.method}`),
+                      })}{' '}
+                      · {b.refund.status === 'completed' ? t('appt.completed') : t('appt.processing')}
                     </div>
                   )}
                   {!cancelled && b.mode === 'salon' && b.date === toISO(today) && (
@@ -300,7 +299,7 @@ export default function Appointments() {
                   <span
                     className={`badge ${cancelled ? 'badge--red' : 'badge--green'}`}
                   >
-                    {cancelled ? 'Cancelled' : 'Confirmed'}
+                    {cancelled ? t('appt.cancelled') : t('appt.confirmed')}
                   </span>
                   <div className="appt__price money">{formatINR(b.total)}</div>
                   <div className="appt__ref">#{b.ref}</div>
@@ -311,23 +310,23 @@ export default function Appointments() {
                         className="appt__reschedule"
                         onClick={() => setRescheduling(b)}
                       >
-                        Reschedule
+                        {t('appt.reschedule')}
                       </button>
                       <button
                         type="button"
                         className="appt__cancel"
                         onClick={() => setPending(b)}
                       >
-                        Cancel
+                        {t('appt.cancel')}
                       </button>
                     </div>
                   )}
                   {!cancelled && (b.status === 'completed' || fromISO(b.date) < today) &&
                     (b.rating ? (
-                      <div className="appt__rated">You rated {b.rating}★</div>
+                      <div className="appt__rated">{t('appt.youRated', { n: b.rating })}</div>
                     ) : (
                       <button type="button" className="appt__rate" onClick={() => setRating(b)}>
-                        Rate salon
+                        {t('appt.rateSalon')}
                       </button>
                     ))}
                 </div>

@@ -1,22 +1,23 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { useApp } from '../store/AppStore'
+import { useT } from '../lib/i18n'
 import { categoryById } from '../data/seed'
 import { api } from '../lib/api'
 import { formatINR } from '../lib/money'
-import { SERVICE_MODES } from '../lib/pricing'
 import './Salon.css'
 
 const TABS = [
-  { key: 'services', label: 'Services' },
-  { key: 'team', label: 'Team' },
-  { key: 'about', label: 'About' },
+  { key: 'services', labelKey: 'salon.tabServices' },
+  { key: 'team', labelKey: 'salon.tabTeam' },
+  { key: 'about', labelKey: 'salon.tabAbout' },
 ]
 
 export default function Salon() {
   const { salonId } = useParams()
   const navigate = useNavigate()
   const { publicSalons, salonsReady, isFirstBooking, isSignedIn } = useApp()
+  const t = useT()
   const [tab, setTab] = useState('services')
 
   const salon = publicSalons.find((s) => s.id === salonId)
@@ -77,17 +78,17 @@ export default function Salon() {
           <h1 className="display salon__name">{salon.name}</h1>
           <div className="salon__facts">
             <span className="salon__rating">
-              ★ {salon.rating.toFixed(1)} · {salon.reviews} reviews
+              {t('salon.ratingReviews', { rating: salon.rating.toFixed(1), reviews: salon.reviews })}
             </span>
             <span>{salon.address}</span>
             <span className="salon__open">
-              Open {salon.opens} – {salon.closes}
+              {t('salon.openHours', { opens: salon.opens, closes: salon.closes })}
             </span>
           </div>
           <div className="salon__modes">
             {salon.serviceModes.map((m) => (
               <span key={m} className="badge badge--gold">
-                {SERVICE_MODES[m].label}
+                {t(`mode.${m}`)}
               </span>
             ))}
           </div>
@@ -97,25 +98,25 @@ export default function Salon() {
       <div className="shell salon__grid">
         <div className="salon__main">
           <div className="tabs salon__tabs" role="tablist">
-            {TABS.map((t) => (
+            {TABS.map((tb) => (
               <button
-                key={t.key}
+                key={tb.key}
                 type="button"
                 role="tab"
                 className="tab"
-                aria-selected={tab === t.key}
-                onClick={() => setTab(t.key)}
+                aria-selected={tab === tb.key}
+                onClick={() => setTab(tb.key)}
               >
-                {t.label}
+                {t(tb.labelKey)}
               </button>
             ))}
           </div>
 
           {tab === 'services' &&
             (loadingSvc ? (
-              <p className="svcList__loading">Loading menu…</p>
+              <p className="svcList__loading">{t('salon.loadingMenu')}</p>
             ) : services.length === 0 ? (
-              <p className="svcList__loading">This salon hasn&rsquo;t listed any services yet.</p>
+              <p className="svcList__loading">{t('salon.noServices')}</p>
             ) : (
               <ul className="svcList">
                 {services.map((s) => (
@@ -127,14 +128,14 @@ export default function Salon() {
                     <div className="svc__right">
                       <div className="svc__priceBlock">
                         <div className="svc__price money">{formatINR(s.amount)}</div>
-                        <div className="svc__dur">{s.mins} min</div>
+                        <div className="svc__dur">{s.mins} {t('salon.min')}</div>
                       </div>
                       <button
                         type="button"
                         className="btn btn--ghost-gold btn--sm"
                         onClick={() => book(s.id)}
                       >
-                        Book
+                        {t('salon.book')}
                       </button>
                     </div>
                   </li>
@@ -162,34 +163,37 @@ export default function Salon() {
           {tab === 'about' && (
             <div className="about">
               <p className="about__text">
-                {salon.name} is a {category.label.toLowerCase()} in {salon.area}, {' '}
-                offering {category.short.toLowerCase()}. Rated {salon.rating.toFixed(1)} by{' '}
-                {salon.reviews} customers.
+                {t('salon.aboutText', {
+                  name: salon.name,
+                  category: t(`cat.${salon.category}.label`),
+                  area: salon.area,
+                  services: t(`cat.${salon.category}.blurb`).toLowerCase(),
+                  rating: salon.rating.toFixed(1),
+                  reviews: salon.reviews,
+                })}
               </p>
               <dl className="about__list">
                 <div className="about__row">
-                  <dt>Address</dt>
+                  <dt>{t('salon.address')}</dt>
                   <dd>{salon.address}</dd>
                 </div>
                 <div className="about__row">
-                  <dt>Hours</dt>
-                  <dd>
-                    {salon.opens} – {salon.closes}, daily
-                  </dd>
+                  <dt>{t('salon.hours')}</dt>
+                  <dd>{t('salon.hoursDaily', { opens: salon.opens, closes: salon.closes })}</dd>
                 </div>
                 <div className="about__row">
-                  <dt>Service options</dt>
-                  <dd>{salon.serviceModes.map((m) => SERVICE_MODES[m].label).join(' · ')}</dd>
+                  <dt>{t('salon.serviceOptions')}</dt>
+                  <dd>{salon.serviceModes.map((m) => t(`mode.${m}`)).join(' · ')}</dd>
                 </div>
                 {offersHome && (
                   <div className="about__row">
-                    <dt>Home service fee</dt>
+                    <dt>{t('salon.homeFee')}</dt>
                     <dd className="money">{formatINR(salon.homeServiceFee)}</dd>
                   </div>
                 )}
                 <div className="about__row">
-                  <dt>Payment</dt>
-                  <dd>Pay online or cash at the salon</dd>
+                  <dt>{t('salon.payment')}</dt>
+                  <dd>{t('salon.payLine')}</dd>
                 </div>
               </dl>
             </div>
@@ -197,35 +201,35 @@ export default function Salon() {
         </div>
 
         <aside className="rail">
-          <div className="eyebrow">Book an appointment</div>
+          <div className="eyebrow">{t('salon.bookAppt')}</div>
           <div className="rail__price money">
-            From {formatINR(fromPrice)}
+            {t('salon.fromPrice', { price: formatINR(fromPrice) })}
           </div>
 
           {isFirstBooking && (
             <div className="rail__offer">
-              <strong>10% off</strong> your first booking when you pay online.
+              <strong>{t('home.offerStrong')}</strong> {t('home.offerRest')}.
             </div>
           )}
 
           <button type="button" className="btn btn--gold btn--block" onClick={() => book(null)}>
-            {isSignedIn ? 'Choose service & slot' : 'Login to book'}
+            {isSignedIn ? t('salon.chooseSlot') : t('salon.loginToBook')}
           </button>
 
           <ul className="rail__modes">
             {salon.serviceModes.map((m) => (
               <li key={m}>
-                <span className="rail__modeLabel">{SERVICE_MODES[m].label}</span>
+                <span className="rail__modeLabel">{t(`mode.${m}`)}</span>
                 <span className="rail__modeNote">
                   {m === 'home' && salon.homeServiceFee > 0
-                    ? `${SERVICE_MODES[m].note} +${formatINR(salon.homeServiceFee)} travel`
-                    : SERVICE_MODES[m].note}
+                    ? `${t('mode.homeNote')} ${t('book.travel', { fee: formatINR(salon.homeServiceFee) })}`
+                    : t(`mode.${m}Note`)}
                 </span>
               </li>
             ))}
           </ul>
 
-          <div className="rail__note">Free cancellation up to 4 hours before your slot.</div>
+          <div className="rail__note">{t('salon.freeCancel')}</div>
         </aside>
       </div>
     </div>

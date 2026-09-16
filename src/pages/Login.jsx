@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams, useLocation, Link } from 'react-router-dom'
 import { useApp, SESSION_DAYS } from '../store/AppStore'
 import { useToast } from '../components/Toast'
+import { useT } from '../lib/i18n'
 import { BRAND } from '../data/seed'
 import {
   widgetConfigured,
@@ -44,6 +45,7 @@ export default function Login() {
   const location = useLocation()
   const { requestOtp, verifyOtp, widgetLogin, setName: saveName } = useApp()
   const { push } = useToast()
+  const t = useT()
 
   // Warm up the MSG91 widget once, if it's configured.
   useEffect(() => {
@@ -148,7 +150,7 @@ export default function Login() {
   const sendCode = (e) => {
     e.preventDefault()
     if (!phoneValid) {
-      setError('Enter a valid 10-digit mobile number.')
+      setError(t('login.invalidPhone'))
       return
     }
     doSend()
@@ -259,7 +261,7 @@ export default function Login() {
       <div className="login__panel">
         <div className="login__inner">
           <Link to="/" className="login__back">
-            ← Back to home
+            {t('login.back')}
           </Link>
 
           <LogoMark className="login__logo" />
@@ -267,14 +269,11 @@ export default function Login() {
 
           {step === 'phone' ? (
             <form onSubmit={sendCode} noValidate>
-              <h1 className="login__title">Login to continue</h1>
-              <p className="login__sub">
-                Enter your phone number to receive an OTP and continue booking your salon
-                appointment
-              </p>
+              <h1 className="login__title">{t('login.title')}</h1>
+              <p className="login__sub">{t('login.sub')}</p>
 
               <label className="field" htmlFor="login-phone">
-                <span className="field__label">Mobile number</span>
+                <span className="field__label">{t('login.mobile')}</span>
                 <div className="login__phoneRow">
                   <span className="login__cc">+91</span>
                   <input
@@ -300,28 +299,28 @@ export default function Login() {
               </label>
 
               <button type="submit" className="btn btn--gold btn--block" disabled={!phoneValid || busy}>
-                {busy ? 'Sending…' : 'Send OTP'}
+                {busy ? t('login.sending') : t('login.sendOtp')}
               </button>
 
               <p className="login__fine">
                 By continuing you agree to our{' '}
                 <Link to="/terms-and-conditions" className="login__link">
-                  Terms
+                  {t('ftr.terms')}
                 </Link>{' '}
-                and{' '}
+                &amp;{' '}
                 <Link to="/privacy-policy" className="login__link">
-                  Privacy Policy
+                  {t('ftr.privacy')}
                 </Link>
                 .
               </p>
             </form>
           ) : step === 'otp' ? (
             <form onSubmit={verify} noValidate>
-              <h1 className="login__title">Enter your code</h1>
+              <h1 className="login__title">{t('login.enterCode')}</h1>
               <p className="lede login__lede">
-                Sent to <strong>+91 {phone}</strong>.{' '}
+                {t('login.sentTo')} <strong>+91 {phone}</strong>.{' '}
                 <button type="button" className="login__link" onClick={() => setStep('phone')}>
-                  Change
+                  {t('login.change')}
                 </button>
               </p>
 
@@ -369,20 +368,20 @@ export default function Login() {
               )}
 
               <button type="submit" className="btn btn--gold btn--block" disabled={!otpComplete || busy}>
-                Verify &amp; continue
+                {t('login.verify')}
               </button>
 
               <div className="login__resend">
                 {resends >= MAX_RESENDS ? (
                   <span className="login__resendNote">
-                    Didn&rsquo;t get it?{' '}
+                    {t('login.didntGet')}{' '}
                     <button type="button" className="login__link" onClick={() => setStep('phone')}>
-                      Change number
+                      {t('login.changeNumber')}
                     </button>
                   </span>
                 ) : cooldown > 0 ? (
                   <span className="login__resendNote">
-                    Resend code in 0:{String(cooldown).padStart(2, '0')}
+                    {t('login.resendIn', { s: String(cooldown).padStart(2, '0') })}
                   </span>
                 ) : (
                   <button
@@ -391,7 +390,7 @@ export default function Login() {
                     onClick={resend}
                     disabled={busy}
                   >
-                    Resend code
+                    {t('login.resend')}
                   </button>
                 )}
               </div>
@@ -409,24 +408,19 @@ export default function Login() {
                       d="M12 2a10 10 0 0 0-8.6 15l-1.3 4.9 5-1.3A10 10 0 1 0 12 2Zm5.8 14.2c-.2.7-1.4 1.3-2 1.4-.5.1-1.2.1-1.9-.1-.4-.1-1-.3-1.7-.6-3-1.3-4.9-4.3-5.1-4.5-.1-.2-1.2-1.6-1.2-3 0-1.4.7-2.1 1-2.4.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.8 2c.1.2.1.4 0 .5l-.4.5-.3.3c-.2.2-.3.4-.2.6.2.4.8 1.3 1.6 2 1 .9 1.9 1.2 2.2 1.3.2.1.4.1.6-.1l.7-.9c.2-.2.4-.2.6-.1l1.9.9c.3.1.4.2.5.3.1.2.1.8-.1 1.5Z"
                     />
                   </svg>
-                  Get the code on WhatsApp
+                  {t('login.whatsapp')}
                 </button>
               )}
 
-              <p className="login__fine">
-                You can resend up to 2 times in 15 minutes. Stays signed in on this device for{' '}
-                {SESSION_DAYS} days.
-              </p>
+              <p className="login__fine">{t('login.resendFine', { days: SESSION_DAYS })}</p>
             </form>
           ) : (
             <form onSubmit={submitName} noValidate>
-              <h1 className="login__title">What should we call you?</h1>
-              <p className="lede login__lede">
-                You&rsquo;re signed in. Add your name so salons know who&rsquo;s booking.
-              </p>
+              <h1 className="login__title">{t('login.nameTitle')}</h1>
+              <p className="lede login__lede">{t('login.nameSub')}</p>
 
               <label className="field" htmlFor="login-name">
-                <span className="field__label">Your name</span>
+                <span className="field__label">{t('login.yourName')}</span>
                 <input
                   id="login-name"
                   ref={nameRef}
@@ -450,7 +444,7 @@ export default function Login() {
                 className="btn btn--gold btn--block"
                 disabled={busy || !name.trim()}
               >
-                {busy ? 'Saving…' : 'Continue'}
+                {busy ? t('acc.saving') : t('login.continue')}
               </button>
 
               <div className="login__resend">
@@ -460,7 +454,7 @@ export default function Login() {
                   onClick={() => finishLogin(newUser)}
                   disabled={busy}
                 >
-                  Skip for now
+                  {t('login.skip')}
                 </button>
               </div>
             </form>

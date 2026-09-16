@@ -1,11 +1,13 @@
 import { Link, Navigate, useParams } from 'react-router-dom'
 import { useApp } from '../store/AppStore'
+import { useT } from '../lib/i18n'
 import { formatINR } from '../lib/money'
 import './Confirmed.css'
 
 export default function Confirmed() {
   const { bookingId } = useParams()
   const { myBookings, publicSalons } = useApp()
+  const t = useT()
 
   const booking = myBookings.find((b) => b.id === bookingId)
   if (!booking) return <Navigate to="/appointments" replace />
@@ -20,9 +22,9 @@ export default function Confirmed() {
   const paidOnline = booking.paymentMode === 'online' && booking.paymentStatus === 'paid'
   const payMethod = paidOnline
     ? rzpId
-      ? 'Paid online · Razorpay'
-      : 'Paid online'
-    : 'Cash at salon'
+      ? t('done.paidOnlineRzp')
+      : t('done.paidOnline')
+    : t('done.cashAtSalon')
 
   return (
     <div className="done">
@@ -34,22 +36,17 @@ export default function Confirmed() {
           </svg>
         </div>
 
-        <div className="eyebrow">Confirmed · #{booking.ref}</div>
-        <h1 className="display done__title">Your appointment is booked</h1>
+        <div className="eyebrow">{t('done.confirmedRef', { ref: booking.ref })}</div>
+        <h1 className="display done__title">{t('done.title')}</h1>
         <p className="lede done__lede">
-          {booking.paymentMode === 'online'
-            ? 'Payment received. A confirmation is on its way to your phone.'
-            : 'Slot held. Pay cash at the salon when you arrive.'}
+          {booking.paymentMode === 'online' ? t('done.ledeOnline') : t('done.ledeCash')}
         </p>
 
         {booking.completionOtp && booking.status !== 'completed' && (
           <div className="done__otp">
-            <div className="done__otpLabel">Your service OTP</div>
+            <div className="done__otpLabel">{t('done.otpLabel')}</div>
             <div className="done__otpCode">{booking.completionOtp}</div>
-            <div className="done__otpHint">
-              Share this with the salon only after your service — they need it to complete the
-              booking. Also saved in <strong>My Bookings</strong>.
-            </div>
+            <div className="done__otpHint">{t('done.otpHint')}</div>
           </div>
         )}
 
@@ -60,7 +57,10 @@ export default function Confirmed() {
               <div className="done__shopName">{booking.salonName}</div>
               <div className="done__shopMeta">{salon?.address}</div>
               <div className="done__shopRating">
-                ★ {salon?.rating.toFixed(1)} · {salon?.reviews} reviews
+                {t('salon.ratingReviews', {
+                  rating: salon?.rating.toFixed(1),
+                  reviews: salon?.reviews,
+                })}
               </div>
             </div>
           </div>
@@ -68,7 +68,7 @@ export default function Confirmed() {
           <dl className="done__rows">
             {items.length > 1 ? (
               <div className="done__row done__row--items">
-                <dt>Services</dt>
+                <dt>{t('book.services')}</dt>
                 <dd>
                   <ul className="done__items">
                     {items.map((it, i) => (
@@ -82,32 +82,30 @@ export default function Confirmed() {
               </div>
             ) : (
               <div className="done__row">
-                <dt>Service</dt>
+                <dt>{t('book.service')}</dt>
                 <dd>{booking.serviceName}</dd>
               </div>
             )}
             <div className="done__row">
-              <dt>Where</dt>
-              <dd>{booking.modeLabel}</dd>
+              <dt>{t('done.where')}</dt>
+              <dd>{t(`mode.${booking.mode}`)}</dd>
             </div>
             {booking.address && (
               <div className="done__row">
-                <dt>Address</dt>
+                <dt>{t('done.address')}</dt>
                 <dd>{booking.address}</dd>
               </div>
             )}
             <div className="done__row">
-              <dt>Professional</dt>
-              <dd>{booking.staffName ?? 'Any available'}</dd>
+              <dt>{t('done.professional')}</dt>
+              <dd>{booking.staffName ?? t('done.anyAvailable')}</dd>
             </div>
             <div className="done__row">
-              <dt>When</dt>
-              <dd>
-                {booking.dateLabel} at {booking.slot}
-              </dd>
+              <dt>{t('done.when')}</dt>
+              <dd>{t('done.whenAt', { date: booking.dateLabel, slot: booking.slot })}</dd>
             </div>
             <div className="done__row">
-              <dt>Payment</dt>
+              <dt>{t('done.payment')}</dt>
               <dd className="done__pay">
                 {payMethod}
                 <span
@@ -115,24 +113,24 @@ export default function Confirmed() {
                     booking.paymentStatus === 'paid' ? 'paid' : 'pending'
                   }`}
                 >
-                  {booking.paymentStatus === 'paid' ? 'Paid' : 'Pending'}
+                  {booking.paymentStatus === 'paid' ? t('done.paid') : t('done.pending')}
                 </span>
               </dd>
             </div>
             {rzpId && (
               <div className="done__row">
-                <dt>Payment ID</dt>
+                <dt>{t('done.paymentId')}</dt>
                 <dd className="done__payId">{rzpId}</dd>
               </div>
             )}
             {booking.discount > 0 && (
               <div className="done__row done__row--save">
-                <dt>First booking discount</dt>
+                <dt>{t('book.firstDiscount')}</dt>
                 <dd className="money">−{formatINR(booking.discount)}</dd>
               </div>
             )}
             <div className="done__row done__row--total">
-              <dt>{booking.paymentMode === 'online' ? 'Paid' : 'Due at salon'}</dt>
+              <dt>{booking.paymentMode === 'online' ? t('done.paid') : t('done.dueAtSalon')}</dt>
               <dd className="money">{formatINR(booking.total)}</dd>
             </div>
           </dl>
@@ -140,23 +138,20 @@ export default function Confirmed() {
 
         <div className="done__actions">
           <Link to="/appointments" className="btn btn--gold done__action">
-            My bookings
+            {t('nav.mybookings')}
           </Link>
           {salonPhone ? (
             <a href={`tel:+91${salonPhone}`} className="btn btn--outline done__action">
-              Call salon
+              {t('appt.callSalon')}
             </a>
           ) : (
             <Link to="/salons" className="btn btn--outline done__action">
-              Book another
+              {t('done.bookAnother')}
             </Link>
           )}
         </div>
 
-        <p className="done__fine">
-          Free cancellation up to 4 hours before your slot. Refunds go to your wallet instantly
-          or back to UPI in 2–3 working days.
-        </p>
+        <p className="done__fine">{t('done.fine')}</p>
       </div>
     </div>
   )

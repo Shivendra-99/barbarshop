@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useApp } from '../store/AppStore'
+import { useT } from '../lib/i18n'
 import { api } from '../lib/api'
 import {
   buildCalendar,
@@ -19,6 +20,7 @@ import './RescheduleDialog.css'
  */
 export default function RescheduleDialog({ booking, onClose, onConfirm }) {
   const { findSalon } = useApp()
+  const t = useT()
   const ref = useRef(null)
   const today = useMemo(() => startOfToday(), [])
 
@@ -116,11 +118,15 @@ export default function RescheduleDialog({ booking, onClose, onConfirm }) {
         onMouseDown={(e) => e.stopPropagation()}
       >
         <h2 className="modal__title" id="rsx-title" tabIndex={-1} ref={ref}>
-          Reschedule booking
+          {t('rsx.title')}
         </h2>
         <p className="modal__text">
-          {booking.serviceName} at {booking.salonName} · currently {booking.dateLabel},{' '}
-          {booking.slot}
+          {t('rsx.current', {
+            service: booking.serviceName,
+            salon: booking.salonName,
+            date: booking.dateLabel,
+            slot: booking.slot,
+          })}
         </p>
 
         <div className="rsx__cal">
@@ -189,10 +195,10 @@ export default function RescheduleDialog({ booking, onClose, onConfirm }) {
 
         <div className="modal__actions">
           <button type="button" className="btn btn--outline" onClick={onClose}>
-            Keep current
+            {t('rsx.keep')}
           </button>
           <button type="button" className="btn btn--gold" onClick={save} disabled={!canSave}>
-            {busy ? 'Saving…' : 'Confirm new time'}
+            {busy ? t('rsx.saving') : t('rsx.confirm')}
           </button>
         </div>
       </div>

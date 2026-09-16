@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api } from '../lib/api'
+import { useT } from '../lib/i18n'
 import './QueueBadge.css'
 
 const POLL_MS = 15000
@@ -11,6 +12,7 @@ const POLL_MS = 15000
  */
 export default function QueueBadge({ bookingId }) {
   const [q, setQ] = useState(null)
+  const t = useT()
 
   useEffect(() => {
     let alive = true
@@ -36,16 +38,18 @@ export default function QueueBadge({ bookingId }) {
   if (!q || !q.inQueue) return null
 
   const label =
-    q.ahead === 0 ? 'You’re next!' : `${q.ahead} ${q.ahead === 1 ? 'person' : 'people'} ahead of you`
+    q.ahead === 0
+      ? t('queue.next')
+      : q.ahead === 1
+        ? t('queue.aheadOne')
+        : t('queue.ahead', { n: q.ahead })
 
   return (
     <div className={`queue${q.ahead === 0 ? ' queue--next' : ''}`}>
       <span className="queue__dot" aria-hidden="true" />
       <span className="queue__text">
-        Live queue · <strong>{label}</strong>
-        <span className="queue__pos">
-          You’re #{q.position} of {q.total}
-        </span>
+        {t('queue.live')} · <strong>{label}</strong>
+        <span className="queue__pos">{t('queue.pos', { pos: q.position, total: q.total })}</span>
       </span>
     </div>
   )

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useApp, SESSION_DAYS } from '../store/AppStore'
 import { usePrefs } from '../store/Prefs'
 import { useToast } from '../components/Toast'
+import { useT } from '../lib/i18n'
 import { formatINR } from '../lib/money'
 import './Simple.css'
 
@@ -11,6 +12,7 @@ export default function Account() {
   const { session, setName, logout, myBookings, walletBalance, isFirstBooking } = useApp()
   const { city, setCity, cities } = usePrefs()
   const { push } = useToast()
+  const t = useT()
   const [draft, setDraft] = useState(session?.name ?? '')
   const [saving, setSaving] = useState(false)
 
@@ -29,7 +31,7 @@ export default function Account() {
     setSaving(true)
     try {
       await setName(trimmed)
-      push({ tone: 'success', title: 'Profile updated' })
+      push({ tone: 'success', title: t('acc.updated') })
     } catch (err) {
       push({ tone: 'warn', title: 'Could not update name', body: err.message })
     } finally {
@@ -44,30 +46,30 @@ export default function Account() {
 
   return (
     <div className="shell shell--narrow simple">
-      <h1 className="display simple__title">Account</h1>
+      <h1 className="display simple__title">{t('acc.title')}</h1>
 
       <div className="statRow">
         <div className="stat">
-          <div className="stat__label">Bookings</div>
+          <div className="stat__label">{t('acc.bookings')}</div>
           <div className="stat__value money">{myBookings.length}</div>
         </div>
         <div className="stat">
-          <div className="stat__label">Wallet</div>
+          <div className="stat__label">{t('acc.wallet')}</div>
           <div className="stat__value money">{formatINR(walletBalance)}</div>
         </div>
         <div className="stat">
-          <div className="stat__label">First-booking offer</div>
+          <div className="stat__label">{t('acc.firstOffer')}</div>
           <div className="stat__value stat__value--sm">
-            {isFirstBooking ? 'Available' : 'Used'}
+            {isFirstBooking ? t('acc.availableOffer') : t('acc.used')}
           </div>
         </div>
       </div>
 
       <form className="panel" onSubmit={saveName}>
-        <h2 className="simple__heading">Profile</h2>
+        <h2 className="simple__heading">{t('acc.profile')}</h2>
 
         <label className="field" htmlFor="acc-name">
-          <span className="field__label">Name</span>
+          <span className="field__label">{t('acc.name')}</span>
           <input
             id="acc-name"
             className="field__input"
@@ -78,7 +80,7 @@ export default function Account() {
         </label>
 
         <div className="field">
-          <span className="field__label">Mobile number</span>
+          <span className="field__label">{t('acc.mobile')}</span>
           <div className="acc-lock">
             <input
               id="acc-phone"
@@ -99,22 +101,21 @@ export default function Account() {
                   strokeLinejoin="round"
                 />
               </svg>
-              Verified
+              {t('acc.verified')}
             </span>
           </div>
           <span className="field__hint">
-            Your number is verified by OTP and can’t be changed. Signed in until {expires} (
-            {SESSION_DAYS}-day session).
+            {t('acc.mobileHint', { date: expires, days: SESSION_DAYS })}
           </span>
         </div>
 
         <button type="submit" className="btn btn--gold" disabled={!changed || saving}>
-          {saving ? 'Saving…' : 'Save changes'}
+          {saving ? t('acc.saving') : t('acc.save')}
         </button>
       </form>
 
       <div className="panel">
-        <h2 className="simple__heading">Default city</h2>
+        <h2 className="simple__heading">{t('acc.defaultCity')}</h2>
         <div className="cityRow">
           {cities.map((c) => (
             <button
@@ -128,20 +129,15 @@ export default function Account() {
             </button>
           ))}
         </div>
-        <p className="panel__text panel__text--fine">
-          Set your city from any PIN code using the location menu in the header.
-        </p>
+        <p className="panel__text panel__text--fine">{t('acc.cityHint')}</p>
       </div>
 
       <div className="panel panel--danger">
-        <h2 className="simple__heading">Session</h2>
-        <p className="panel__text">
-          Logging out ends the {SESSION_DAYS}-day session on this device. Your bookings stay
-          saved to your account.
-        </p>
+        <h2 className="simple__heading">{t('acc.session')}</h2>
+        <p className="panel__text">{t('acc.sessionText', { days: SESSION_DAYS })}</p>
         <div className="panel__actions">
           <button type="button" className="btn btn--outline" onClick={signOut}>
-            Log out
+            {t('acc.logout')}
           </button>
         </div>
       </div>

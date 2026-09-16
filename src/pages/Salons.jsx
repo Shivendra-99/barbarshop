@@ -3,26 +3,28 @@ import { useNavigate } from 'react-router-dom'
 import Reveal from '../components/Reveal'
 import { useApp } from '../store/AppStore'
 import { usePrefs } from '../store/Prefs'
+import { useT } from '../lib/i18n'
 import { CATEGORIES } from '../data/seed'
 import { formatINR } from '../lib/money'
 import './Salons.css'
 
 const SORTS = [
-  { id: 'rating', label: 'Top rated' },
-  { id: 'price', label: 'Price: low to high' },
-  { id: 'distance', label: 'Nearest' },
+  { id: 'rating', key: 'salons.sortRating' },
+  { id: 'price', key: 'salons.sortPrice' },
+  { id: 'distance', key: 'salons.sortNearest' },
 ]
 
 const MODE_FILTERS = [
-  { id: 'all', label: 'All' },
-  { id: 'salon', label: 'At salon' },
-  { id: 'home', label: 'Home service' },
+  { id: 'all', key: 'salons.allModes' },
+  { id: 'salon', key: 'card.atSalon' },
+  { id: 'home', key: 'card.homeService' },
 ]
 
 export default function Salons() {
   const navigate = useNavigate()
   const { publicSalons, settings } = useApp()
   const { city, category, setCategory } = usePrefs()
+  const t = useT()
   const [mode, setMode] = useState('all')
   const [sort, setSort] = useState('rating')
 
@@ -48,11 +50,12 @@ export default function Salons() {
         <div>
           <div className="eyebrow">{city.label}</div>
           <h1 className="display salons__title">
-            {activeCategory ? activeCategory.label : 'All salons'}
+            {activeCategory ? t(`cat.${activeCategory.id}.label`) : t('salons.allSalons')}
           </h1>
           <p className="lede salons__lede">
-            {results.length} {results.length === 1 ? 'salon' : 'salons'} available
-            {activeCategory ? ` · ${activeCategory.short}` : ''}
+            {results.length === 1
+              ? t('salons.availableOne')
+              : t('salons.available', { n: results.length })}
           </p>
         </div>
 
@@ -65,7 +68,7 @@ export default function Salons() {
           >
             {SORTS.map((s) => (
               <option key={s.id} value={s.id}>
-                {s.label}
+                {t(s.key)}
               </option>
             ))}
           </select>
@@ -80,7 +83,7 @@ export default function Salons() {
             aria-pressed={!category}
             onClick={() => setCategory(null)}
           >
-            All types
+            {t('salons.allTypes')}
           </button>
           {CATEGORIES.map((c) => (
             <button
@@ -90,7 +93,7 @@ export default function Salons() {
               aria-pressed={category === c.id}
               onClick={() => setCategory(c.id)}
             >
-              {c.label}
+              {t(`cat.${c.id}.label`)}
             </button>
           ))}
         </div>
@@ -104,7 +107,7 @@ export default function Salons() {
               aria-pressed={mode === m.id}
               onClick={() => setMode(m.id)}
             >
-              {m.label}
+              {t(m.key)}
             </button>
           ))}
         </div>
@@ -112,17 +115,15 @@ export default function Salons() {
 
       {showComingSoon ? (
         <div className="empty">
-          <h2 className="empty__title">Coming soon in {city.label}</h2>
+          <h2 className="empty__title">{t('home.comingSoonTitle', { city: city.label })}</h2>
           <p className="empty__text">
-            {settings.comingSoonMessage || 'We’re onboarding great salons near you — check back soon.'}
+            {settings.comingSoonMessage || t('home.comingSoonText')}
           </p>
         </div>
       ) : results.length === 0 ? (
         <div className="empty">
-          <h2 className="empty__title">No salons match those filters</h2>
-          <p className="empty__text">
-            Try a different salon type or service location in {city.label}.
-          </p>
+          <h2 className="empty__title">{t('salons.noMatch')}</h2>
+          <p className="empty__text">{t('salons.noMatchHint', { city: city.label })}</p>
           <button
             type="button"
             className="btn btn--ghost-gold"
@@ -131,7 +132,7 @@ export default function Salons() {
               setMode('all')
             }}
           >
-            Clear filters
+            {t('salons.clearFilters')}
           </button>
         </div>
       ) : (
@@ -158,19 +159,21 @@ export default function Salons() {
                     <span className="salonCard__rating">★ {salon.rating.toFixed(1)}</span>
                   </span>
                   <span className="salonCard__meta">
-                    {salon.area} · {salon.dist} · {salon.reviews} reviews
+                    {salon.area} · {salon.dist} · {salon.reviews} {t('card.reviews')}
                   </span>
                   <span className="salonCard__modes">
-                    {salon.serviceModes.includes('salon') && <span className="tag">At salon</span>}
+                    {salon.serviceModes.includes('salon') && (
+                      <span className="tag">{t('card.atSalon')}</span>
+                    )}
                     {salon.serviceModes.includes('home') && (
-                      <span className="tag">Home service</span>
+                      <span className="tag">{t('card.homeService')}</span>
                     )}
                   </span>
                   <span className="salonCard__foot">
                     <span className="salonCard__price money">
-                      from <strong>{formatINR(salon.from)}</strong>
+                      {t('card.from')} <strong>{formatINR(salon.from)}</strong>
                     </span>
-                    <span className="salonCard__open">Open till {salon.closes}</span>
+                    <span className="salonCard__open">{t('card.openTill', { t: salon.closes })}</span>
                   </span>
                 </span>
               </button>
