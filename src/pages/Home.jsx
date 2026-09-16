@@ -145,6 +145,11 @@ export default function Home() {
                 <span className="salonCard__media">
                   <img src={salon.img} alt="" aria-hidden="true" loading="lazy" />
                   <span className="salonCard__badge">{salon.badge}</span>
+                  {salon.offerActive && salon.offerPercent > 0 && (
+                    <span className="salonCard__offer">
+                      {t('card.offerBadge', { pct: salon.offerPercent })}
+                    </span>
+                  )}
                 </span>
                 <span className="salonCard__body">
                   <span className="salonCard__row">

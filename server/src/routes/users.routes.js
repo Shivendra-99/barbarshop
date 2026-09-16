@@ -17,6 +17,8 @@ const createOwnerSchema = z.object({
   phone: phoneField,
 })
 
+const blockSchema = z.object({ phone: phoneField })
+
 /** Shape one owner for the founder's table (public fields + salon count). */
 function ownerView(user, salonCount = 0) {
   return { ...user.toPublic(), salonCount, createdAt: user.createdAt }
@@ -59,6 +61,91 @@ router.post(
 
     const user = await User.create({ name, phone, role: 'owner' })
     return res.status(201).json({ owner: ownerView(user, 0) })
+  }),
+)
+
+/* ---- Founder: platform-wide block/unblock of any account by number ---- */
+
+/** Founder: list every platform-blocked account. */
+router.get(
+  '/blocked',
+  requireAuth,
+  requireRole('founder'),
+  asyncHandler(async (_req, res) => {
+    const users = await User.find({ blocked: true }).sort({ updatedAt: -1 })
+    res.json({ users: users.map((u) => u.toPublic()) })
+  }),
+)
+
+/** Founder: block (or unblock) a customer/owner platform-wide by phone. */
+async function setBlocked(req, res, blocked) {
+  const target = await User.findOne({ phone: req.body.phone })
+  if (!target) throw new ApiError(404, 'No account is registered with that number.')
+  if (target.role === 'founder') throw new ApiError(400, 'You can’t block a founder account.')
+  target.blocked = blocked
+  await target.save()
+  res.json({ user: target.toPublic() })
+}
+
+router.post(
+  '/block',
+  requireAuth,
+  requireRole('founder'),
+  validate(blockSchema),
+  asyncHandler((req, res) => setBlocked(req, res, true)),
+)
+
+router.post(
+  '/unblock',
+  requireAuth,
+  requireRole('founder'),
+  validate(blockSchema),
+  asyncHandler((req, res) => setBlocked(req, res, false)),
+)
+
+/* ---- Owner: block/unblock a customer from their own salons ---- */
+
+/** Owner: the numbers they've blocked from booking at their salons. */
+router.get(
+  '/owner-blocked',
+  requireAuth,
+  requireRole('owner'),
+  asyncHandler(async (req, res) => {
+    res.json({ blockedCustomers: req.user.blockedCustomers ?? [] })
+  }),
+)
+
+router.post(
+  '/owner-block',
+  requireAuth,
+  requireRole('owner'),
+  validate(blockSchema),
+  asyncHandler(async (req, res) => {
+    const { phone } = req.body
+    if (phone === req.user.phone) throw new ApiError(400, 'That’s your own number.')
+    const target = await User.findOne({ phone })
+    if (target && target.role !== 'customer') {
+      throw new ApiError(400, 'You can only block customer numbers.')
+    }
+    if (!req.user.blockedCustomers.includes(phone)) {
+      req.user.blockedCustomers.push(phone)
+      await req.user.save()
+    }
+    res.json({ blockedCustomers: req.user.blockedCustomers })
+  }),
+)
+
+router.post(
+  '/owner-unblock',
+  requireAuth,
+  requireRole('owner'),
+  validate(blockSchema),
+  asyncHandler(async (req, res) => {
+    req.user.blockedCustomers = (req.user.blockedCustomers ?? []).filter(
+      (p) => p !== req.body.phone,
+    )
+    await req.user.save()
+    res.json({ blockedCustomers: req.user.blockedCustomers })
   }),
 )
 

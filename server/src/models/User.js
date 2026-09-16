@@ -14,6 +14,12 @@ const userSchema = new mongoose.Schema(
     // service resets it to 0.
     cashCancelCount: { type: Number, default: 0 },
     cashBlocked: { type: Boolean, default: false },
+    // Platform-wide block set by the founder: a blocked account can't sign in or
+    // act (applies to customers and owners alike).
+    blocked: { type: Boolean, default: false },
+    // Owner-only: phone numbers this owner has blocked from booking at THEIR
+    // salons. A per-owner list, not a platform ban.
+    blockedCustomers: { type: [String], default: [] },
   },
   { timestamps: true },
 )
@@ -27,6 +33,7 @@ userSchema.methods.toPublic = function toPublic() {
     walletBalance: this.walletBalance,
     cashBlocked: this.cashBlocked ?? false,
     cashCancelCount: this.cashCancelCount ?? 0,
+    blocked: this.blocked ?? false,
   }
 }
 

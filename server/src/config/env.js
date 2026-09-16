@@ -1,6 +1,10 @@
 import dotenv from 'dotenv'
+import path from 'path'
+import { fileURLToPath } from 'url'
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 dotenv.config()
+dotenv.config({ path: path.resolve(__dirname, '../../.env') })
 
 const bool = (v, fallback) => (v == null ? fallback : v === 'true' || v === '1')
 const int = (v, fallback) => (v == null || v === '' ? fallback : Number(v))
@@ -32,6 +36,8 @@ export const env = {
     templateId: process.env.MSG91_TEMPLATE_ID || '',
     senderId: process.env.MSG91_SENDER_ID || '',
     otpExpiryMinutes: int(process.env.MSG91_OTP_EXPIRY_MINUTES, 15),
+    bookingFlowId: process.env.MSG91_BOOKING_FLOW_ID || process.env.MSG91_FLOW_ID || '',
+    ownerFlowId: process.env.MSG91_OWNER_FLOW_ID || process.env.MSG91_OWNER_BOOKING_FLOW_ID || '',
   },
 
   // Mappls (MapmyIndia) address autosuggest. Server-side OAuth credentials —

@@ -19,6 +19,11 @@ export default function FounderOwners() {
   const [phone, setPhone] = useState('')
   const [saving, setSaving] = useState(false)
 
+  // Platform-wide blocking (any customer/owner by number).
+  const [blocked, setBlocked] = useState([])
+  const [blockPhone, setBlockPhone] = useState('')
+  const [blockBusy, setBlockBusy] = useState(false)
+
   const load = async () => {
     try {
       const { owners: list } = await api.owners()
@@ -30,10 +35,69 @@ export default function FounderOwners() {
     }
   }
 
+  const loadBlocked = async () => {
+    try {
+      const { users } = await api.blockedUsers()
+      setBlocked(users)
+    } catch {
+      /* ignore */
+    }
+  }
+
   useEffect(() => {
     load()
+    loadBlocked()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  const toggleOwnerBlock = async (o) => {
+    const ok = await confirm({
+      title: o.blocked ? 'Unblock this owner?' : 'Block this owner?',
+      message: o.blocked
+        ? `${o.name} (+91 ${o.phone}) will be able to sign in again.`
+        : `${o.name} (+91 ${o.phone}) will be signed out and blocked from the platform.`,
+      confirmLabel: o.blocked ? 'Unblock' : 'Block',
+      tone: o.blocked ? 'default' : 'danger',
+    })
+    if (!ok) return
+    try {
+      if (o.blocked) await api.unblockUser(o.phone)
+      else await api.blockUser(o.phone)
+      push({ tone: 'info', title: o.blocked ? 'Owner unblocked' : 'Owner blocked', body: o.name })
+      load()
+      loadBlocked()
+    } catch (err) {
+      push({ tone: 'warn', title: 'Could not update', body: err.message })
+    }
+  }
+
+  const blockByNumber = async (e) => {
+    e.preventDefault()
+    if (!phoneValid(blockPhone) || blockBusy) return
+    setBlockBusy(true)
+    try {
+      const { user } = await api.blockUser(blockPhone)
+      push({ tone: 'info', title: 'Account blocked', body: `${user.name} · +91 ${user.phone}` })
+      setBlockPhone('')
+      load()
+      loadBlocked()
+    } catch (err) {
+      push({ tone: 'warn', title: 'Could not block', body: err.message })
+    } finally {
+      setBlockBusy(false)
+    }
+  }
+
+  const unblock = async (u) => {
+    try {
+      await api.unblockUser(u.phone)
+      push({ tone: 'info', title: 'Unblocked', body: `${u.name} · +91 ${u.phone}` })
+      load()
+      loadBlocked()
+    } catch (err) {
+      push({ tone: 'warn', title: 'Could not unblock', body: err.message })
+    }
+  }
 
   const canSubmit = name.trim().length > 0 && phoneValid(phone) && !saving
 
@@ -129,6 +193,8 @@ export default function FounderOwners() {
                 <th>Mobile</th>
                 <th>Salons</th>
                 <th>Added</th>
+                <th>Status</th>
+                <th>Action</th>
               </tr>
             </thead>
             <tbody>
@@ -142,6 +208,95 @@ export default function FounderOwners() {
                     </span>
                   </td>
                   <td className="ptable__sub">{joinedLabel(o.createdAt)}</td>
+                  <td>
+                    <span className={`badge ${o.blocked ? 'badge--red' : 'badge--green'}`}>
+                      {o.blocked ? 'Blocked' : 'Active'}
+                    </span>
+                  </td>
+                  <td>
+                    <button
+                      type="button"
+                      className={`btn btn--sm ${o.blocked ? 'btn--ghost-gold' : 'btn--danger'}`}
+                      onClick={() => toggleOwnerBlock(o)}
+                    >
+                      {o.blocked ? 'Unblock' : 'Block'}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* ---- Block any account by number ---- */}
+      <div className="p-head" style={{ marginTop: 40 }}>
+        <h2 className="p-head__title">Blocked accounts</h2>
+        <p className="p-head__sub">
+          Block or unblock any customer or owner platform-wide by mobile number. A blocked account
+          can’t sign in or book.
+        </p>
+      </div>
+
+      <div className="pcard" style={{ marginBottom: 20 }}>
+        <div className="pcard__body" style={{ padding: 20 }}>
+          <form className="fo-form" onSubmit={blockByNumber} noValidate>
+            <label className="field fo-field" htmlFor="block-phone">
+              <span className="field__label">Mobile number</span>
+              <div className="fo-phone">
+                <span className="fo-cc">+91</span>
+                <input
+                  id="block-phone"
+                  className="field__input"
+                  value={blockPhone}
+                  onChange={(e) => setBlockPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                  placeholder="98765 43210"
+                  inputMode="numeric"
+                  autoComplete="off"
+                />
+              </div>
+            </label>
+            <button
+              type="submit"
+              className="btn btn--danger fo-submit"
+              disabled={!phoneValid(blockPhone) || blockBusy}
+            >
+              {blockBusy ? 'Blocking…' : 'Block number'}
+            </button>
+          </form>
+        </div>
+      </div>
+
+      {blocked.length === 0 ? (
+        <div className="p-empty">
+          <p className="p-empty__text">No blocked accounts.</p>
+        </div>
+      ) : (
+        <div className="ptable-wrap">
+          <table className="ptable">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Mobile</th>
+                <th>Role</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {blocked.map((u) => (
+                <tr key={u.id}>
+                  <td className="ptable__strong">{u.name}</td>
+                  <td>+91 {u.phone}</td>
+                  <td style={{ textTransform: 'capitalize' }}>{u.role}</td>
+                  <td>
+                    <button
+                      type="button"
+                      className="btn btn--ghost-gold btn--sm"
+                      onClick={() => unblock(u)}
+                    >
+                      Unblock
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>

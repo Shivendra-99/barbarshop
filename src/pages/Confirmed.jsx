@@ -124,6 +124,12 @@ export default function Confirmed() {
                 <dd className="done__payId">{rzpId}</dd>
               </div>
             )}
+            {booking.offerDiscount > 0 && (
+              <div className="done__row done__row--save">
+                <dt>{t('book.offerDiscount', { pct: booking.offerPercent })}</dt>
+                <dd className="money">−{formatINR(booking.offerDiscount)}</dd>
+              </div>
+            )}
             {booking.discount > 0 && (
               <div className="done__row done__row--save">
                 <dt>{t('book.firstDiscount')}</dt>
@@ -141,6 +147,24 @@ export default function Confirmed() {
           <Link to="/appointments" className="btn btn--gold done__action">
             {t('nav.mybookings')}
           </Link>
+          {salonPhone && (
+            <a
+              href={`https://wa.me/91${salonPhone.replace(/\D/g, '').slice(-10)}?text=${encodeURIComponent(
+                `Hi ${salon?.name || 'there'}! I just booked an appointment on SalonSaathi:\n\n` +
+                  `• Service: ${booking.serviceName}\n` +
+                  `• Date & Time: ${booking.dateLabel}, ${formatTime12(booking.slot)}\n` +
+                  `• Mode: ${booking.mode === 'home' ? 'Home Service' : 'At Salon'}\n` +
+                  `• Booking ID: #${booking.ref}\n` +
+                  `• Total: ₹${booking.total} (${booking.paymentMode === 'online' ? 'Paid Online' : 'Cash at Salon'})\n\n` +
+                  `Please confirm you have received my booking.`
+              )}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn btn--outline done__action done__action--wa"
+            >
+              WhatsApp Salon
+            </a>
+          )}
           {salonPhone ? (
             <a href={`tel:+91${salonPhone}`} className="btn btn--outline done__action">
               {t('appt.callSalon')}

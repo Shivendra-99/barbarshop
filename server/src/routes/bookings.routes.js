@@ -12,6 +12,7 @@ import { requireAuth, requireRole } from '../middleware/auth.js'
 import { asyncHandler, ApiError } from '../middleware/error.js'
 import { notify } from '../lib/notify.js'
 import { sendBookingOtp } from '../lib/sms/bookingOtp.js'
+import { sendOwnerBookingAlert } from '../lib/sms/ownerAlert.js'
 import { formatINR } from '../lib/money.js'
 import { geocode } from '../lib/geo/mappls.js'
 
@@ -136,6 +137,15 @@ export async function priceBookingDraft(user, body) {
     throw new ApiError(404, 'Salon not available.')
   }
 
+  // Per-owner block: this salon's owner may have blocked the customer's number.
+  const salonOwner = await User.findById(salon.owner).catch(() => null)
+  if (salonOwner?.blockedCustomers?.includes(user.phone)) {
+    throw new ApiError(
+      403,
+      'This salon is not accepting bookings from your number. Please contact the salon.',
+    )
+  }
+
   // One or many services (cart). De-dupe while preserving order.
   const ids = [...new Set(body.serviceIds?.length ? body.serviceIds : [body.serviceId])]
   if (!ids.length || ids.some((id) => !isObjectId(id))) throw new ApiError(400, 'Invalid service.')
@@ -165,11 +175,13 @@ export async function priceBookingDraft(user, body) {
   const serviceName = services.map((s) => s.name).join(' + ')
 
   const homeServiceFee = body.mode === 'home' ? salon.homeServiceFee : 0
+  const offerPercent = salon.offerActive ? salon.offerPercent || 0 : 0
   const priced = quote({
     amount: servicesTotal,
     paymentMode: body.paymentMode,
     isFirstBooking,
     homeServiceFee,
+    offerPercent,
   })
 
   return { salon, services, primary: services[0], items, serviceName, priced, homeServiceFee }
@@ -250,6 +262,9 @@ export async function createBookingRecord(user, body, payment = {}) {
       } ${formatINR(booking.total)}`,
     },
   ])
+
+  // Best-effort SMS/WhatsApp alert to the salon owner (never blocks the booking).
+  sendOwnerBookingAlert({ booking, salon, user }).catch(() => {})
 
   // Best-effort SMS/WhatsApp of the completion OTP (never blocks the booking).
   sendBookingOtp({ phone: user.phone, otp: booking.completionOtp, ref: booking.ref }).catch(() => {})
@@ -381,6 +396,10 @@ router.patch(
           ]
         : []),
     ])
+
+    if (salon) {
+      sendOwnerBookingAlert({ booking, salon, user: req.user, isReschedule: true }).catch(() => {})
+    }
 
     res.json({ booking: booking.toPublic({ includeOtp: true }) })
   }),

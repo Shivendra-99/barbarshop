@@ -144,6 +144,7 @@ export default function Book() {
     paymentMode,
     isFirstBooking,
     homeServiceFee: homeFee,
+    offerPercent: salon?.offerActive ? salon.offerPercent : 0,
   })
 
   const missing = []
@@ -521,6 +522,12 @@ export default function Book() {
               <div className="summary__row">
                 <span>{t('book.homeVisit')}</span>
                 <span className="summary__val money">{formatINR(homeFee)}</span>
+              </div>
+            )}
+            {priced.offerDiscount > 0 && (
+              <div className="summary__row summary__row--save">
+                <span>{t('book.offerDiscount', { pct: priced.offerPercent })}</span>
+                <span className="summary__val money">−{formatINR(priced.offerDiscount)}</span>
               </div>
             )}
             {priced.discount > 0 && (

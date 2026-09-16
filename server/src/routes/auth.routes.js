@@ -48,6 +48,11 @@ async function issueSession(phone, name) {
   // No prior document ⇒ this login just created the account.
   const isNew = !result.lastErrorObject?.updatedExisting
 
+  // A founder-blocked account can't sign in.
+  if (user.blocked) {
+    throw new ApiError(403, 'Your account has been blocked. Please contact SalonSaathi support.')
+  }
+
   if (name && user.role === 'customer' && user.name !== name) {
     user.name = name
     await user.save()

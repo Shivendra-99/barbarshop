@@ -47,6 +47,10 @@ const salonSchema = new mongoose.Schema(
     // Parallel bookings a single time slot can hold (chairs / staff working at
     // once). Availability blocks a slot once its confirmed bookings hit this.
     capacity: { type: Number, default: 1, min: 1 },
+    // Owner-set promotional discount: when active, offerPercent (1–50) comes off
+    // the service subtotal at checkout. Applied before the first-booking offer.
+    offerActive: { type: Boolean, default: false },
+    offerPercent: { type: Number, default: 0, min: 0, max: 50 },
     rating: { type: Number, default: 0 },
     reviews: { type: Number, default: 0 },
     badge: { type: String, default: 'New' },
@@ -79,6 +83,8 @@ salonSchema.methods.toPublic = function toPublic() {
     daysOff: this.daysOff ?? [],
     closedDates: this.closedDates ?? [],
     capacity: this.capacity ?? 1,
+    offerActive: this.offerActive ?? false,
+    offerPercent: this.offerPercent ?? 0,
     rating: this.rating,
     reviews: this.reviews,
     badge: this.badge,

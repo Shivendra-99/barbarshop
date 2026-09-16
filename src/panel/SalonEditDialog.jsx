@@ -30,6 +30,8 @@ export default function SalonEditDialog({ salon, role = 'founder', onClose, onSa
     daysOff: salon.daysOff ?? [],
     closedDates: salon.closedDates ?? [],
     photo: salon.photo ?? null,
+    offerActive: salon.offerActive ?? false,
+    offerPercent: salon.offerPercent ?? 0,
   })
   const [newDate, setNewDate] = useState('')
   const [busy, setBusy] = useState(false)
@@ -98,6 +100,8 @@ export default function SalonEditDialog({ salon, role = 'founder', onClose, onSa
         daysOff: form.daysOff,
         closedDates: form.closedDates,
         photo: form.photo ?? null,
+        offerActive: Boolean(form.offerActive),
+        offerPercent: form.offerActive ? Math.max(0, Math.min(50, Number(form.offerPercent) || 0)) : 0,
       }
       // Category is founder-only.
       if (role === 'founder') changes.category = form.category
@@ -285,6 +289,40 @@ export default function SalonEditDialog({ salon, role = 'founder', onClose, onSa
           <label>
             <input type="checkbox" checked={form.home} onChange={set('home')} /> Home service
           </label>
+        </div>
+
+        {/* Offer / discount — % off the service total at checkout. */}
+        <div className="se-block">
+          <label className="se-offerToggle">
+            <input type="checkbox" checked={form.offerActive} onChange={set('offerActive')} />
+            <span className="field__label" style={{ margin: 0 }}>
+              Run an offer (discount at checkout)
+            </span>
+          </label>
+          {form.offerActive && (
+            <label className="field" style={{ marginTop: 10, maxWidth: 220 }}>
+              <span className="field__label">Discount %</span>
+              <input
+                type="number"
+                min="1"
+                max="50"
+                step="1"
+                className="field__input"
+                value={form.offerPercent}
+                onChange={(e) =>
+                  setForm((f) => ({
+                    ...f,
+                    offerPercent: Math.max(0, Math.min(50, Number(e.target.value.replace(/\D/g, '')) || 0)),
+                  }))
+                }
+              />
+              <span className="se-hint">
+                {form.offerPercent > 0
+                  ? `Customers get ${form.offerPercent}% off the service total (max 50%).`
+                  : 'Enter a percentage between 1 and 50.'}
+              </span>
+            </label>
+          )}
         </div>
 
         {/* Menu — add, edit or remove services right here. Saves immediately,

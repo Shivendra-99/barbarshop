@@ -16,7 +16,7 @@ const toMobile = (phone) => `91${phone}`
 
 export async function sendBookingOtp({ phone, otp, ref }) {
   if (!phone || !otp) return
-  const flowId = process.env.MSG91_BOOKING_FLOW_ID || ''
+  const flowId = env.msg91.bookingFlowId || process.env.MSG91_BOOKING_FLOW_ID || env.msg91.templateId || ''
 
   // Dev / not-configured: log so it's visible without a provider.
   if (!env.msg91.authkey || !flowId) {

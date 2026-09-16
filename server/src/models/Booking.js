@@ -53,6 +53,9 @@ const bookingSchema = new mongoose.Schema(
     base: Number,
     discount: Number,
     discountEligible: Boolean,
+    // Salon offer applied at checkout (snapshot).
+    offerPercent: { type: Number, default: 0 },
+    offerDiscount: { type: Number, default: 0 },
     total: Number,
     commission: Number,
     salonPayout: Number,
@@ -137,6 +140,8 @@ bookingSchema.methods.toPublic = function toPublic({
     base: this.base,
     discount: this.discount,
     discountEligible: this.discountEligible,
+    offerPercent: this.offerPercent ?? 0,
+    offerDiscount: this.offerDiscount ?? 0,
     total: this.total,
     commission: this.commission,
     salonPayout: this.salonPayout,

@@ -71,6 +71,17 @@ export const api = {
   owners: () => request('/users/owners'),
   addOwner: (body) => request('/users/owners', { method: 'POST', body }),
 
+  // --- Blocking ---
+  // Founder: platform-wide block/unblock any account by number.
+  blockedUsers: () => request('/users/blocked'),
+  blockUser: (phone) => request('/users/block', { method: 'POST', body: { phone } }),
+  unblockUser: (phone) => request('/users/unblock', { method: 'POST', body: { phone } }),
+  // Owner: block/unblock a customer from their own salons.
+  ownerBlockedCustomers: () => request('/users/owner-blocked'),
+  ownerBlockCustomer: (phone) => request('/users/owner-block', { method: 'POST', body: { phone } }),
+  ownerUnblockCustomer: (phone) =>
+    request('/users/owner-unblock', { method: 'POST', body: { phone } }),
+
   // --- Salons ---
   publicSalons: () => request('/salons', { auth: false }),
   salon: (id) => request(`/salons/${id}`, { auth: false }),

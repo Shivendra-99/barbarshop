@@ -15,8 +15,11 @@ export const OFFLINE_PAYEE = 'salon'
  * Quotes a booking. The 10% discount applies only when paying online AND the
  * customer has never booked before.
  */
-export function quote({ amount, paymentMode, isFirstBooking, homeServiceFee = 0 }) {
-  const base = amount + (homeServiceFee || 0)
+export function quote({ amount, paymentMode, isFirstBooking, homeServiceFee = 0, offerPercent = 0 }) {
+  // Salon offer comes off the service subtotal first.
+  const pct = Math.max(0, Math.min(50, Math.round(offerPercent || 0)))
+  const offerDiscount = pct > 0 ? Math.round((amount * pct) / 100) : 0
+  const base = amount - offerDiscount + (homeServiceFee || 0)
   const discountEligible = paymentMode === 'online' && Boolean(isFirstBooking)
   const discount = discountEligible ? Math.round(base * FIRST_BOOKING_DISCOUNT_RATE) : 0
   const total = base - discount
@@ -24,6 +27,8 @@ export function quote({ amount, paymentMode, isFirstBooking, homeServiceFee = 0 
 
   return {
     base,
+    offerPercent: pct,
+    offerDiscount,
     discount,
     discountEligible,
     total,

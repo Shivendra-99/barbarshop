@@ -165,6 +165,17 @@
   flex: 1;
 }
 
+.done__action--wa {
+  border-color: #25d366;
+  color: #25d366;
+}
+
+.done__action--wa:hover {
+  background: #25d366;
+  color: #ffffff;
+  border-color: #25d366;
+}
+
 .done__fine {
   margin: 22px 0 0;
   font-size: 13px;

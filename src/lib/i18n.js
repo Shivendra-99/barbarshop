@@ -253,6 +253,8 @@ const EN = {
   'book.bookingAs': 'Booking as {name} · +91 {phone}. Free cancellation up to 2 hours before.',
   'book.travel': '+{fee} travel',
   'book.confirmed': 'Booking confirmed',
+  'book.offerDiscount': 'Salon offer ({pct}% off)',
+  'card.offerBadge': '{pct}% OFF',
 
   // --- Confirmed ---
   'done.confirmedRef': 'Confirmed · #{ref}',
@@ -629,6 +631,8 @@ const HI = {
   'book.bookingAs': '{name} के रूप में बुकिंग · +91 {phone}. 2 घंटे पहले तक मुफ़्त कैंसिलेशन।',
   'book.travel': '+{fee} यात्रा',
   'book.confirmed': 'बुकिंग पक्की हो गई',
+  'book.offerDiscount': 'सैलून ऑफर ({pct}% छूट)',
+  'card.offerBadge': '{pct}% छूट',
 
   // --- Confirmed ---
   'done.confirmedRef': 'पक्की · #{ref}',

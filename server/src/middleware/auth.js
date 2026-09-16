@@ -21,6 +21,9 @@ export async function requireAuth(req, _res, next) {
 
     const user = await User.findById(payload.sub)
     if (!user) throw new ApiError(401, 'Account not found.')
+    if (user.blocked) {
+      throw new ApiError(403, 'Your account has been blocked. Please contact SalonSaathi support.')
+    }
 
     req.user = user
     next()

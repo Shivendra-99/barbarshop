@@ -304,6 +304,35 @@ a.ptable__mono {
   text-decoration: none;
 }
 
+/* Offer toggle row in the salon edit dialog */
+.se-offerToggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+
+/* Blocked-numbers list */
+.blocklist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.blocklist__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm, 10px);
+  font-variant-numeric: tabular-nums;
+}
+
 /* No-show reason picker (preset buttons, no typing) */
 .reason-list {
   display: flex;

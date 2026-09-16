@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useApp } from '../store/AppStore'
 import { useToast } from '../components/Toast'
+import { api } from '../lib/api'
 import './panel-ui.css'
 
 /**
@@ -24,7 +25,47 @@ export default function OwnerProfile() {
   const [phone, setPhone] = useState(currentPhone)
   const [phoneBusy, setPhoneBusy] = useState(false)
 
+  // Per-salon blocked customer numbers.
+  const [blockedCustomers, setBlockedCustomers] = useState([])
+  const [blockPhone, setBlockPhone] = useState('')
+  const [blockBusy, setBlockBusy] = useState(false)
+
   useEffect(() => setPhone(currentPhone), [currentPhone])
+
+  useEffect(() => {
+    api
+      .ownerBlockedCustomers()
+      .then((r) => setBlockedCustomers(r.blockedCustomers ?? []))
+      .catch(() => {})
+  }, [])
+
+  const blockCustValid = /^[6-9]\d{9}$/.test(blockPhone)
+
+  const blockCustomer = async (e) => {
+    e.preventDefault()
+    if (!blockCustValid || blockBusy) return
+    setBlockBusy(true)
+    try {
+      const r = await api.ownerBlockCustomer(blockPhone)
+      setBlockedCustomers(r.blockedCustomers ?? [])
+      push({ tone: 'info', title: 'Customer blocked', body: `+91 ${blockPhone}` })
+      setBlockPhone('')
+    } catch (err) {
+      push({ tone: 'warn', title: 'Could not block', body: err.message })
+    } finally {
+      setBlockBusy(false)
+    }
+  }
+
+  const unblockCustomer = async (p) => {
+    try {
+      const r = await api.ownerUnblockCustomer(p)
+      setBlockedCustomers(r.blockedCustomers ?? [])
+      push({ tone: 'info', title: 'Customer unblocked', body: `+91 ${p}` })
+    } catch (err) {
+      push({ tone: 'warn', title: 'Could not unblock', body: err.message })
+    }
+  }
 
   const nameChanged = name.trim().length > 0 && name.trim() !== session?.name
   const phoneValid = phone === '' || /^\d{10}$/.test(phone)
@@ -134,6 +175,54 @@ export default function OwnerProfile() {
           {phoneBusy ? 'Saving…' : 'Save contact number'}
         </button>
       </form>
+
+      <div className="p-section" style={{ maxWidth: 520 }}>
+        <h3 className="p-section__title">Blocked customers</h3>
+        <p className="p-empty__text" style={{ padding: 0, marginBottom: 12 }}>
+          Block a customer’s number from booking at your salons. They can still use the rest of
+          SalonSaathi.
+        </p>
+
+        <form onSubmit={blockCustomer}>
+          <label className="field" htmlFor="block-cust">
+            <span className="field__label">Customer mobile number</span>
+            <input
+              id="block-cust"
+              className="field__input"
+              type="tel"
+              inputMode="numeric"
+              maxLength={10}
+              value={blockPhone}
+              onChange={(e) => setBlockPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+              placeholder="10-digit mobile number"
+            />
+          </label>
+          <button
+            type="submit"
+            className="btn btn--danger btn--sm"
+            disabled={!blockCustValid || blockBusy}
+          >
+            {blockBusy ? 'Blocking…' : 'Block customer'}
+          </button>
+        </form>
+
+        {blockedCustomers.length > 0 && (
+          <ul className="blocklist" style={{ marginTop: 16 }}>
+            {blockedCustomers.map((p) => (
+              <li key={p} className="blocklist__row">
+                <span>+91 {p}</span>
+                <button
+                  type="button"
+                  className="btn btn--ghost-gold btn--sm"
+                  onClick={() => unblockCustomer(p)}
+                >
+                  Unblock
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
     </>
   )
 }
