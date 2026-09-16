@@ -230,6 +230,13 @@
   margin-top: 26px;
 }
 
+.legal__subheading {
+  font-size: 15.5px;
+  font-weight: 700;
+  color: var(--heading);
+  margin: 16px 0 8px;
+}
+
 /* Contact Us details list */
 .contact__list {
   list-style: none;

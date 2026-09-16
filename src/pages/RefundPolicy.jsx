@@ -27,6 +27,60 @@ export default function RefundPolicy() {
         <li>Cash bookings have nothing to refund.</li>
       </ol>
 
+      <h2 className="simple__heading">C. Salon Owner — Withdrawal Policy</h2>
+      <ul className="legal__list">
+        <li>
+          <strong>Minimum withdrawal:</strong> ₹500.
+        </li>
+        <li>
+          <strong>Instant withdrawal:</strong> available anytime with a 7% charge.
+        </li>
+        <li>
+          <strong>Weekly withdrawal:</strong> free (0% fee) — processed every Sunday by the
+          SalonSaathi team.
+        </li>
+      </ul>
+
+      <h2 className="simple__heading">D. Online Payment — Cancellation, Reschedule &amp; Refund</h2>
+
+      <h3 className="legal__subheading">Reschedule</h3>
+      <p className="legal__p">
+        Rescheduling is allowed only up to <strong>2 hours before</strong> the booking time.
+      </p>
+
+      <h3 className="legal__subheading">Cancelled by customer</h3>
+      <ul className="legal__list">
+        <li>
+          <strong>More than 2 hours before:</strong> full refund to SalonSaathi Wallet (0% fee). For
+          an instant Bank/UPI refund, a 2% fee applies.
+        </li>
+        <li>
+          <strong>Within 2 hours of booking time:</strong> 10% cancellation fee (both Wallet and
+          instant refund).
+        </li>
+        <li>
+          <strong>After 15 minutes of booking time:</strong> 15% cancellation fee (both Wallet and
+          instant refund).
+        </li>
+        <li>
+          <strong>Note:</strong> instant Bank/UPI refund amounts are credited within 5–7 working
+          days.
+        </li>
+      </ul>
+
+      <h2 className="simple__heading">E. No-Show — Cancelled by Salon Owner</h2>
+      <ul className="legal__list">
+        <li>The salon owner will wait a maximum of 15 minutes.</li>
+        <li>
+          If the customer does not arrive, the owner can mark the booking as a{' '}
+          <strong>Customer No-Show</strong>.
+        </li>
+        <li>
+          On a No-Show, a 15% penalty applies to the customer and 85% is refunded to the SalonSaathi
+          Wallet only.
+        </li>
+      </ul>
+
       <p className="legal__p">
         For any refund related query, contact us at{' '}
         <a href="tel:+917081126830">+91-7081126830</a> or{' '}
