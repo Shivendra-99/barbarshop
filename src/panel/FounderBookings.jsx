@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useApp } from '../store/AppStore'
 import { formatINR } from '../lib/money'
+import { formatTime12 } from '../lib/datetime'
 import './panel-ui.css'
 
 const FILTERS = ['All', 'Online', 'Cash', 'Cancelled']
@@ -86,7 +87,7 @@ export default function FounderBookings() {
                   </td>
                   <td>
                     {b.dateLabel}
-                    <div className="ptable__sub">{b.slot}</div>
+                    <div className="ptable__sub">{formatTime12(b.slot)}</div>
                   </td>
                   <td>
                     <span className={`badge ${b.paymentMode === 'online' ? 'badge--gold' : 'badge--neutral'}`}>

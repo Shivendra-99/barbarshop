@@ -8,7 +8,7 @@ import RatingDialog from '../components/RatingDialog'
 import QueueBadge from '../components/QueueBadge'
 import { formatINR } from '../lib/money'
 import { REFUND_METHODS, refundFor } from '../lib/pricing'
-import { fromISO, startOfToday, toISO } from '../lib/datetime'
+import { fromISO, startOfToday, toISO, formatTime12, toMins } from '../lib/datetime'
 import './Appointments.css'
 
 const TABS = ['Upcoming', 'Past']
@@ -45,7 +45,7 @@ function CancelDialog({ booking, onClose, onConfirm }) {
           {t('appt.cancelTitle')}
         </h2>
         <p className="modal__text">
-          {booking.serviceName} at {booking.salonName} · {booking.dateLabel}, {booking.slot}
+          {booking.serviceName} at {booking.salonName} · {booking.dateLabel}, {formatTime12(booking.slot)}
         </p>
 
         {cashBooking ? (
@@ -152,7 +152,7 @@ export default function Appointments() {
       if (b.status === 'cancelled' || isPast) old.push(b)
       else up.push(b)
     })
-    up.sort((a, b) => a.date.localeCompare(b.date) || a.slot.localeCompare(b.slot))
+    up.sort((a, b) => a.date.localeCompare(b.date) || toMins(a.slot) - toMins(b.slot))
     old.sort((a, b) => b.createdAt - a.createdAt)
     return { upcoming: up, past: old }
   }, [myBookings, today])
@@ -238,7 +238,7 @@ export default function Appointments() {
                   <div className="appt__mon">
                     {fromISO(b.date).toLocaleString('en-IN', { month: 'short' })}
                   </div>
-                  <div className="appt__time">{b.slot}</div>
+                  <div className="appt__time">{formatTime12(b.slot)}</div>
                 </div>
 
                 <div className="appt__body">

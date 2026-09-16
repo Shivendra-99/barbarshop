@@ -104,7 +104,12 @@ export default function Terms() {
         jurisdiction of courts in Pratapgarh, Uttar Pradesh.
       </p>
 
-      <h2 className="simple__heading">10. Contact Us</h2>
+      <h2 className="simple__heading">13. How do refunds work?</h2>
+      <p className="legal__p">
+        To get a refund, go to <strong>My Bookings</strong> &gt; <strong>Cancel Booking</strong>. Wallet refund is instant. Bank/UPI refund will be credited within 5-7 working days as per cancellation policy.
+      </p>
+
+      <h2 className="simple__heading">14. Contact Us</h2>
       <p className="legal__p">
         If you have any questions about this Privacy Policy, please contact us:
         <br />

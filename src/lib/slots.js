@@ -1,17 +1,20 @@
-import { addDays, fromISO, toISO } from './datetime'
+import { addDays, fromISO, toISO, formatTime12, toMins } from './datetime'
+
+export { formatTime12, toMins }
 
 /** Booking slot geometry — shared by the Book page and the reschedule dialog. */
 
 export const SLOT_STEP_MINS = 30
 export const MONTHS_AHEAD = 2
 
-export const toMins = (hhmm) => {
-  const [h, m] = hhmm.split(':').map(Number)
-  return h * 60 + m
+export const label = (mins) => {
+  let h = Math.floor(mins / 60)
+  const m = mins % 60
+  const period = h >= 12 ? 'PM' : 'AM'
+  h = h % 12
+  if (h === 0) h = 12
+  return `${h}:${String(m).padStart(2, '0')} ${period}`
 }
-
-const label = (mins) =>
-  `${String(Math.floor(mins / 60)).padStart(2, '0')}:${String(mins % 60).padStart(2, '0')}`
 
 /** The slot interval this salon uses (owner-set), falling back to 30 min. */
 const stepFor = (salon) => Number(salon?.slotMinutes) || SLOT_STEP_MINS
@@ -50,7 +53,9 @@ export function slotsFor(salon, dateISO, todayISO, availability = null) {
   const out = []
   for (let m = open; m + step <= close; m += step) {
     const lbl = label(m)
-    const full = (taken[lbl] ?? 0) >= capacity
+    const legacy24 = `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`
+    const takenCount = (taken[lbl] ?? 0) + (taken[legacy24] ?? 0)
+    const full = takenCount >= capacity
     out.push({ label: lbl, busy: full || (isToday && m <= nowMins + 30) })
   }
   return out

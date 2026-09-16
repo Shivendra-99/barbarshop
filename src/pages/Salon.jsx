@@ -5,6 +5,7 @@ import { useT } from '../lib/i18n'
 import { categoryById } from '../data/seed'
 import { api } from '../lib/api'
 import { formatINR } from '../lib/money'
+import { formatTime12 } from '../lib/datetime'
 import './Salon.css'
 
 const TABS = [
@@ -82,7 +83,7 @@ export default function Salon() {
             </span>
             <span>{salon.address}</span>
             <span className="salon__open">
-              {t('salon.openHours', { opens: salon.opens, closes: salon.closes })}
+              {t('salon.openHours', { opens: formatTime12(salon.opens), closes: formatTime12(salon.closes) })}
             </span>
           </div>
           <div className="salon__modes">
@@ -179,7 +180,7 @@ export default function Salon() {
                 </div>
                 <div className="about__row">
                   <dt>{t('salon.hours')}</dt>
-                  <dd>{t('salon.hoursDaily', { opens: salon.opens, closes: salon.closes })}</dd>
+                  <dd>{t('salon.hoursDaily', { opens: formatTime12(salon.opens), closes: formatTime12(salon.closes) })}</dd>
                 </div>
                 <div className="about__row">
                   <dt>{t('salon.serviceOptions')}</dt>

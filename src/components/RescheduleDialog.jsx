@@ -6,6 +6,7 @@ import {
   buildCalendar,
   formatDateLabel,
   formatMonth,
+  formatTime12,
   fromISO,
   startOfToday,
   toISO,
@@ -95,7 +96,7 @@ export default function RescheduleDialog({ booking, onClose, onConfirm }) {
     setCursor({ year: Math.floor(next / 12), month: next % 12 })
   }
 
-  const unchanged = date === booking.date && slot === booking.slot
+  const unchanged = date === booking.date && (slot === booking.slot || formatTime12(slot) === formatTime12(booking.slot))
   const canSave = slot && !unchanged && !busy
 
   const save = async () => {
@@ -125,7 +126,7 @@ export default function RescheduleDialog({ booking, onClose, onConfirm }) {
             service: booking.serviceName,
             salon: booking.salonName,
             date: booking.dateLabel,
-            slot: booking.slot,
+            slot: formatTime12(booking.slot),
           })}
         </p>
 

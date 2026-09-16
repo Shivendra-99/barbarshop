@@ -3,6 +3,7 @@ import { useToast } from '../components/Toast'
 import { useConfirm } from '../components/Confirm'
 import { cityById } from '../data/seed'
 import { formatINR, formatCompactINR } from '../lib/money'
+import { formatTime12 } from '../lib/datetime'
 import './panel-ui.css'
 
 const KPI_ICONS = {
@@ -187,7 +188,7 @@ export default function FounderDashboard() {
                       </td>
                       <td>
                         <div>{b.salonName}</div>
-                        <div className="ptable__sub">{b.dateLabel}, {b.slot}</div>
+                        <div className="ptable__sub">{b.dateLabel}, {formatTime12(b.slot)}</div>
                       </td>
                       <td className="ptable__money">{formatINR(b.total)}</td>
                       <td>

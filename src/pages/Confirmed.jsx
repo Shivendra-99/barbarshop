@@ -2,6 +2,7 @@ import { Link, Navigate, useParams } from 'react-router-dom'
 import { useApp } from '../store/AppStore'
 import { useT } from '../lib/i18n'
 import { formatINR } from '../lib/money'
+import { formatTime12 } from '../lib/datetime'
 import './Confirmed.css'
 
 export default function Confirmed() {
@@ -102,7 +103,7 @@ export default function Confirmed() {
             </div>
             <div className="done__row">
               <dt>{t('done.when')}</dt>
-              <dd>{t('done.whenAt', { date: booking.dateLabel, slot: booking.slot })}</dd>
+              <dd>{t('done.whenAt', { date: booking.dateLabel, slot: formatTime12(booking.slot) })}</dd>
             </div>
             <div className="done__row">
               <dt>{t('done.payment')}</dt>

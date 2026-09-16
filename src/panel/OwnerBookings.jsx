@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useApp } from '../store/AppStore'
 import { useToast } from '../components/Toast'
 import { formatINR } from '../lib/money'
+import { formatTime12 } from '../lib/datetime'
 import { slotStartMs } from '../lib/pricing'
 import './panel-ui.css'
 
@@ -188,7 +189,7 @@ export default function OwnerBookings() {
                         <td>{b.salonName}</td>
                         <td>
                           {b.dateLabel}
-                          <div className="ptable__sub">{b.slot}</div>
+                          <div className="ptable__sub">{formatTime12(b.slot)}</div>
                         </td>
                         <td>{b.modeLabel}</td>
                         <td>

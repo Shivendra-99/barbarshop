@@ -64,11 +64,51 @@ export function buildCalendar(year, month, today = startOfToday(), closedOn = ()
   return cells
 }
 
-/** Generates bookable times from 09:00 to 19:00 at the given interval. */
+/**
+ * Formats a 24h "HH:MM" or existing time string into "h:MM AM/PM".
+ * e.g. "09:00" -> "9:00 AM", "14:30" -> "2:30 PM", "20:00" -> "8:00 PM"
+ */
+export function formatTime12(timeStr) {
+  if (!timeStr) return ''
+  const trimmed = String(timeStr).trim()
+  if (/am|pm/i.test(trimmed)) return trimmed
+  const [hRaw, mRaw] = trimmed.split(':')
+  let h = parseInt(hRaw, 10)
+  let m = parseInt(mRaw, 10)
+  if (isNaN(h)) return timeStr
+  if (isNaN(m)) m = 0
+  const period = h >= 12 ? 'PM' : 'AM'
+  h = h % 12
+  if (h === 0) h = 12
+  return `${h}:${String(m).padStart(2, '0')} ${period}`
+}
+
+/**
+ * Parses any "HH:MM" (24h) or "h:MM AM/PM" (12h) into minutes since midnight.
+ */
+export function toMins(timeStr) {
+  if (!timeStr) return 0
+  const m = /^(\d{1,2}):(\d{2})(?:\s*(AM|PM))?/i.exec(String(timeStr).trim())
+  if (!m) return 0
+  let h = Number(m[1])
+  const min = Number(m[2])
+  if (m[3]) {
+    h = h % 12
+    if (/PM/i.test(m[3])) h += 12
+  }
+  return h * 60 + min
+}
+
+/** Generates bookable times from 09:00 to 19:00 at the given interval in 12h format. */
 export function buildSlots(intervalMinutes = 45, taken = []) {
   const slots = []
   for (let mins = 9 * 60; mins <= 19 * 60; mins += intervalMinutes) {
-    const label = `${pad(Math.floor(mins / 60))}:${pad(mins % 60)}`
+    let h = Math.floor(mins / 60)
+    const m = mins % 60
+    const period = h >= 12 ? 'PM' : 'AM'
+    h = h % 12
+    if (h === 0) h = 12
+    const label = `${h}:${String(m).padStart(2, '0')} ${period}`
     slots.push({ label, busy: taken.includes(label) })
   }
   return slots

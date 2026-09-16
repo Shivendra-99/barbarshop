@@ -82,12 +82,18 @@ export const REFUND_METHODS = {
   },
 }
 
-/** Slot start as epoch ms (mirrors the server). date "yyyy-mm-dd" + slot "HH:MM". */
+/** Slot start as epoch ms (mirrors the server). date "yyyy-mm-dd" + slot (12h or 24h). */
 export function slotStartMs(booking) {
-  const m = /^(\d{1,2}):(\d{2})/.exec(booking.slot || '')
+  const m = /^(\d{1,2}):(\d{2})(?:\s*(AM|PM))?/i.exec((booking.slot || '').trim())
   const [y, mo, d] = (booking.date || '').split('-').map(Number)
   if (!y || !m) return Date.now()
-  return new Date(y, mo - 1, d, Number(m[1]), Number(m[2])).getTime()
+  let h = Number(m[1])
+  const min = Number(m[2])
+  if (m[3]) {
+    h = h % 12
+    if (/PM/i.test(m[3])) h += 12
+  }
+  return new Date(y, mo - 1, d, h, min).getTime()
 }
 
 /**

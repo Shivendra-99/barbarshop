@@ -49,8 +49,28 @@ const makeRef = () => `SS${Math.floor(100000 + Math.random() * 899999)}`
  * enforce capacity so a slot can't be double-booked past the salon's chairs.
  * `excludeId` skips the booking being rescheduled.
  */
+function equivalentSlots(slot) {
+  if (!slot) return []
+  const m = /^(\d{1,2}):(\d{2})(?:\s*(AM|PM))?/i.exec(String(slot).trim())
+  if (!m) return [slot]
+  let h = Number(m[1])
+  const min = Number(m[2])
+  if (m[3]) {
+    h = h % 12
+    if (/PM/i.test(m[3])) h += 12
+  }
+  const minStr = String(min).padStart(2, '0')
+  const h24 = `${String(h).padStart(2, '0')}:${minStr}`
+  let h12 = h % 12
+  if (h12 === 0) h12 = 12
+  const period = h >= 12 ? 'PM' : 'AM'
+  const h12Str = `${h12}:${minStr} ${period}`
+  return Array.from(new Set([slot, h24, h12Str]))
+}
+
 async function slotTakenCount(salonId, date, slot, excludeId) {
-  const q = { salon: salonId, date, slot, status: 'confirmed' }
+  const eq = equivalentSlots(slot)
+  const q = { salon: salonId, date, slot: eq.length > 1 ? { $in: eq } : slot, status: 'confirmed' }
   if (excludeId) q._id = { $ne: excludeId }
   return Booking.countDocuments(q)
 }
@@ -368,13 +388,17 @@ router.patch(
 
 /* ---- Customer: live queue position for a booking ---- */
 
-/** "11:00 AM" → minutes since midnight, for ordering the day's queue. */
+/** "11:00 AM" or "11:00" → minutes since midnight, for ordering the day's queue. */
 function slotMinutes(slot) {
-  const m = /^(\d{1,2}):(\d{2})\s*(AM|PM)$/i.exec((slot || '').trim())
+  const m = /^(\d{1,2}):(\d{2})(?:\s*(AM|PM))?/i.exec((slot || '').trim())
   if (!m) return 0
-  let h = Number(m[1]) % 12
-  if (/PM/i.test(m[3])) h += 12
-  return h * 60 + Number(m[2])
+  let h = Number(m[1])
+  const min = Number(m[2])
+  if (m[3]) {
+    h = h % 12
+    if (/PM/i.test(m[3])) h += 12
+  }
+  return h * 60 + min
 }
 
 router.get(
@@ -630,13 +654,19 @@ const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000
 
 /**
  * Epoch ms of a booking's slot start, read as India time (the app is IST-only).
- * date "yyyy-mm-dd" + slot "HH:MM" (24h). TZ-safe on any server (Vercel = UTC).
+ * date "yyyy-mm-dd" + slot (12h or 24h). TZ-safe on any server (Vercel = UTC).
  */
 function slotStartMsIST(date, slot) {
   const [y, mo, d] = (date || '').split('-').map(Number)
-  const m = /^(\d{1,2}):(\d{2})/.exec(slot || '')
+  const m = /^(\d{1,2}):(\d{2})(?:\s*(AM|PM))?/i.exec((slot || '').trim())
   if (!y || !m) return NaN
-  return Date.UTC(y, mo - 1, d, Number(m[1]), Number(m[2])) - IST_OFFSET_MS
+  let h = Number(m[1])
+  const min = Number(m[2])
+  if (m[3]) {
+    h = h % 12
+    if (/PM/i.test(m[3])) h += 12
+  }
+  return Date.UTC(y, mo - 1, d, h, min) - IST_OFFSET_MS
 }
 
 const noShowSchema = z.object({ reason: z.string().trim().max(80).optional() })

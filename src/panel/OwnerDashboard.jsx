@@ -5,6 +5,7 @@ import { useToast } from '../components/Toast'
 import SalonEditDialog from './SalonEditDialog'
 import { CITIES, categoryById } from '../data/seed'
 import { formatINR, formatCompactINR } from '../lib/money'
+import { formatTime12 } from '../lib/datetime'
 
 /** Salon city label — district for PIN-added cities, else the seeded label. */
 const cityLabel = (s) => s.district || CITIES.find((c) => c.id === s.city)?.label || s.city
@@ -195,7 +196,7 @@ export default function OwnerDashboard() {
                     <td>{b.salonName}</td>
                     <td>
                       {b.dateLabel}
-                      <div className="ptable__sub">{b.slot}</div>
+                      <div className="ptable__sub">{formatTime12(b.slot)}</div>
                     </td>
                     <td>
                       <span className={`badge ${b.paymentMode === 'online' ? 'badge--gold' : 'badge--neutral'}`}>

@@ -12,6 +12,7 @@ import {
   buildCalendar,
   formatDateLabel,
   formatMonth,
+  formatTime12,
   fromISO,
   startOfToday,
   toISO,
@@ -189,7 +190,7 @@ export default function Book() {
       push({
         tone: 'success',
         title: t('book.confirmed'),
-        body: `${selected.map((s) => s.name).join(' + ')} · ${formatDateLabel(date)}, ${slot}`,
+        body: `${selected.map((s) => s.name).join(' + ')} · ${formatDateLabel(date)}, ${formatTime12(slot)}`,
         meta:
           paymentMode === 'online'
             ? `Paid online · ${formatINR(booking.total)}`
@@ -498,7 +499,7 @@ export default function Book() {
               <span>{t('book.when')}</span>
               <span className="summary__val">
                 {formatDateLabel(date)}
-                {slot ? `, ${slot}` : ''}
+                {slot ? `, ${formatTime12(slot)}` : ''}
               </span>
             </div>
 

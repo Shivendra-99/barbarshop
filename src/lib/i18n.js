@@ -582,7 +582,7 @@ const HI = {
   'salon.fromPrice': '{price} से',
   'salon.chooseSlot': 'सेवा और स्लॉट चुनें',
   'salon.loginToBook': 'बुक करने के लिए लॉगिन करें',
-  'salon.freeCancel': 'स्लॉट से 4 घंटे पहले तक मुफ़्त कैंसिलेशन।',
+  'salon.freeCancel': 'स्लॉट से 2 घंटे पहले तक मुफ़्त कैंसिलेशन।',
   'salon.openHours': 'खुला {opens} – {closes}',
   'salon.ratingReviews': '★ {rating} · {reviews} समीक्षाएं',
 
@@ -626,7 +626,7 @@ const HI = {
   'book.pay': '{amt} भुगतान करें',
   'book.confirm': 'बुकिंग पक्की करें',
   'book.confirming': 'पक्की हो रही…',
-  'book.bookingAs': '{name} के रूप में बुकिंग · +91 {phone}. 4 घंटे पहले तक मुफ़्त कैंसिलेशन।',
+  'book.bookingAs': '{name} के रूप में बुकिंग · +91 {phone}. 2 घंटे पहले तक मुफ़्त कैंसिलेशन।',
   'book.travel': '+{fee} यात्रा',
   'book.confirmed': 'बुकिंग पक्की हो गई',
 
@@ -652,7 +652,7 @@ const HI = {
   'done.paymentId': 'पेमेंट ID',
   'done.dueAtSalon': 'सैलून पर देय',
   'done.bookAnother': 'दूसरी बुकिंग करें',
-  'done.fine': 'स्लॉट से 4 घंटे पहले तक मुफ़्त कैंसिलेशन। रिफंड तुरंत आपके वॉलेट में या 2–3 कार्यदिवस में UPI पर वापस।',
+  'done.fine': 'स्लॉट से 2 घंटे पहले तक मुफ़्त कैंसिलेशन। रिफंड तुरंत आपके वॉलेट में या 2–3 कार्यदिवस में UPI पर वापस।',
 
   // --- Appointments (My bookings) ---
   'appt.title': 'मेरी बुकिंग',
