@@ -4,20 +4,23 @@
   gap: 6px;
 }
 
+/* flex-basis:0 overrides the inherited .field__input width:100%, so the three
+   controls share the row evenly instead of the AM/PM box eating all the space. */
 .tf12__sel {
-  padding-left: 10px;
-  padding-right: 8px;
+  flex: 1 1 0;
   min-width: 0;
-  flex: 1 1 auto;
+  width: auto;
+  padding-left: 8px;
+  padding-right: 6px;
   text-align: center;
 }
 
 .tf12__ampm {
-  flex: 0 0 auto;
-  min-width: 68px;
+  flex: 1.2 1 0;
 }
 
 .tf12__colon {
+  flex: 0 0 auto;
   font-weight: 700;
   opacity: 0.6;
 }
