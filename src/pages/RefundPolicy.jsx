@@ -77,7 +77,16 @@ export default function RefundPolicy() {
         </li>
         <li>
           On a No-Show, a 15% penalty applies to the customer and 85% is refunded to the SalonSaathi
-          Wallet only.
+          Wallet or the original UPI / bank account.
+        </li>
+      </ul>
+
+      <h2 className="simple__heading">F. Cash / Pay at Salon Bookings</h2>
+      <ul className="legal__list">
+        <li>There is no refund for Cash (Pay at Salon) bookings, as no payment is collected upfront.</li>
+        <li>
+          If a customer cancels or is marked No-Show <strong>3 times continuously</strong> on Cash
+          bookings, their Cash option will be blocked. They can then book only with Online Payment.
         </li>
       </ul>
 

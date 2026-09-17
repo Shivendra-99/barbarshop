@@ -417,6 +417,12 @@
   padding-bottom: 26px;
 }
 
+.faq__link {
+  color: var(--gold-deep);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 /* ---------------- Responsive ---------------- */
 
 @media (max-width: 780px) {

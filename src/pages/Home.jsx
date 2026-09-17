@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import Reveal from '../components/Reveal'
 import { useApp } from '../store/AppStore'
 import { usePrefs } from '../store/Prefs'
@@ -249,7 +249,17 @@ export default function Home() {
                   </span>
                 </button>
                 <div className={open ? 'faq__panel is-open' : 'faq__panel'}>
-                  <div className="faq__a">{t(`faq.${i + 1}.a`)}</div>
+                  <div className="faq__a">
+                    {t(`faq.${i + 1}.a`)}
+                    {i + 1 === 4 && (
+                      <>
+                        {' '}
+                        <Link to="/terms-and-conditions" className="faq__link">
+                          {t('faq.4.terms')}
+                        </Link>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
             )
