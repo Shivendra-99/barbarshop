@@ -87,13 +87,23 @@ export function refundFor(booking, method, now = Date.now()) {
 
 /**
  * Refund when the SALON marks a no-show (customer didn't turn up). Online: a
- * flat 15% penalty, remainder to the customer's WALLET only (never UPI/bank).
- * Cash: nothing to refund.
+ * flat 15% penalty, 85% back to Wallet (instant) or the original UPI/bank
+ * (2–3 days). The customer isn't present when the owner marks the no-show, so
+ * the refund starts `pending` (no method) and the customer picks the
+ * destination later from My Bookings. Cash: nothing to refund.
  */
-export function noShowRefund(booking) {
+export function noShowRefund(booking, method = null) {
   if (booking.paymentMode === 'offline') {
     return { amount: 0, fee: 0, feePct: 0, method: null, status: 'not_applicable' }
   }
   const fee = Math.round(booking.total * 0.15)
-  return { amount: booking.total - fee, fee, feePct: 15, method: 'wallet', status: 'completed' }
+  const amount = booking.total - fee
+  if (!method) return { amount, fee, feePct: 15, method: null, status: 'pending' }
+  return {
+    amount,
+    fee,
+    feePct: 15,
+    method,
+    status: REFUND_METHODS[method]?.instant ? 'completed' : 'processing',
+  }
 }

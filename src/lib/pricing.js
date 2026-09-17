@@ -132,3 +132,21 @@ export function refundFor(booking, method, now = Date.now()) {
     status: REFUND_METHODS[method]?.instant ? 'completed' : 'processing',
   }
 }
+
+/**
+ * No-show refund preview (mirrors the server): flat 15% penalty, 85% to the
+ * chosen method. Used by the customer's "choose your refund" dialog.
+ */
+export function noShowRefund(booking, method) {
+  if (booking.paymentMode === 'offline') {
+    return { amount: 0, fee: 0, feePct: 0, method: null, status: 'not_applicable' }
+  }
+  const fee = Math.round(booking.total * 0.15)
+  return {
+    amount: booking.total - fee,
+    fee,
+    feePct: 15,
+    method,
+    status: REFUND_METHODS[method]?.instant ? 'completed' : 'processing',
+  }
+}

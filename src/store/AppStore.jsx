@@ -215,6 +215,21 @@ export function AppProvider({ children }) {
     [loadNotifications],
   )
 
+  const resolveNoShowRefund = useCallback(
+    async (booking, method) => {
+      const { booking: updated, walletBalance: bal } = await api.resolveNoShowRefund(
+        booking.id,
+        method,
+      )
+      setMyBookings((prev) => prev.map((b) => (b.id === updated.id ? updated : b)))
+      setWalletBalance(bal)
+      api.wallet().then((w) => setMyLedger(w.ledger)).catch(() => {})
+      loadNotifications().catch(() => {})
+      return updated.refund
+    },
+    [loadNotifications],
+  )
+
   const rescheduleBooking = useCallback(
     async (booking, { date, dateLabel, slot }) => {
       const { booking: updated } = await api.rescheduleBooking(booking.id, { date, dateLabel, slot })
@@ -381,6 +396,7 @@ export function AppProvider({ children }) {
       createBooking,
       createBookingOnline,
       cancelBooking,
+      resolveNoShowRefund,
       rescheduleBooking,
       completeBooking,
       markNoShow,
@@ -412,7 +428,7 @@ export function AppProvider({ children }) {
       ready, salonsReady, session, role, requestOtp, verifyOtp, widgetLogin, logout, setName, allSalons, publicSalons,
       findSalon, mySalons, pendingSalons, allBookings, myBookings, ownerBookings, createBooking,
       createBookingOnline,
-      cancelBooking, rescheduleBooking, completeBooking, markNoShow, rateBooking, submitSalon, setSalonStatus, updateSalon, setOwnerContact, settings, updateSettings, walletBalance, myLedger, notifications,
+      cancelBooking, resolveNoShowRefund, rescheduleBooking, completeBooking, markNoShow, rateBooking, submitSalon, setSalonStatus, updateSalon, setOwnerContact, settings, updateSettings, walletBalance, myLedger, notifications,
       unreadCount, markRead, platformStats,
     ],
   )

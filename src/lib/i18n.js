@@ -101,6 +101,7 @@ const EN = {
   'faq.4.q': 'How do refunds work if I cancel?',
   'faq.4.a':
     'Choose SalonSaathi Wallet for an instant credit, or send it back to your UPI or bank account, which takes 2–3 working days. Cash bookings have nothing to refund.',
+  'faq.4.terms': 'See our full Terms & Conditions →',
   'faq.5.q': 'How to list your salon?',
   'faq.5.a':
     'Contact our support team. After verification, we will register your number and you can login at salonsaathi.in and list your salon.\n\n' +
@@ -312,6 +313,10 @@ const EN = {
   'appt.feeLine': ' · {pct}% fee ({fee})',
   'appt.noFee': ' · no fee',
   'appt.feeFine': 'Fee depends on timing: free up to 2 hours before (UPI 2%), 10% within 2 hours, 15% if you cancel late.',
+  'appt.nsRefundPending': '15% no-show penalty applied. Choose where to receive your {amount} refund.',
+  'appt.nsRefundChoose': 'Choose refund',
+  'appt.nsRefundTitle': 'Choose your refund',
+  'appt.nsRefundConfirm': 'Confirm refund',
   'appt.keepBooking': 'Keep booking',
   'appt.cancelBooking': 'Cancel booking',
 
@@ -481,6 +486,7 @@ const HI = {
   'faq.4.q': 'रद्द करने पर रिफंड कैसे मिलता है?',
   'faq.4.a':
     'तुरंत क्रेडिट के लिए SalonSaathi वॉलेट चुनें, या इसे अपने UPI या बैंक खाते में वापस भेजें, जिसमें 2–3 कार्यदिवस लगते हैं। नकद बुकिंग में रिफंड के लिए कुछ नहीं होता।',
+  'faq.4.terms': 'हमारी पूरी नियम और शर्तें देखें →',
   'faq.5.q': 'अपना सैलून कैसे सूचीबद्ध करें?',
   'faq.5.a':
     'हमारी सहायता टीम से संपर्क करें। सत्यापन के बाद, हम आपका नंबर पंजीकृत करेंगे और आप salonsaathi.in पर लॉगिन करके अपना सैलून सूचीबद्ध कर सकते हैं।\n\n' +
@@ -692,6 +698,10 @@ const HI = {
   'appt.feeLine': ' · {pct}% शुल्क ({fee})',
   'appt.noFee': ' · कोई शुल्क नहीं',
   'appt.feeFine': 'शुल्क समय पर निर्भर: 2 घंटे पहले तक मुफ़्त (UPI 2%), 2 घंटे के भीतर 10%, देर से रद्द करने पर 15%।',
+  'appt.nsRefundPending': '15% नो-शो पेनल्टी लागू। अपना {amount} रिफंड कहाँ पाना है चुनें।',
+  'appt.nsRefundChoose': 'रिफंड चुनें',
+  'appt.nsRefundTitle': 'अपना रिफंड चुनें',
+  'appt.nsRefundConfirm': 'रिफंड पक्का करें',
   'appt.keepBooking': 'बुकिंग रखें',
   'appt.cancelBooking': 'बुकिंग रद्द करें',
 

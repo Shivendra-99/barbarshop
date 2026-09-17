@@ -7,7 +7,7 @@ import RescheduleDialog from '../components/RescheduleDialog'
 import RatingDialog from '../components/RatingDialog'
 import QueueBadge from '../components/QueueBadge'
 import { formatINR } from '../lib/money'
-import { REFUND_METHODS, refundFor, slotStartMs } from '../lib/pricing'
+import { REFUND_METHODS, refundFor, noShowRefund, slotStartMs } from '../lib/pricing'
 import { fromISO, startOfToday, toISO, formatTime12, toMins } from '../lib/datetime'
 import './Appointments.css'
 
@@ -104,15 +104,87 @@ function CancelDialog({ booking, onClose, onConfirm }) {
 }
 
 /* ------------------------------------------------------------------
+   No-show refund chooser — the customer picks where their 85% goes
+   (Wallet instant, or original UPI/bank in 2–3 days) after the salon
+   marked them a no-show. Flat 15% penalty, so the amount is the same
+   for both methods; only the destination and ETA differ.
+   ------------------------------------------------------------------ */
+
+function NoShowRefundDialog({ booking, onClose, onConfirm }) {
+  const [method, setMethod] = useState('wallet')
+  const ref = useRef(null)
+  const t = useT()
+  const r = noShowRefund(booking, method)
+
+  useEffect(() => {
+    ref.current?.focus()
+    const onKey = (e) => e.key === 'Escape' && onClose()
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [onClose])
+
+  return (
+    <div className="modal" role="presentation" onMouseDown={onClose}>
+      <div
+        className="modal__box anim-pop"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="nsr-title"
+        onMouseDown={(e) => e.stopPropagation()}
+      >
+        <h2 className="modal__title" id="nsr-title" tabIndex={-1} ref={ref}>
+          {t('appt.nsRefundTitle')}
+        </h2>
+        <p className="modal__text">
+          {booking.serviceName} at {booking.salonName} · {t('appt.youGet', { amount: formatINR(r.amount) })}
+        </p>
+        <fieldset className="modal__methods">
+          <legend className="modal__legend">{t('appt.chooseRefund')}</legend>
+          {Object.values(REFUND_METHODS).map((m) => (
+            <label key={m.id} className={`refund${method === m.id ? ' is-active' : ''}`}>
+              <input
+                type="radio"
+                name="ns-refund-method"
+                value={m.id}
+                checked={method === m.id}
+                onChange={() => setMethod(m.id)}
+              />
+              <span className="refund__body">
+                <span className="refund__top">
+                  <span className="refund__name">{t(`refund.${m.id}`)}</span>
+                  <span className={`badge ${m.instant ? 'badge--green' : 'badge--amber'}`}>
+                    {t(`refund.${m.id}Eta`)}
+                  </span>
+                </span>
+                <span className="refund__note">{t(`refund.${m.id}Note`)}</span>
+              </span>
+            </label>
+          ))}
+        </fieldset>
+        <div className="modal__actions">
+          <button type="button" className="btn btn--outline" onClick={onClose}>
+            {t('appt.keepBooking')}
+          </button>
+          <button type="button" className="btn btn--gold" onClick={() => onConfirm(method)}>
+            {t('appt.nsRefundConfirm')}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* ------------------------------------------------------------------
    Page
    ------------------------------------------------------------------ */
 
 export default function Appointments() {
-  const { myBookings, cancelBooking, rescheduleBooking, rateBooking } = useApp()
+  const { myBookings, cancelBooking, resolveNoShowRefund, rescheduleBooking, rateBooking } = useApp()
   const { push } = useToast()
   const t = useT()
   const [tab, setTab] = useState('Upcoming')
   const [pending, setPending] = useState(null)
+  const [refundChoice, setRefundChoice] = useState(null)
   const [rescheduling, setRescheduling] = useState(null)
   const [rating, setRating] = useState(null)
 
@@ -190,6 +262,22 @@ export default function Appointments() {
       })
     } catch (err) {
       push({ tone: 'warn', title: 'Could not cancel', body: err.message })
+    }
+  }
+
+  const doResolveRefund = async (method) => {
+    const booking = refundChoice
+    setRefundChoice(null)
+    try {
+      const refund = await resolveNoShowRefund(booking, method)
+      push({
+        tone: 'success',
+        title: 'Refund on the way',
+        body: `${formatINR(refund.amount)} to ${REFUND_METHODS[refund.method].label}`,
+        meta: REFUND_METHODS[refund.method].eta,
+      })
+    } catch (err) {
+      push({ tone: 'warn', title: 'Could not process refund', body: err.message })
     }
   }
 
@@ -281,14 +369,29 @@ export default function Appointments() {
                     </a>
                   )}
                   {b.address && <div className="appt__addr">{b.address}</div>}
-                  {cancelled && b.refund?.amount > 0 && (
-                    <div className="appt__refund">
-                      {t('appt.refundedTo', {
-                        amount: formatINR(b.refund.amount),
-                        method: t(`refund.${b.refund.method}`),
-                      })}{' '}
-                      · {b.refund.status === 'completed' ? t('appt.completed') : t('appt.processing')}
+                  {cancelled && b.refund?.status === 'pending' && b.refund?.amount > 0 ? (
+                    <div className="appt__refund appt__refund--pending">
+                      <div className="appt__refundPending">
+                        {t('appt.nsRefundPending', { amount: formatINR(b.refund.amount) })}
+                      </div>
+                      <button
+                        type="button"
+                        className="btn btn--gold btn--sm"
+                        onClick={() => setRefundChoice(b)}
+                      >
+                        {t('appt.nsRefundChoose')}
+                      </button>
                     </div>
+                  ) : (
+                    cancelled && b.refund?.amount > 0 && (
+                      <div className="appt__refund">
+                        {t('appt.refundedTo', {
+                          amount: formatINR(b.refund.amount),
+                          method: t(`refund.${b.refund.method}`),
+                        })}{' '}
+                        · {b.refund.status === 'completed' ? t('appt.completed') : t('appt.processing')}
+                      </div>
+                    )
                   )}
                   {!cancelled && b.mode === 'salon' && b.date === toISO(today) && (
                     <QueueBadge bookingId={b.id} />
@@ -343,6 +446,14 @@ export default function Appointments() {
           booking={pending}
           onClose={() => setPending(null)}
           onConfirm={doCancel}
+        />
+      )}
+
+      {refundChoice && (
+        <NoShowRefundDialog
+          booking={refundChoice}
+          onClose={() => setRefundChoice(null)}
+          onConfirm={doResolveRefund}
         />
       )}
 

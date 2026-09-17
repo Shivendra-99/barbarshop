@@ -263,11 +263,13 @@ export async function createBookingRecord(user, body, payment = {}) {
     },
   ])
 
-  // Best-effort SMS/WhatsApp alert to the salon owner (never blocks the booking).
-  sendOwnerBookingAlert({ booking, salon, user }).catch(() => {})
-
-  // Best-effort SMS/WhatsApp of the completion OTP (never blocks the booking).
-  sendBookingOtp({ phone: user.phone, otp: booking.completionOtp, ref: booking.ref }).catch(() => {})
+  // Await both notifications so they actually fire on serverless (Vercel freezes
+  // the instance after the response, dropping any in-flight fetch). allSettled
+  // means a provider error still never blocks or fails the booking.
+  await Promise.allSettled([
+    sendOwnerBookingAlert({ booking, salon, user }),
+    sendBookingOtp({ phone: user.phone, otp: booking.completionOtp, ref: booking.ref }),
+  ])
 
   return booking
 }
@@ -407,7 +409,10 @@ router.patch(
     ])
 
     if (salon) {
-      sendOwnerBookingAlert({ booking, salon, user: req.user, isReschedule: true }).catch(() => {})
+      // Awaited so it survives the serverless freeze; never fails the reschedule.
+      await Promise.allSettled([
+        sendOwnerBookingAlert({ booking, salon, user: req.user, isReschedule: true }),
+      ])
     }
 
     res.json({ booking: booking.toPublic({ includeOtp: true }) })
@@ -726,7 +731,9 @@ router.post(
     // Store the chosen reason if it's one of the presets; ignore anything else.
     const reason = NO_SHOW_REASONS.includes(req.body.reason) ? req.body.reason : null
 
-    // Online: 15% penalty, 85% to the customer's WALLET only. Cash: nothing paid.
+    // Online: 15% penalty, 85% refundable — but the customer isn't here to pick
+    // Wallet vs UPI/bank, so the refund starts `pending`; they choose the
+    // destination later via /no-show-refund. Cash: nothing was paid.
     const refund = noShowRefund(booking)
     booking.status = 'cancelled'
     booking.noShow = true
@@ -735,27 +742,12 @@ router.post(
     booking.cancelledAt = new Date()
     await booking.save()
 
-    const customer = await User.findById(booking.customer).catch(() => null)
-    if (customer) {
-      if (refund.status === 'completed' && refund.amount > 0) {
-        const walletBalance = (customer.walletBalance || 0) + refund.amount
-        await User.updateOne({ _id: customer._id }, { walletBalance })
-        await WalletTxn.create({
-          user: customer._id,
-          type: 'credit',
-          amount: refund.amount,
-          note: `No-show refund (15% penalty) for ${booking.serviceName}`,
-          bookingRef: booking.ref,
-          balanceAfter: walletBalance,
-        })
-      }
-      // A cash no-show is a strike toward the cash block.
-      if (booking.paymentMode === 'offline') {
-        const count = (customer.cashCancelCount || 0) + 1
-        await User.updateOne(
-          { _id: customer._id },
-          { cashCancelCount: count, cashBlocked: count >= 3 },
-        )
+    // A cash no-show is a strike toward the cash block.
+    if (booking.paymentMode === 'offline') {
+      const customer = await User.findById(booking.customer).catch(() => null)
+      if (customer) {
+        const n = (customer.cashCancelCount || 0) + 1
+        await User.updateOne({ _id: customer._id }, { cashCancelCount: n, cashBlocked: n >= 3 })
       }
     }
 
@@ -765,8 +757,8 @@ router.post(
         tone: 'warn',
         title: 'Marked as no-show',
         body:
-          refund.amount > 0
-            ? `${booking.serviceName}: 15% penalty applied, ${formatINR(refund.amount)} credited to your wallet.`
+          refund.status === 'pending' && refund.amount > 0
+            ? `${booking.serviceName}: 15% penalty applied. Choose where to receive your ${formatINR(refund.amount)} refund in My Bookings.`
             : `${booking.serviceName} was marked no-show.`,
       },
       {
@@ -780,6 +772,48 @@ router.post(
     ])
 
     res.json({ booking: booking.toPublic() })
+  }),
+)
+
+/* ---- Customer: choose where a pending no-show refund is paid ---- */
+
+const noShowRefundSchema = z.object({ method: z.enum(['wallet', 'upi']) })
+
+router.post(
+  '/:id/no-show-refund',
+  requireAuth,
+  requireRole('customer'),
+  validate(noShowRefundSchema),
+  asyncHandler(async (req, res) => {
+    const booking = await Booking.findById(req.params.id).catch(() => null)
+    if (!booking) throw new ApiError(404, 'Booking not found.')
+    if (booking.customer.toString() !== req.user._id.toString()) {
+      throw new ApiError(403, 'That is not your booking.')
+    }
+    if (!booking.noShow || booking.refund?.status !== 'pending') {
+      throw new ApiError(400, 'No refund is pending for this booking.')
+    }
+
+    const refund = noShowRefund(booking, req.body.method)
+    booking.refund = refund
+    await booking.save()
+
+    // Wallet is instant; UPI/bank is marked processing and settled offline.
+    let walletBalance = req.user.walletBalance
+    if (refund.status === 'completed' && refund.method === 'wallet' && refund.amount > 0) {
+      walletBalance = (req.user.walletBalance || 0) + refund.amount
+      await User.updateOne({ _id: req.user._id }, { walletBalance })
+      await WalletTxn.create({
+        user: req.user._id,
+        type: 'credit',
+        amount: refund.amount,
+        note: `No-show refund (15% penalty) for ${booking.serviceName}`,
+        bookingRef: booking.ref,
+        balanceAfter: walletBalance,
+      })
+    }
+
+    res.json({ booking: booking.toPublic(), walletBalance })
   }),
 )
 

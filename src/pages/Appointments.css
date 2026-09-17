@@ -171,6 +171,16 @@
   color: var(--green);
 }
 
+.appt__refund--pending {
+  background: var(--gold-wash);
+  border-color: var(--gold-line);
+  color: var(--gold-deep);
+}
+
+.appt__refundPending {
+  margin-bottom: 8px;
+}
+
 .appt__right {
   text-align: right;
   flex-shrink: 0;
