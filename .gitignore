@@ -7,3 +7,6 @@ dist-ssr
 
 # local env
 .env
+
+# graphify knowledge graph (generated)
+graphify-out/

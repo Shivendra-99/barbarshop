@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /panel
+Disallow: /login
+
+Sitemap: https://www.salonsaathi.in/sitemap.xml
