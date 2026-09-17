@@ -115,13 +115,13 @@ export default function Terms() {
         <br />
         <strong>SalonSaathi</strong>
         <br />
-        Website: <a href="https://salonsaathi.in">https://salonsaathi.in</a>
+        Website: <a href="https://www.salonsaathi.in">https://www.salonsaathi.in</a>
         <br />
         Email: <a href="mailto:supportsalonsaathi@gmail.com">supportsalonsaathi@gmail.com</a>
         <br />
         Phone: +91 7081126830
         <br />
-        Address: Golf City, Lucknow, Uttar Pradesh - 226030
+        Address: Jakhamai, Post Tiwaripur, Kunda, Pratapgarh, Uttar Pradesh - 230202
       </p>
     </div>
   )

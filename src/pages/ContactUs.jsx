@@ -23,7 +23,7 @@ export default function ContactUs() {
           </li>
           <li>
             <span className="contact__k">Address</span>
-            <span className="contact__v">Golf City, Lucknow, Uttar Pradesh - 226030</span>
+            <span className="contact__v">Jakhamai, Post Tiwaripur, Kunda, Pratapgarh, Uttar Pradesh - 230202</span>
           </li>
           <li>
             <span className="contact__k">Support Mobile</span>

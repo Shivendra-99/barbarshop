@@ -14,7 +14,7 @@ export default function AboutUs() {
         Our mission is to make salon booking easy, transparent and affordable. For salon owners, we
         provide a platform to list their business, get more customers and grow online.
       </p>
-      <p className="legal__p">SalonSaathi is operated from Golf City, Lucknow, UP - 226030.</p>
+      <p className="legal__p">SalonSaathi is operated from Jakhamai, Post Tiwaripur, Kunda, Pratapgarh, Uttar Pradesh - 230202.</p>
 
       <h2 className="simple__heading">How SalonSaathi Works</h2>
 

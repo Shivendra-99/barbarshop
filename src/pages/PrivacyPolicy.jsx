@@ -66,7 +66,7 @@ export default function PrivacyPolicy() {
       <p className="legal__p">
         You have the right to access, correct, or delete your personal data at any time. To exercise
         these rights, please contact us at{' '}
-        <a href="mailto:sonkarrishu904@gmail.com">sonkarrishu904@gmail.com</a>.
+        <a href="mailto:supportsalonsaathi@gmail.com">supportsalonsaathi@gmail.com</a>.
       </p>
 
       <h2 className="simple__heading">7. Third-Party Links</h2>
@@ -96,13 +96,13 @@ export default function PrivacyPolicy() {
         <br />
         <strong>SalonSaathi</strong>
         <br />
-        Website: <a href="https://salonsaathi.in">https://salonsaathi.in</a>
+        Website: <a href="https://www.salonsaathi.in">https://www.salonsaathi.in</a>
         <br />
         Email: <a href="mailto:supportsalonsaathi@gmail.com">supportsalonsaathi@gmail.com</a>
         <br />
         Phone: +91 7081126830
         <br />
-        Address: Golf City, Lucknow, Uttar Pradesh - 226030
+        Address: Jakhamai, Post Tiwaripur, Kunda, Pratapgarh, Uttar Pradesh - 230202
       </p>
     </div>
   )
