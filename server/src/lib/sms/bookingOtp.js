@@ -30,8 +30,9 @@ export async function sendBookingOtp({ phone, otp, ref }) {
       method: 'POST',
       headers: { authkey: env.msg91.authkey, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        flow_id: flowId,
+        template_id: flowId,
         sender: env.msg91.senderId || undefined,
+        short_url: '0',
         recipients: [{ mobiles: toMobile(phone), OTP: otp, REF: ref }],
       }),
     })
