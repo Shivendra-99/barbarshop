@@ -14,6 +14,10 @@ const userSchema = new mongoose.Schema(
     // service resets it to 0.
     cashCancelCount: { type: Number, default: 0 },
     cashBlocked: { type: Boolean, default: false },
+    // Owner-only accountability: how many of their own bookings this owner has
+    // cancelled (salon's fault → full customer refund). Tracked so abuse is
+    // visible; no auto-penalty yet.
+    ownerCancelCount: { type: Number, default: 0 },
     // Platform-wide block set by the founder: a blocked account can't sign in or
     // act (applies to customers and owners alike).
     blocked: { type: Boolean, default: false },

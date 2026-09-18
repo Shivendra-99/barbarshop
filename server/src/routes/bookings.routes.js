@@ -6,7 +6,7 @@ import { Salon } from '../models/Salon.js'
 import { Service } from '../models/Service.js'
 import { User } from '../models/User.js'
 import { WalletTxn } from '../models/WalletTxn.js'
-import { quote, refundFor, noShowRefund } from '../lib/pricing.js'
+import { quote, refundFor, noShowRefund, ownerCancelRefund } from '../lib/pricing.js'
 import { validate } from '../middleware/validate.js'
 import { requireAuth, requireRole } from '../middleware/auth.js'
 import { asyncHandler, ApiError } from '../middleware/error.js'
@@ -814,6 +814,88 @@ router.post(
     }
 
     res.json({ booking: booking.toPublic(), walletBalance })
+  }),
+)
+
+/* ---- Owner: cancel a booking (salon's fault → full refund to customer) ---- */
+
+// Preset owner-cancel reasons — the owner taps one, no free typing.
+export const OWNER_CANCEL_REASONS = [
+  'Salon closed unexpectedly',
+  'Staff unavailable',
+  'Fully booked for this slot',
+  'Unable to provide the service',
+]
+
+const ownerCancelSchema = z.object({ reason: z.string().trim().max(80).optional() })
+
+router.post(
+  '/:id/cancel-by-owner',
+  requireAuth,
+  requireRole('owner'),
+  validate(ownerCancelSchema),
+  asyncHandler(async (req, res) => {
+    const booking = await Booking.findById(req.params.id).catch(() => null)
+    if (!booking) throw new ApiError(404, 'Booking not found.')
+
+    const owns = await Salon.exists({ _id: booking.salon, owner: req.user._id })
+    if (!owns) throw new ApiError(403, 'That booking is not for your salon.')
+    if (booking.status !== 'confirmed') {
+      throw new ApiError(400, 'Only a confirmed booking can be cancelled.')
+    }
+
+    // Store the chosen reason only if it's one of the presets.
+    const reason = OWNER_CANCEL_REASONS.includes(req.body.reason) ? req.body.reason : null
+
+    // Full refund, no penalty — credited straight to the customer's wallet.
+    const refund = ownerCancelRefund(booking)
+    booking.status = 'cancelled'
+    booking.cancelledBy = 'owner'
+    booking.cancelReason = reason
+    booking.refund = refund
+    booking.cancelledAt = new Date()
+    await booking.save()
+
+    if (refund.status === 'completed' && refund.method === 'wallet' && refund.amount > 0) {
+      const customer = await User.findById(booking.customer).catch(() => null)
+      if (customer) {
+        const walletBalance = (customer.walletBalance || 0) + refund.amount
+        await User.updateOne({ _id: customer._id }, { walletBalance })
+        await WalletTxn.create({
+          user: customer._id,
+          type: 'credit',
+          amount: refund.amount,
+          note: `Full refund — salon cancelled ${booking.serviceName}`,
+          bookingRef: booking.ref,
+          balanceAfter: walletBalance,
+        })
+      }
+    }
+
+    // Accountability: count owner cancellations so abuse is visible.
+    await User.updateOne({ _id: req.user._id }, { $inc: { ownerCancelCount: 1 } })
+
+    const refundLine =
+      refund.status === 'completed'
+        ? `Full refund of ${formatINR(refund.amount)} credited to your wallet.`
+        : 'No payment was taken, so nothing to refund.'
+    const reasonLine = reason ? ` Reason: ${reason}.` : ''
+    await notify([
+      {
+        audience: `user:${booking.customer.toString()}`,
+        tone: 'warn',
+        title: 'Booking cancelled by the salon',
+        body: `${booking.serviceName} · ${booking.dateLabel}, ${booking.slot}.${reasonLine} ${refundLine}`,
+      },
+      {
+        audience: `owner:${req.user._id.toString()}`,
+        tone: 'info',
+        title: 'Booking cancelled',
+        body: `${booking.serviceName} · ${booking.dateLabel}, ${booking.slot}${reason ? ` · ${reason}` : ''}`,
+      },
+    ])
+
+    res.json({ booking: booking.toPublic() })
   }),
 )
 

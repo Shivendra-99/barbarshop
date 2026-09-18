@@ -369,6 +369,12 @@ export default function Appointments() {
                     </a>
                   )}
                   {b.address && <div className="appt__addr">{b.address}</div>}
+                  {cancelled && b.cancelledBy === 'owner' && (
+                    <div className="appt__meta">
+                      {t('appt.cancelledBySalon')}
+                      {b.cancelReason ? ` (${b.cancelReason})` : ''}
+                    </div>
+                  )}
                   {cancelled && b.refund?.status === 'pending' && b.refund?.amount > 0 ? (
                     <div className="appt__refund appt__refund--pending">
                       <div className="appt__refundPending">

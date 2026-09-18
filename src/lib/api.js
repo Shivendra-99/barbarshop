@@ -119,6 +119,8 @@ export const api = {
     request(`/bookings/${id}/cancel`, { method: 'POST', body: { method } }),
   noShowBooking: (id, reason) =>
     request(`/bookings/${id}/no-show`, { method: 'POST', body: reason ? { reason } : {} }),
+  ownerCancelBooking: (id, reason) =>
+    request(`/bookings/${id}/cancel-by-owner`, { method: 'POST', body: reason ? { reason } : {} }),
   resolveNoShowRefund: (id, method) =>
     request(`/bookings/${id}/no-show-refund`, { method: 'POST', body: { method } }),
   rescheduleBooking: (id, body) =>

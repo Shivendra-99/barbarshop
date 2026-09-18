@@ -77,6 +77,11 @@ const bookingSchema = new mongoose.Schema(
     // the owner picked (one of a few preset reasons — no free typing).
     noShow: { type: Boolean, default: false },
     noShowReason: { type: String, default: null },
+    // Who cancelled: null when active, 'customer' for a self-cancel, 'owner'
+    // when the salon cancelled (full refund, no penalty).
+    cancelledBy: { type: String, default: null },
+    // Reason the salon picked when it cancelled (one of a few presets).
+    cancelReason: { type: String, default: null },
     refund: {
       amount: Number,
       fee: Number,
@@ -151,6 +156,8 @@ bookingSchema.methods.toPublic = function toPublic({
     status: this.status,
     noShow: this.noShow ?? false,
     noShowReason: this.noShowReason ?? null,
+    cancelledBy: this.cancelledBy ?? null,
+    cancelReason: this.cancelReason ?? null,
     refund: this.refund,
     rating: this.rating,
     review: this.review,

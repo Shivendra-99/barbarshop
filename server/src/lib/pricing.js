@@ -107,3 +107,15 @@ export function noShowRefund(booking, method = null) {
     status: REFUND_METHODS[method]?.instant ? 'completed' : 'processing',
   }
 }
+
+/**
+ * Refund when the SALON cancels the booking — its own fault, so a FULL refund
+ * with no penalty. Credited straight to the customer's Wallet (instant) since
+ * the customer isn't in the loop to choose. Cash: nothing was paid.
+ */
+export function ownerCancelRefund(booking) {
+  if (booking.paymentMode === 'offline') {
+    return { amount: 0, fee: 0, feePct: 0, method: null, status: 'not_applicable' }
+  }
+  return { amount: booking.total, fee: 0, feePct: 0, method: 'wallet', status: 'completed' }
+}

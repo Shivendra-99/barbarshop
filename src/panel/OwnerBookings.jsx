@@ -16,11 +16,19 @@ const NO_SHOW_REASONS = [
   'Customer was unreachable',
 ]
 
+// Preset reasons the salon gives when it cancels a booking (its own fault).
+const OWNER_CANCEL_REASONS = [
+  'Salon closed unexpectedly',
+  'Staff unavailable',
+  'Fully booked for this slot',
+  'Unable to provide the service',
+]
+
 // A no-show can only be recorded once the customer is 15 minutes late.
 const NO_SHOW_GRACE_MS = 15 * 60 * 1000
 
 export default function OwnerBookings() {
-  const { ownerBookings, mySalons, completeBooking, markNoShow } = useApp()
+  const { ownerBookings, mySalons, completeBooking, markNoShow, ownerCancelBooking } = useApp()
   const { push } = useToast()
   const [filter, setFilter] = useState('All')
   const [otpFor, setOtpFor] = useState(null) // booking awaiting OTP to complete
@@ -29,6 +37,8 @@ export default function OwnerBookings() {
   const [otpBusy, setOtpBusy] = useState(false)
   const [noShowFor, setNoShowFor] = useState(null) // booking awaiting a reason
   const [noShowBusy, setNoShowBusy] = useState(false)
+  const [cancelFor, setCancelFor] = useState(null) // booking awaiting cancel confirm
+  const [cancelBusy, setCancelBusy] = useState(false)
   const [revealed, setRevealed] = useState(() => new Set()) // booking ids showing the number
 
   // A ticking clock so the 15-minute no-show gate enables on its own.
@@ -71,6 +81,28 @@ export default function OwnerBookings() {
       push({ tone: 'warn', title: 'Could not update', body: err.message })
     } finally {
       setNoShowBusy(false)
+    }
+  }
+
+  const submitCancel = async (reason) => {
+    const b = cancelFor
+    if (!b || cancelBusy) return
+    setCancelBusy(true)
+    try {
+      await ownerCancelBooking(b, reason)
+      push({
+        tone: 'info',
+        title: 'Booking cancelled',
+        body:
+          b.paymentMode === 'online'
+            ? `#${b.ref} · ${formatINR(b.total)} refunded to the customer`
+            : `#${b.ref} cancelled`,
+      })
+      setCancelFor(null)
+    } catch (err) {
+      push({ tone: 'warn', title: 'Could not cancel', body: err.message })
+    } finally {
+      setCancelBusy(false)
     }
   }
 
@@ -243,6 +275,14 @@ export default function OwnerBookings() {
                               >
                                 No-show
                               </button>
+                              <button
+                                type="button"
+                                className="btn btn--outline btn--sm"
+                                onClick={() => setCancelFor(b)}
+                                title="Cancel this booking (full refund to the customer)"
+                              >
+                                Cancel
+                              </button>
                             </div>
                           ) : (
                             <span className="ptable__sub">{b.noShow ? 'No-show' : '—'}</span>
@@ -340,6 +380,49 @@ export default function OwnerBookings() {
                 disabled={noShowBusy}
               >
                 Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {cancelFor && (
+        <div className="pmodal" role="presentation" onMouseDown={() => !cancelBusy && setCancelFor(null)}>
+          <div
+            className="pmodal__box pmodal__box--sm"
+            role="dialog"
+            aria-modal="true"
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            <h3 className="pmodal__title">Cancel this booking?</h3>
+            <p className="pmodal__text">
+              Pick a reason to cancel {cancelFor.serviceName} (#{cancelFor.ref}).
+              {cancelFor.paymentMode === 'online'
+                ? ` The customer gets a full refund of ${formatINR(cancelFor.total)} to their wallet.`
+                : ' No payment was taken, so there is nothing to refund.'}{' '}
+              Use this only when the salon can’t honour the booking — not for no-shows.
+            </p>
+            <div className="reason-list">
+              {OWNER_CANCEL_REASONS.map((r) => (
+                <button
+                  key={r}
+                  type="button"
+                  className="reason-btn"
+                  onClick={() => submitCancel(r)}
+                  disabled={cancelBusy}
+                >
+                  {r}
+                </button>
+              ))}
+            </div>
+            <div className="pmodal__actions">
+              <button
+                type="button"
+                className="btn btn--outline"
+                onClick={() => setCancelFor(null)}
+                disabled={cancelBusy}
+              >
+                Keep booking
               </button>
             </div>
           </div>
