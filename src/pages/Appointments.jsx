@@ -121,19 +121,30 @@ function CancelDialog({ booking, onClose, onConfirm }) {
 
 function NoShowRefundDialog({ booking, onClose, onConfirm }) {
   const [method, setMethod] = useState('wallet')
+  const [busy, setBusy] = useState(false)
   const ref = useRef(null)
   const t = useT()
   const r = noShowRefund(booking, method)
 
+  const confirm = async () => {
+    if (busy) return
+    setBusy(true)
+    try {
+      await onConfirm(method)
+    } finally {
+      setBusy(false)
+    }
+  }
+
   useEffect(() => {
     ref.current?.focus()
-    const onKey = (e) => e.key === 'Escape' && onClose()
+    const onKey = (e) => e.key === 'Escape' && !busy && onClose()
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
-  }, [onClose])
+  }, [onClose, busy])
 
   return (
-    <div className="modal" role="presentation" onMouseDown={onClose}>
+    <div className="modal" role="presentation" onMouseDown={busy ? undefined : onClose}>
       <div
         className="modal__box anim-pop"
         role="dialog"
@@ -171,11 +182,11 @@ function NoShowRefundDialog({ booking, onClose, onConfirm }) {
           ))}
         </fieldset>
         <div className="modal__actions">
-          <button type="button" className="btn btn--outline" onClick={onClose}>
+          <button type="button" className="btn btn--outline" onClick={onClose} disabled={busy}>
             {t('appt.keepBooking')}
           </button>
-          <button type="button" className="btn btn--gold" onClick={() => onConfirm(method)}>
-            {t('appt.nsRefundConfirm')}
+          <button type="button" className="btn btn--gold" onClick={confirm} disabled={busy}>
+            {busy ? t('appt.nsRefundConfirming') : t('appt.nsRefundConfirm')}
           </button>
         </div>
       </div>
@@ -286,7 +297,6 @@ export default function Appointments() {
 
   const doResolveRefund = async (method) => {
     const booking = refundChoice
-    setRefundChoice(null)
     try {
       const refund = await resolveNoShowRefund(booking, method)
       push({
@@ -297,6 +307,8 @@ export default function Appointments() {
       })
     } catch (err) {
       push({ tone: 'warn', title: 'Could not process refund', body: err.message })
+    } finally {
+      setRefundChoice(null)
     }
   }
 

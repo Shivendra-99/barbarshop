@@ -50,11 +50,11 @@ export default function RescheduleDialog({ booking, onClose, onConfirm }) {
   useEffect(() => {
     ref.current?.focus()
     const onKey = (e) => {
-      if (e.key === 'Escape') onClose()
+      if (e.key === 'Escape' && !busy) onClose()
     }
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
-  }, [onClose])
+  }, [onClose, busy])
 
   const todayISO = toISO(today)
 
@@ -110,7 +110,7 @@ export default function RescheduleDialog({ booking, onClose, onConfirm }) {
   }
 
   return (
-    <div className="modal" role="presentation" onMouseDown={onClose}>
+    <div className="modal" role="presentation" onMouseDown={busy ? undefined : onClose}>
       <div
         className="modal__box rsx anim-pop"
         role="dialog"
@@ -195,7 +195,7 @@ export default function RescheduleDialog({ booking, onClose, onConfirm }) {
         </div>
 
         <div className="modal__actions">
-          <button type="button" className="btn btn--outline" onClick={onClose}>
+          <button type="button" className="btn btn--outline" onClick={onClose} disabled={busy}>
             {t('rsx.keep')}
           </button>
           <button type="button" className="btn btn--gold" onClick={save} disabled={!canSave}>
