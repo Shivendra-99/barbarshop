@@ -23,6 +23,8 @@ function CancelDialog({ booking, onClose, onConfirm }) {
   const ref = useRef(null)
   const t = useT()
   const cashBooking = booking.paymentMode === 'offline'
+  // Itemised refund for the chosen method, shown as a small invoice below.
+  const bill = cashBooking ? null : refundFor(booking, method)
 
   // Guard against double-submits: once tapped, disable and show a loader until
   // onConfirm settles (the parent then closes the dialog).
@@ -95,6 +97,25 @@ function CancelDialog({ booking, onClose, onConfirm }) {
                 </label>
               )
             })}
+
+            <div className="refundBill" aria-live="polite">
+              <div className="refundBill__row">
+                <span>{t('appt.billPaid')}</span>
+                <span className="money">{formatINR(booking.total)}</span>
+              </div>
+              <div className="refundBill__row">
+                <span>{t('appt.billFee', { pct: bill.feePct })}</span>
+                <span className="money">{bill.fee > 0 ? `− ${formatINR(bill.fee)}` : formatINR(0)}</span>
+              </div>
+              <div className="refundBill__row refundBill__row--total">
+                <span>{t('appt.billTotal')}</span>
+                <span className="money">{formatINR(bill.amount)}</span>
+              </div>
+              <p className="refundBill__dest">
+                {t('appt.billTo', { dest: t(`refund.${method}`), eta: t(`refund.${method}Eta`) })}
+              </p>
+            </div>
+
             <p className="modal__note modal__note--fine">{t('appt.feeFine')}</p>
           </fieldset>
         )}
