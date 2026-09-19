@@ -45,6 +45,11 @@ const isObjectId = (v) => /^[a-f0-9]{24}$/i.test(v)
 
 const makeRef = () => `SS${Math.floor(100000 + Math.random() * 899999)}`
 
+/** A duplicate-key error specifically on the unique `ref` index (random ref
+ * collision) — as opposed to the (salon,date,slot,seat) seat clash. */
+export const isDuplicateRef = (err) =>
+  err?.code === 11000 && (Boolean(err.keyPattern?.ref) || /index:\s*ref_/i.test(err.message || ''))
+
 /**
  * How many confirmed bookings already hold a given salon/date/slot. Used to
  * enforce capacity so a slot can't be double-booked past the salon's chairs.
@@ -108,7 +113,13 @@ async function createInFreeSeat(fields, salon) {
     try {
       return await Booking.create({ ...fields, seat })
     } catch (err) {
-      if (err && err.code === 11000) continue // seat taken concurrently — retry
+      // A random ref collision → get a fresh ref and retry. A seat clash
+      // (someone booked it concurrently) → retry onto the next free seat.
+      if (isDuplicateRef(err)) {
+        fields.ref = makeRef()
+        continue
+      }
+      if (err && err.code === 11000) continue
       throw err
     }
   }
