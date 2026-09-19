@@ -199,16 +199,30 @@
   margin-top: 3px;
 }
 
+.appt__reschedule,
 .appt__cancel {
-  margin-top: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 7px 16px;
+  border-radius: var(--r-pill, 999px);
+  border: 1px solid;
+  background: transparent;
   font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--dur-fast) ease, color var(--dur-fast) ease,
+    border-color var(--dur-fast) ease;
+}
+
+.appt__cancel {
   color: var(--red);
-  min-height: 32px;
-  padding: 0 2px;
+  border-color: var(--red);
 }
 
 .appt__cancel:hover {
-  text-decoration: underline;
+  background: var(--red);
+  color: #fff;
 }
 
 /* ---------------- Cancel dialog ---------------- */
@@ -437,14 +451,14 @@
 }
 
 .appt__reschedule {
-  font-size: 13px;
   color: var(--gold-deep);
-  transition: color var(--dur-fast) ease;
+  border-color: var(--gold-line, var(--gold-deep));
 }
 
 .appt__reschedule:hover {
-  color: var(--gold);
-  text-decoration: underline;
+  background: var(--gold);
+  border-color: var(--gold);
+  color: var(--on-gold, #fff);
 }
 
 .refund__amount {

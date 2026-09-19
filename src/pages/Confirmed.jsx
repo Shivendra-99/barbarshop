@@ -46,7 +46,6 @@ export default function Confirmed() {
         {booking.completionOtp && booking.status !== 'completed' && (
           <div className="done__otp">
             <div className="done__otpLabel">{t('done.otpLabel')}</div>
-            <div className="done__otpCode">{booking.completionOtp}</div>
             <div className="done__otpHint">{t('done.otpHint')}</div>
           </div>
         )}
