@@ -24,6 +24,10 @@ export function createApp() {
   // MSG91 widget forces us off "localhost"). Production accepts the CORS_ORIGIN
   // allow-list plus any of this app's Vercel deployments (see corsAllow).
   app.use(cors({ origin: corsAllow, credentials: true }))
+  // The Razorpay webhook signature is computed over the raw body, so this one
+  // path must stay unparsed. express.raw sets req._body, so express.json below
+  // skips it and every other route still gets parsed JSON.
+  app.use('/api/payments/webhook', express.raw({ type: '*/*' }))
   app.use(express.json())
   if (!env.isProd) app.use(morgan('dev'))
 

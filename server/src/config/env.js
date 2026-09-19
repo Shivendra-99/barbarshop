@@ -59,6 +59,9 @@ export const env = {
   razorpay: {
     keyId: process.env.RAZORPAY_KEY_ID || '',
     keySecret: process.env.RAZORPAY_KEY_SECRET || '',
+    // Webhook signing secret (set in Razorpay Dashboard → Webhooks). Lets us
+    // catch payments where the browser closed before /verify ran.
+    webhookSecret: process.env.RAZORPAY_WEBHOOK_SECRET || '',
   },
 
   isProd: process.env.NODE_ENV === 'production',

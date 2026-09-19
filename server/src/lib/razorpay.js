@@ -52,3 +52,20 @@ export function verifySignature({ orderId, paymentId, signature }) {
     return false
   }
 }
+
+/**
+ * Verify a Razorpay webhook: HMAC-SHA256 of the *raw* request body, keyed by the
+ * webhook secret, must equal the X-Razorpay-Signature header. Constant-time.
+ */
+export function verifyWebhookSignature(rawBody, signature) {
+  if (!signature || !env.razorpay.webhookSecret || !rawBody?.length) return false
+  const expected = crypto
+    .createHmac('sha256', env.razorpay.webhookSecret)
+    .update(rawBody)
+    .digest('hex')
+  try {
+    return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signature))
+  } catch {
+    return false
+  }
+}
