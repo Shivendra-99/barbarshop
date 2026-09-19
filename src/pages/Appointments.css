@@ -492,3 +492,17 @@
   color: var(--muted-3);
   font-size: 12px;
 }
+.appt__otpToggle {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gold-deep);
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0;
+  margin-left: 6px;
+  text-decoration: underline;
+}
+.appt__otpToggle:hover {
+  color: var(--gold);
+}

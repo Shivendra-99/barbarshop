@@ -187,6 +187,15 @@ export default function Appointments() {
   const [refundChoice, setRefundChoice] = useState(null)
   const [rescheduling, setRescheduling] = useState(null)
   const [rating, setRating] = useState(null)
+  const [otpShown, setOtpShown] = useState(() => new Set()) // booking ids revealing their OTP
+
+  const toggleOtp = (id) =>
+    setOtpShown((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
 
   // Auto-prompt for a rating once a service is completed: when the customer
   // opens My Bookings and has a completed, unrated booking, pop the dialog.
@@ -353,8 +362,27 @@ export default function Appointments() {
                   )}
                   {b.completionOtp && b.status === 'confirmed' && (
                     <div className="appt__otp">
-                      {t('appt.serviceOtp')} <strong>{b.completionOtp}</strong>
-                      <span className="appt__otpHint">{t('appt.otpHint')}</span>
+                      {otpShown.has(b.id) ? (
+                        <>
+                          {t('appt.serviceOtp')} <strong>{b.completionOtp}</strong>
+                          <button
+                            type="button"
+                            className="appt__otpToggle"
+                            onClick={() => toggleOtp(b.id)}
+                          >
+                            {t('appt.otpHide')}
+                          </button>
+                          <span className="appt__otpHint">{t('appt.otpHint')}</span>
+                        </>
+                      ) : (
+                        <button
+                          type="button"
+                          className="appt__otpToggle"
+                          onClick={() => toggleOtp(b.id)}
+                        >
+                          {t('appt.otpShow')}
+                        </button>
+                      )}
                     </div>
                   )}
                   {!cancelled && b.salonPhone && (
