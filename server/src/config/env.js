@@ -37,7 +37,10 @@ export const env = {
     senderId: process.env.MSG91_SENDER_ID || '',
     otpExpiryMinutes: int(process.env.MSG91_OTP_EXPIRY_MINUTES, 15),
     bookingFlowId: process.env.MSG91_BOOKING_FLOW_ID || process.env.MSG91_FLOW_ID || '',
+    completedFlowId: process.env.MSG91_COMPLETED_FLOW_ID || '',
     ownerFlowId: process.env.MSG91_OWNER_FLOW_ID || process.env.MSG91_OWNER_BOOKING_FLOW_ID || '',
+    ownerCancelAlertFlowId: process.env.MSG91_OWNER_CANCEL_ALERT_FLOW_ID || '',
+    salonCancelFlowId: process.env.MSG91_SALON_CANCEL_FLOW_ID || '',
   },
 
   // Mappls (MapmyIndia) address autosuggest. Server-side OAuth credentials —

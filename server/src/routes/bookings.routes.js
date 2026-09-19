@@ -11,8 +11,8 @@ import { validate } from '../middleware/validate.js'
 import { requireAuth, requireRole } from '../middleware/auth.js'
 import { asyncHandler, ApiError } from '../middleware/error.js'
 import { notify } from '../lib/notify.js'
-import { sendBookingOtp } from '../lib/sms/bookingOtp.js'
-import { sendOwnerBookingAlert } from '../lib/sms/ownerAlert.js'
+import { sendFlowSms, resolveOwnerPhones, bookingWhen } from '../lib/sms/flow.js'
+import { env } from '../config/env.js'
 import { formatINR } from '../lib/money.js'
 import { geocode } from '../lib/geo/mappls.js'
 
@@ -263,12 +263,40 @@ export async function createBookingRecord(user, body, payment = {}) {
     },
   ])
 
-  // Await both notifications so they actually fire on serverless (Vercel freezes
-  // the instance after the response, dropping any in-flight fetch). allSettled
-  // means a provider error still never blocks or fails the booking.
+  // Await the SMS sends so they actually fire on serverless (Vercel freezes the
+  // instance after the response, dropping any in-flight fetch). sendFlowSms never
+  // throws, so a provider error still can't block or fail the booking.
+  const when = bookingWhen(booking)
+  const ownerPhones = await resolveOwnerPhones(salon)
   await Promise.allSettled([
-    sendOwnerBookingAlert({ booking, salon, user }),
-    sendBookingOtp({ phone: user.phone, otp: booking.completionOtp, ref: booking.ref }),
+    // Customer: booking confirmed + the completion OTP to share at the salon.
+    sendFlowSms({
+      flowId: env.msg91.bookingFlowId,
+      phone: user.phone,
+      vars: {
+        CUSTOMER_NAME: user.name,
+        REF: booking.ref,
+        SERVICE: serviceName,
+        WHEN: when,
+        OTP: booking.completionOtp,
+      },
+      label: 'confirm',
+    }),
+    // Owner(s): new booking alert.
+    ...ownerPhones.map((phone) =>
+      sendFlowSms({
+        flowId: env.msg91.ownerFlowId,
+        phone,
+        vars: {
+          REF: booking.ref,
+          CUSTOMER_NAME: user.name,
+          SERVICE: serviceName,
+          WHEN: when,
+          TOTAL: String(booking.total || 0),
+        },
+        label: 'owner-new',
+      }),
+    ),
   ])
 
   return booking
@@ -408,12 +436,8 @@ router.patch(
         : []),
     ])
 
-    if (salon) {
-      // Awaited so it survives the serverless freeze; never fails the reschedule.
-      await Promise.allSettled([
-        sendOwnerBookingAlert({ booking, salon, user: req.user, isReschedule: true }),
-      ])
-    }
+    // No SMS on reschedule — there's no DLT-approved template for it; the
+    // in-app notification above keeps both sides informed.
 
     res.json({ booking: booking.toPublic({ includeOtp: true }) })
   }),
@@ -590,6 +614,15 @@ router.patch(
       },
     ])
 
+    // Customer SMS: service complete.
+    const customer = await User.findById(booking.customer).catch(() => null)
+    await sendFlowSms({
+      flowId: env.msg91.completedFlowId,
+      phone: customer?.phone,
+      vars: { REF: booking.ref },
+      label: 'completed',
+    })
+
     res.json({ booking: booking.toPublic() })
   }),
 )
@@ -668,6 +701,24 @@ router.post(
           ]
         : []),
     ])
+
+    // Owner SMS: a customer cancelled.
+    const ownerPhones = await resolveOwnerPhones(salon)
+    await Promise.allSettled(
+      ownerPhones.map((phone) =>
+        sendFlowSms({
+          flowId: env.msg91.ownerCancelAlertFlowId,
+          phone,
+          vars: {
+            REF: booking.ref,
+            CUSTOMER_NAME: req.user.name,
+            SERVICE: booking.serviceName,
+            WHEN: bookingWhen(booking),
+          },
+          label: 'owner-cancelled',
+        }),
+      ),
+    )
 
     res.json({ booking: booking.toPublic({ includeOtp: true }), walletBalance, cashBlocked })
   }),
@@ -856,20 +907,18 @@ router.post(
     booking.cancelledAt = new Date()
     await booking.save()
 
-    if (refund.status === 'completed' && refund.method === 'wallet' && refund.amount > 0) {
-      const customer = await User.findById(booking.customer).catch(() => null)
-      if (customer) {
-        const walletBalance = (customer.walletBalance || 0) + refund.amount
-        await User.updateOne({ _id: customer._id }, { walletBalance })
-        await WalletTxn.create({
-          user: customer._id,
-          type: 'credit',
-          amount: refund.amount,
-          note: `Full refund — salon cancelled ${booking.serviceName}`,
-          bookingRef: booking.ref,
-          balanceAfter: walletBalance,
-        })
-      }
+    const customer = await User.findById(booking.customer).catch(() => null)
+    if (refund.status === 'completed' && refund.method === 'wallet' && refund.amount > 0 && customer) {
+      const walletBalance = (customer.walletBalance || 0) + refund.amount
+      await User.updateOne({ _id: customer._id }, { walletBalance })
+      await WalletTxn.create({
+        user: customer._id,
+        type: 'credit',
+        amount: refund.amount,
+        note: `Full refund — salon cancelled ${booking.serviceName}`,
+        bookingRef: booking.ref,
+        balanceAfter: walletBalance,
+      })
     }
 
     // Accountability: count owner cancellations so abuse is visible.
@@ -894,6 +943,20 @@ router.post(
         body: `${booking.serviceName} · ${booking.dateLabel}, ${booking.slot}${reason ? ` · ${reason}` : ''}`,
       },
     ])
+
+    // Customer SMS: the salon cancelled, full refund on the way.
+    await sendFlowSms({
+      flowId: env.msg91.salonCancelFlowId,
+      phone: customer?.phone,
+      vars: {
+        CUSTOMER_NAME: customer?.name || 'Customer',
+        REF: booking.ref,
+        SERVICE: booking.serviceName,
+        WHEN: bookingWhen(booking),
+        REASON: reason || 'Salon unavailable',
+      },
+      label: 'salon-cancel',
+    })
 
     res.json({ booking: booking.toPublic() })
   }),
