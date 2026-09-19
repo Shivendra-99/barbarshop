@@ -88,6 +88,9 @@ const bookingSchema = new mongoose.Schema(
       feePct: Number,
       method: String,
       status: String,
+      // Razorpay refund id (rfnd_…) when the refund was issued to the original
+      // source; null for wallet/cash refunds or a manual/pending settlement.
+      id: { type: String, default: null },
     },
     // Customer's rating of the salon for this booking (1–5) + optional review.
     rating: { type: Number, min: 1, max: 5, default: null },

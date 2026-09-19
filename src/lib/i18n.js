@@ -172,7 +172,7 @@ const EN = {
   'refund.walletNote': 'Credited immediately, usable on your next booking.',
   'refund.upi': 'Original UPI / bank',
   'refund.upiEta': '2–3 working days',
-  'refund.upiNote': 'Sent back to the account you paid from.',
+  'refund.upiNote': 'Refunded automatically to the account you paid from — no details needed.',
 
   // --- Salons list ---
   'salons.allSalons': 'All salons',
@@ -569,7 +569,7 @@ const HI = {
   'refund.walletNote': 'तुरंत क्रेडिट, अगली बुकिंग पर इस्तेमाल करें।',
   'refund.upi': 'मूल UPI / बैंक',
   'refund.upiEta': '2–3 कार्यदिवस',
-  'refund.upiNote': 'जिस खाते से भुगतान किया, वहीं वापस भेजा जाएगा।',
+  'refund.upiNote': 'जिस खाते से भुगतान किया, वहीं अपने-आप वापस — कोई जानकारी नहीं चाहिए।',
 
   // --- Salons list ---
   'salons.allSalons': 'सभी सैलून',

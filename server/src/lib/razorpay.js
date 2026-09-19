@@ -54,6 +54,35 @@ export function verifySignature({ orderId, paymentId, signature }) {
 }
 
 /**
+ * Refund a captured payment back to its original source (the UPI/card the
+ * customer paid with — Razorpay decides the destination, we can't redirect it).
+ * `amount` is in rupees; we convert to paise. `speed: 'normal'` is the free,
+ * few-days refund. Returns the refund object ({ id, status, ... }).
+ */
+export async function refundPayment({ paymentId, amount, notes }) {
+  if (!razorpayEnabled()) throw new ApiError(503, 'Online payments are not configured.')
+  if (!paymentId) throw new ApiError(400, 'No payment to refund.')
+
+  const paise = Math.round(amount * 100)
+  let res
+  try {
+    res = await fetch(`${API}/payments/${paymentId}/refund`, {
+      method: 'POST',
+      headers: { Authorization: authHeader(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ amount: paise, speed: 'normal', notes }),
+    })
+  } catch {
+    throw new ApiError(502, 'Could not reach the payment gateway.')
+  }
+
+  const data = await res.json().catch(() => null)
+  if (!res.ok) {
+    throw new ApiError(502, data?.error?.description || 'Refund could not be processed.')
+  }
+  return data
+}
+
+/**
  * Verify a Razorpay webhook: HMAC-SHA256 of the *raw* request body, keyed by the
  * webhook secret, must equal the X-Razorpay-Signature header. Constant-time.
  */

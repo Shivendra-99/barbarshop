@@ -12,11 +12,48 @@ import { requireAuth, requireRole } from '../middleware/auth.js'
 import { asyncHandler, ApiError } from '../middleware/error.js'
 import { notify } from '../lib/notify.js'
 import { sendFlowSms, resolveOwnerPhones, bookingWhen } from '../lib/sms/flow.js'
-import { env } from '../config/env.js'
+import { env, razorpayEnabled } from '../config/env.js'
+import { refundPayment } from '../lib/razorpay.js'
 import { formatINR } from '../lib/money.js'
 import { geocode } from '../lib/geo/mappls.js'
 
 const router = Router()
+
+/**
+ * For a UPI/bank refund on a real online payment, issue it via Razorpay back to
+ * the original payment source. Mutates `refund` with the gateway refund id and
+ * final status. Never throws — a gateway hiccup leaves the refund 'processing'
+ * for manual settlement so the cancellation itself still succeeds. Wallet and
+ * cash refunds are handled by the caller and skipped here.
+ */
+/** True only when a refund should be pushed to the original source via Razorpay:
+ * a positive UPI/bank refund on a real, gateway-paid online booking. Wallet,
+ * cash, zero-amount and demo (no paymentId) refunds are handled elsewhere. */
+export const shouldSourceRefund = (booking, refund) =>
+  refund?.method === 'upi' &&
+  refund.amount > 0 &&
+  booking?.paymentMode === 'online' &&
+  Boolean(booking?.razorpay?.paymentId)
+
+async function issueSourceRefund(booking, refund, reason) {
+  if (!shouldSourceRefund(booking, refund) || !razorpayEnabled()) {
+    return refund
+  }
+  try {
+    const rf = await refundPayment({
+      paymentId: booking.razorpay.paymentId,
+      amount: refund.amount,
+      notes: { ref: booking.ref, reason },
+    })
+    refund.id = rf.id
+    // Razorpay 'processed' = done; 'pending' = still settling to the source.
+    refund.status = rf.status === 'processed' ? 'completed' : 'processing'
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.log(`[refund] source refund failed for ${booking.ref}:`, err.message)
+  }
+  return refund
+}
 
 export const createSchema = z
   .object({
@@ -658,6 +695,8 @@ router.post(
     }
 
     const refund = refundFor(booking, req.body.method)
+    // UPI/bank refund → issue it to the original source via Razorpay now.
+    await issueSourceRefund(booking, refund, 'customer_cancel')
     booking.status = 'cancelled'
     booking.refund = refund
     booking.cancelledAt = new Date()
@@ -857,6 +896,8 @@ router.post(
     }
 
     const refund = noShowRefund(booking, req.body.method)
+    // UPI/bank refund → issue it to the original source via Razorpay now.
+    await issueSourceRefund(booking, refund, 'no_show')
     booking.refund = refund
     await booking.save()
 
