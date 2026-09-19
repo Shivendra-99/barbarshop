@@ -201,6 +201,22 @@
   flex-wrap: wrap;
 }
 
+.citySet {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 14px;
+}
+
+.citySet__pin {
+  width: auto;
+  flex: 1 1 160px;
+  max-width: 220px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.08em;
+}
+
 /* Legal pages (Privacy / Terms) */
 .legal__meta {
   font-size: 13.5px;

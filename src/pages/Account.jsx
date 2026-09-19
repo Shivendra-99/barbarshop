@@ -5,16 +5,46 @@ import { usePrefs } from '../store/Prefs'
 import { useToast } from '../components/Toast'
 import { useT } from '../lib/i18n'
 import { formatINR } from '../lib/money'
+import { api } from '../lib/api'
 import './Simple.css'
 
 export default function Account() {
   const navigate = useNavigate()
   const { session, setName, logout, myBookings, walletBalance, isFirstBooking } = useApp()
-  const { city, setCity, cities } = usePrefs()
+  const { city, setCity, cities, setCityFromPincode, detectLocation, detecting } = usePrefs()
   const { push } = useToast()
   const t = useT()
   const [draft, setDraft] = useState(session?.name ?? '')
   const [saving, setSaving] = useState(false)
+  const [pin, setPin] = useState('')
+  const [pinBusy, setPinBusy] = useState(false)
+  const [pinErr, setPinErr] = useState('')
+
+  const applyPin = async () => {
+    if (pin.length !== 6 || pinBusy) return
+    setPinBusy(true)
+    setPinErr('')
+    try {
+      const r = await api.pincode(pin)
+      const c = setCityFromPincode({ district: r.district, state: r.state, pincode: r.pincode })
+      push({ tone: 'success', title: t('acc.cityUpdated', { city: c.label }) })
+      setPin('')
+    } catch (err) {
+      setPinErr(err.message || t('acc.cityPinErr'))
+    } finally {
+      setPinBusy(false)
+    }
+  }
+
+  const useMyLocation = async () => {
+    if (detecting) return
+    try {
+      const c = await detectLocation()
+      push({ tone: 'success', title: t('acc.cityUpdated', { city: c.label }) })
+    } catch (err) {
+      push({ tone: 'warn', title: t('acc.cityDetectErr'), body: err.message })
+    }
+  }
 
   const trimmed = draft.trim()
   const changed = trimmed.length > 0 && trimmed !== session?.name
@@ -129,6 +159,38 @@ export default function Account() {
             </button>
           ))}
         </div>
+
+        <div className="citySet">
+          <input
+            className="field__input citySet__pin"
+            value={pin}
+            onChange={(e) => {
+              setPin(e.target.value.replace(/\D/g, '').slice(0, 6))
+              setPinErr('')
+            }}
+            inputMode="numeric"
+            placeholder={t('acc.cityPinPlaceholder')}
+            aria-label={t('acc.cityPinPlaceholder')}
+            onKeyDown={(e) => e.key === 'Enter' && applyPin()}
+          />
+          <button
+            type="button"
+            className="btn btn--gold btn--sm"
+            onClick={applyPin}
+            disabled={pin.length !== 6 || pinBusy}
+          >
+            {pinBusy ? t('acc.saving') : t('acc.citySet')}
+          </button>
+          <button
+            type="button"
+            className="btn btn--outline btn--sm"
+            onClick={useMyLocation}
+            disabled={detecting}
+          >
+            {detecting ? t('acc.cityDetecting') : t('acc.cityDetect')}
+          </button>
+        </div>
+        {pinErr && <p className="field__error">{pinErr}</p>}
         <p className="panel__text panel__text--fine">{t('acc.cityHint')}</p>
       </div>
 
