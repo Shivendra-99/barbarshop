@@ -50,14 +50,41 @@ export default function Terms() {
         </li>
       </ul>
 
-      <h2 className="simple__heading">5. Cancellations</h2>
+      <h2 className="simple__heading">5. Cancellations &amp; Refunds</h2>
+      <p className="legal__p">
+        Customers can cancel a confirmed booking any time before the scheduled slot from{' '}
+        <strong>My Bookings</strong>. For online (prepaid) bookings, a cancellation fee is deducted
+        from the refund depending on how close to the appointment you cancel:
+      </p>
       <ul className="legal__list">
         <li>
-          Customers can cancel a booking before the scheduled time. Any advance payment refund will
-          be as per the respective salon&rsquo;s policy.
+          <strong>2 hours or more before the slot:</strong> full refund, no cancellation fee. (A 2%
+          gateway charge applies only if you choose a bank/UPI refund instead of Wallet.)
         </li>
-        <li>Salon owners have the right to cancel a booking due to unavailability.</li>
+        <li>
+          <strong>Within 2 hours of the slot:</strong> 10% cancellation fee; the remaining amount is
+          refunded.
+        </li>
+        <li>
+          <strong>After the slot time has passed (late cancellation):</strong> 15% cancellation fee.
+        </li>
+        <li>
+          <strong>No-show</strong> (you do not arrive and the salon marks you absent): 15% fee; the
+          remaining 85% is refunded.
+        </li>
+        <li>
+          <strong>If the salon cancels</strong> your booking, you receive a full refund with no fee.
+        </li>
+        <li>
+          <strong>Cash / pay-at-salon bookings:</strong> no money is collected in advance, so there
+          is nothing to refund on cancellation.
+        </li>
       </ul>
+      <p className="legal__p">
+        The exact refund amount and any applicable fee are always shown to you before you confirm a
+        cancellation. Wallet refunds are credited instantly; bank/UPI refunds are processed within
+        5&ndash;7 working days.
+      </p>
 
       <h2 className="simple__heading">6. Responsibilities of Salon Owners</h2>
       <ul className="legal__list">
