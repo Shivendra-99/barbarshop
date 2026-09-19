@@ -19,21 +19,34 @@ const TABS = ['Upcoming', 'Past']
 
 function CancelDialog({ booking, onClose, onConfirm }) {
   const [method, setMethod] = useState('wallet')
+  const [busy, setBusy] = useState(false)
   const ref = useRef(null)
   const t = useT()
   const cashBooking = booking.paymentMode === 'offline'
 
+  // Guard against double-submits: once tapped, disable and show a loader until
+  // onConfirm settles (the parent then closes the dialog).
+  const confirm = async () => {
+    if (busy) return
+    setBusy(true)
+    try {
+      await onConfirm(cashBooking ? 'wallet' : method)
+    } finally {
+      setBusy(false)
+    }
+  }
+
   useEffect(() => {
     ref.current?.focus()
     const onKey = (e) => {
-      if (e.key === 'Escape') onClose()
+      if (e.key === 'Escape' && !busy) onClose()
     }
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
-  }, [onClose])
+  }, [onClose, busy])
 
   return (
-    <div className="modal" role="presentation" onMouseDown={onClose}>
+    <div className="modal" role="presentation" onMouseDown={busy ? undefined : onClose}>
       <div
         className="modal__box anim-pop"
         role="dialog"
@@ -87,15 +100,11 @@ function CancelDialog({ booking, onClose, onConfirm }) {
         )}
 
         <div className="modal__actions">
-          <button type="button" className="btn btn--outline" onClick={onClose}>
+          <button type="button" className="btn btn--outline" onClick={onClose} disabled={busy}>
             {t('appt.keepBooking')}
           </button>
-          <button
-            type="button"
-            className="btn btn--danger"
-            onClick={() => onConfirm(cashBooking ? 'wallet' : method)}
-          >
-            {t('appt.cancelBooking')}
+          <button type="button" className="btn btn--danger" onClick={confirm} disabled={busy}>
+            {busy ? t('appt.cancelling') : t('appt.cancelBooking')}
           </button>
         </div>
       </div>
@@ -257,7 +266,6 @@ export default function Appointments() {
 
   const doCancel = async (method) => {
     const booking = pending
-    setPending(null)
     try {
       const refund = await cancelBooking(booking, method)
       push({
@@ -271,6 +279,8 @@ export default function Appointments() {
       })
     } catch (err) {
       push({ tone: 'warn', title: 'Could not cancel', body: err.message })
+    } finally {
+      setPending(null)
     }
   }
 

@@ -322,6 +322,7 @@ const EN = {
   'appt.nsRefundConfirm': 'Confirm refund',
   'appt.keepBooking': 'Keep booking',
   'appt.cancelBooking': 'Cancel booking',
+  'appt.cancelling': 'Cancelling…',
 
   // --- Rating / Reschedule dialogs ---
   'rate.title': 'Rate {salon}',
@@ -710,6 +711,7 @@ const HI = {
   'appt.nsRefundConfirm': 'रिफंड पक्का करें',
   'appt.keepBooking': 'बुकिंग रखें',
   'appt.cancelBooking': 'बुकिंग रद्द करें',
+  'appt.cancelling': 'रद्द हो रहा है…',
 
   // --- Rating / Reschedule dialogs ---
   'rate.title': '{salon} को रेट करें',
