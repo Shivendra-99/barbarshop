@@ -255,8 +255,8 @@ export async function createBookingRecord(user, body, payment = {}) {
     {
       audience: `user:${user._id.toString()}`,
       tone: 'success',
-      title: `Booking confirmed · OTP ${booking.completionOtp}`,
-      body: `${serviceName} at ${salon.name} · ${booking.dateLabel}, ${booking.slot}. Share OTP ${booking.completionOtp} with the salon to complete your service (#${booking.ref}).`,
+      title: 'Booking confirmed',
+      body: `${serviceName} at ${salon.name} · ${booking.dateLabel}, ${booking.slot} (#${booking.ref}). Your service OTP is in My Bookings and your confirmation SMS.`,
     },
     {
       audience: `owner:${salon.owner.toString()}`,
