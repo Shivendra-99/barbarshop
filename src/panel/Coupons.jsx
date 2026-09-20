@@ -4,6 +4,7 @@ import { useToast } from '../components/Toast'
 import { api } from '../lib/api'
 import { formatINR } from '../lib/money'
 import './panel-ui.css'
+import './Coupons.css'
 
 /**
  * Coupon management — shared by owner and founder. A founder creates
@@ -21,6 +22,18 @@ const BLANK = {
   perUserLimit: '1',
   validTo: '',
   description: '',
+}
+
+/** Real, at-a-glance state — disabled/expired/exhausted are distinct from active. */
+function statusOf(c) {
+  if (!c.active) return { label: 'Disabled', cls: 'badge--neutral' }
+  if (c.validTo && Date.now() > new Date(c.validTo).getTime()) {
+    return { label: 'Expired', cls: 'badge--amber' }
+  }
+  if (c.usageLimit && c.usedCount >= c.usageLimit) {
+    return { label: 'Fully used', cls: 'badge--amber' }
+  }
+  return { label: 'Active', cls: 'badge--green' }
 }
 
 export default function Coupons() {
@@ -104,8 +117,14 @@ export default function Coupons() {
 
   const valueLabel = (c) =>
     c.type === 'percent'
-      ? `${c.value}% off${c.maxDiscount ? ` (max ${formatINR(c.maxDiscount)})` : ''}`
+      ? `${c.value}% off${c.maxDiscount ? ` · up to ${formatINR(c.maxDiscount)}` : ''}`
       : `${formatINR(c.value)} off`
+
+  // Live customer-eye preview of the form being filled in.
+  const previewValue =
+    form.type === 'percent'
+      ? `${form.value || '0'}% off${form.maxDiscount ? ` up to ${formatINR(Number(form.maxDiscount))}` : ''}`
+      : `${formatINR(Number(form.value) || 0)} off`
 
   return (
     <>
@@ -147,43 +166,58 @@ export default function Coupons() {
                 <th>Code</th>
                 <th>Discount</th>
                 <th>Min order</th>
-                <th>Used</th>
+                <th>Usage</th>
                 {isFounder && <th>Scope</th>}
                 <th>Status</th>
                 <th aria-label="Actions" />
               </tr>
             </thead>
             <tbody>
-              {coupons.map((c) => (
-                <tr key={c.id}>
-                  <td>
-                    <div className="ptable__strong">{c.code}</div>
-                    {c.description && <div className="ptable__sub">{c.description}</div>}
-                  </td>
-                  <td>{valueLabel(c)}</td>
-                  <td className="ptable__money">{c.minOrder ? formatINR(c.minOrder) : '—'}</td>
-                  <td>
-                    {c.usedCount}
-                    {c.usageLimit ? ` / ${c.usageLimit}` : ''}
-                  </td>
-                  {isFounder && <td>{c.salonId ? 'Salon' : 'Platform'}</td>}
-                  <td>
-                    <span className={`badge ${c.active ? 'badge--green' : 'badge--neutral'}`}>
-                      {c.active ? 'Active' : 'Off'}
-                    </span>
-                  </td>
-                  <td>
-                    <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-                      <button type="button" className="btn btn--outline btn--sm" onClick={() => toggle(c)}>
-                        {c.active ? 'Disable' : 'Enable'}
-                      </button>
-                      <button type="button" className="btn btn--outline btn--sm" onClick={() => remove(c)}>
-                        Delete
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+              {coupons.map((c) => {
+                const st = statusOf(c)
+                const pct = c.usageLimit ? Math.min(100, Math.round((c.usedCount / c.usageLimit) * 100)) : 0
+                return (
+                  <tr key={c.id}>
+                    <td>
+                      <div className="ptable__strong">{c.code}</div>
+                      {c.description && <div className="ptable__sub">{c.description}</div>}
+                    </td>
+                    <td>{valueLabel(c)}</td>
+                    <td className="ptable__money">{c.minOrder ? formatINR(c.minOrder) : '—'}</td>
+                    <td>
+                      {c.usageLimit ? (
+                        <div className="cpn-usage">
+                          <span className="cpn-usage__num">
+                            {c.usedCount} / {c.usageLimit}
+                          </span>
+                          <span className="cpn-meter">
+                            <span
+                              className={`cpn-meter__fill${pct >= 100 ? ' is-full' : ''}`}
+                              style={{ width: `${pct}%` }}
+                            />
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="cpn-usage__num">{c.usedCount} used</span>
+                      )}
+                    </td>
+                    {isFounder && <td>{c.salonId ? 'Salon' : 'Platform'}</td>}
+                    <td>
+                      <span className={`badge ${st.cls}`}>{st.label}</span>
+                    </td>
+                    <td>
+                      <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                        <button type="button" className="btn btn--outline btn--sm" onClick={() => toggle(c)}>
+                          {c.active ? 'Disable' : 'Enable'}
+                        </button>
+                        <button type="button" className="btn btn--outline btn--sm" onClick={() => remove(c)}>
+                          Delete
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         </div>
@@ -195,86 +229,115 @@ export default function Coupons() {
             className="pmodal__box"
             role="dialog"
             aria-modal="true"
+            aria-labelledby="cpn-modal-title"
             onMouseDown={(e) => e.stopPropagation()}
           >
-            <h3 className="pmodal__title">New coupon</h3>
+            <h3 className="pmodal__title" id="cpn-modal-title">
+              New coupon
+            </h3>
 
-            <label className="field">
-              <span className="field__label">Code</span>
-              <input
-                className="field__input"
-                value={form.code}
-                onChange={(e) => {
-                  setForm((f) => ({ ...f, code: e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 24) }))
-                  setErr('')
-                }}
-                placeholder="FIRST100"
-                autoFocus
-              />
-            </label>
-
-            <div className="field">
-              <span className="field__label">Type</span>
-              <div style={{ display: 'flex', gap: 8 }}>
-                {[
-                  { id: 'percent', label: 'Percentage' },
-                  { id: 'flat', label: 'Flat ₹' },
-                ].map((o) => (
-                  <button
-                    key={o.id}
-                    type="button"
-                    className={`btn btn--sm ${form.type === o.id ? 'btn--gold' : 'btn--outline'}`}
-                    onClick={() => setForm((f) => ({ ...f, type: o.id }))}
-                  >
-                    {o.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <label className="field">
-              <span className="field__label">{form.type === 'percent' ? 'Discount %' : 'Amount off (₹)'}</span>
-              <input type="number" min="1" className="field__input" value={form.value} onChange={set('value')} />
-            </label>
-
-            {form.type === 'percent' && (
+            {/* Code & type */}
+            <fieldset className="cpn-section">
+              <legend className="cpn-section__title">Code &amp; type</legend>
               <label className="field">
-                <span className="field__label">Max discount (₹, optional)</span>
+                <span className="field__label">Code</span>
                 <input
-                  type="number"
-                  min="0"
                   className="field__input"
-                  value={form.maxDiscount}
-                  onChange={set('maxDiscount')}
-                  placeholder="No cap"
+                  value={form.code}
+                  onChange={(e) => {
+                    setForm((f) => ({
+                      ...f,
+                      code: e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 24),
+                    }))
+                    setErr('')
+                  }}
+                  placeholder="FIRST100"
+                  autoFocus
                 />
               </label>
-            )}
+              <div className="field">
+                <span className="field__label">Type</span>
+                <div className="cpn-typeToggle">
+                  {[
+                    { id: 'percent', label: 'Percentage' },
+                    { id: 'flat', label: 'Flat ₹' },
+                  ].map((o) => (
+                    <button
+                      key={o.id}
+                      type="button"
+                      className={`btn btn--sm ${form.type === o.id ? 'btn--gold' : 'btn--outline'}`}
+                      onClick={() => setForm((f) => ({ ...f, type: o.id }))}
+                    >
+                      {o.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </fieldset>
 
-            <label className="field">
-              <span className="field__label">Minimum order (₹, optional)</span>
-              <input type="number" min="0" className="field__input" value={form.minOrder} onChange={set('minOrder')} placeholder="0" />
-            </label>
+            {/* Discount */}
+            <fieldset className="cpn-section">
+              <legend className="cpn-section__title">Discount</legend>
+              <div className="cpn-grid">
+                <label className="field">
+                  <span className="field__label">{form.type === 'percent' ? 'Discount %' : 'Amount off (₹)'}</span>
+                  <input type="number" min="1" className="field__input" value={form.value} onChange={set('value')} />
+                </label>
+                {form.type === 'percent' && (
+                  <label className="field">
+                    <span className="field__label">Max discount (₹)</span>
+                    <input
+                      type="number"
+                      min="0"
+                      className="field__input"
+                      value={form.maxDiscount}
+                      onChange={set('maxDiscount')}
+                      placeholder="No cap"
+                    />
+                  </label>
+                )}
+                <label className="field">
+                  <span className="field__label">Minimum order (₹)</span>
+                  <input type="number" min="0" className="field__input" value={form.minOrder} onChange={set('minOrder')} placeholder="0" />
+                </label>
+              </div>
+            </fieldset>
 
-            <label className="field">
-              <span className="field__label">Total usage limit (optional)</span>
-              <input type="number" min="0" className="field__input" value={form.usageLimit} onChange={set('usageLimit')} placeholder="Unlimited" />
-            </label>
+            {/* Limits & validity */}
+            <fieldset className="cpn-section">
+              <legend className="cpn-section__title">Limits &amp; validity</legend>
+              <div className="cpn-grid">
+                <label className="field">
+                  <span className="field__label">Total usage limit</span>
+                  <input type="number" min="0" className="field__input" value={form.usageLimit} onChange={set('usageLimit')} placeholder="Unlimited" />
+                </label>
+                <label className="field">
+                  <span className="field__label">Per-customer limit</span>
+                  <input type="number" min="0" className="field__input" value={form.perUserLimit} onChange={set('perUserLimit')} placeholder="1" />
+                </label>
+                <label className="field">
+                  <span className="field__label">Valid until</span>
+                  <input type="date" className="field__input" value={form.validTo} onChange={set('validTo')} />
+                </label>
+                <label className="field">
+                  <span className="field__label">Description</span>
+                  <input className="field__input" value={form.description} onChange={set('description')} placeholder="New customer offer" maxLength={120} />
+                </label>
+              </div>
+            </fieldset>
 
-            <label className="field">
-              <span className="field__label">Per-customer limit</span>
-              <input type="number" min="0" className="field__input" value={form.perUserLimit} onChange={set('perUserLimit')} placeholder="1" />
-            </label>
-
-            <label className="field">
-              <span className="field__label">Valid until (optional)</span>
-              <input type="date" className="field__input" value={form.validTo} onChange={set('validTo')} />
-            </label>
-
-            <label className="field">
-              <span className="field__label">Description (optional)</span>
-              <input className="field__input" value={form.description} onChange={set('description')} placeholder="e.g. New customer offer" maxLength={120} />
-            </label>
+            {/* Live customer-eye preview */}
+            <div className="cpn-preview">
+              <p className="cpn-preview__label">Customers will see</p>
+              <div className="cpn-preview__row">
+                <span className="cpn-preview__chip">{form.code || 'CODE'}</span>
+                <span className="cpn-preview__terms">{previewValue}</span>
+              </div>
+              <p className="cpn-preview__meta">
+                {form.minOrder ? `Minimum order ${formatINR(Number(form.minOrder))} · ` : ''}
+                Online payments only · doesn’t stack with other offers
+              </p>
+            </div>
 
             {err && <p className="field__error">{err}</p>}
 

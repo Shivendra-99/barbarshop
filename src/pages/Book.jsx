@@ -204,7 +204,7 @@ export default function Book() {
     setCouponBusy(true)
     setCouponMsg(null)
     try {
-      const { coupon: c, applied } = await api.validateCoupon({
+      const { coupon: c, applied, priced: p } = await api.validateCoupon({
         couponCode: code,
         salonId: salon.id,
         serviceIds: selected.map((s) => s.id),
@@ -215,19 +215,23 @@ export default function Book() {
         setCouponMsg({ tone: 'warn', text: t('book.couponInvalid') })
         return
       }
-      setCoupon({
-        code: c.code,
-        type: c.type,
-        value: c.value,
-        maxDiscount: c.maxDiscount,
-        minOrder: c.minOrder,
-      })
-      setCouponInput(c.code)
-      setCouponMsg(
-        applied
-          ? { tone: 'success', text: t('book.couponApplied', { code: c.code }) }
-          : { tone: 'info', text: t('book.couponNotBetter') },
-      )
+      if (applied) {
+        setCoupon({
+          code: c.code,
+          type: c.type,
+          value: c.value,
+          maxDiscount: c.maxDiscount,
+          minOrder: c.minOrder,
+        })
+        setCouponInput(c.code)
+        setCouponMsg(null) // the applied chip below tells the story
+      } else {
+        // Valid, but the customer's existing discount already saves more. Best-of
+        // keeps the bigger one — name it, so the "not applied" is a favour, not a fail.
+        const kept = (p?.offerDiscount || 0) + (p?.discount || 0)
+        setCoupon(null)
+        setCouponMsg({ tone: 'info', text: t('book.couponNotBetter', { amount: formatINR(kept) }) })
+      }
     } catch (err) {
       setCoupon(null)
       setCouponMsg({ tone: 'warn', text: err.message || t('book.couponInvalid') })
@@ -636,32 +640,50 @@ export default function Book() {
 
             {paymentMode === 'online' && (
               <div className="coupon">
-                <div className="coupon__field">
-                  <input
-                    className="coupon__input"
-                    value={couponInput}
-                    onChange={(e) => setCouponInput(e.target.value.toUpperCase().slice(0, 24))}
-                    placeholder={t('book.couponPlaceholder')}
-                    aria-label={t('book.couponPlaceholder')}
-                    disabled={couponBusy || Boolean(coupon)}
-                    onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), applyCoupon())}
-                  />
-                  {coupon ? (
-                    <button type="button" className="btn btn--outline btn--sm" onClick={clearCoupon}>
+                {priced.couponDiscount > 0 ? (
+                  <div className="coupon__applied">
+                    <span className="coupon__chip">
+                      <svg viewBox="0 0 20 20" aria-hidden="true" className="coupon__tick">
+                        <path
+                          d="M4 10.5l3.5 3.5L16 6"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                      {priced.couponCode}
+                    </span>
+                    <span className="coupon__save">
+                      {t('book.couponSave', { amount: formatINR(priced.couponDiscount) })}
+                    </span>
+                    <button type="button" className="coupon__remove" onClick={clearCoupon}>
                       {t('book.couponRemove')}
                     </button>
-                  ) : (
+                  </div>
+                ) : (
+                  <div className="coupon__field">
+                    <input
+                      className="coupon__input"
+                      value={couponInput}
+                      onChange={(e) => setCouponInput(e.target.value.toUpperCase().slice(0, 24))}
+                      placeholder={t('book.couponPlaceholder')}
+                      aria-label={t('book.couponPlaceholder')}
+                      disabled={couponBusy}
+                      onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), applyCoupon())}
+                    />
                     <button
                       type="button"
-                      className="btn btn--gold btn--sm"
+                      className="btn btn--gold btn--sm coupon__apply"
                       onClick={applyCoupon}
                       disabled={couponBusy || couponInput.trim().length < 3}
                     >
                       {couponBusy ? t('book.couponChecking') : t('book.couponApply')}
                     </button>
-                  )}
-                </div>
-                {couponMsg && (
+                  </div>
+                )}
+                {couponMsg && priced.couponDiscount === 0 && (
                   <p className={`coupon__msg coupon__msg--${couponMsg.tone}`}>{couponMsg.text}</p>
                 )}
               </div>
