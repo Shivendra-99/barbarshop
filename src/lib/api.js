@@ -107,6 +107,10 @@ export const api = {
   createPaymentOrder: (draft) => request('/payments/order', { method: 'POST', body: draft }),
   verifyPayment: (body) => request('/payments/verify', { method: 'POST', body }),
 
+  // --- Coupons ---
+  // Preview a coupon against a draft → { priced, applied, coupon }.
+  validateCoupon: (body) => request('/coupons/validate', { method: 'POST', body }),
+
   // --- Bookings ---
   createBooking: (draft) => request('/bookings', { method: 'POST', body: draft }),
   // Slot availability for a salon on a date → { capacity, taken: { [slot]: count } }

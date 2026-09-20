@@ -102,6 +102,12 @@ export default function Book() {
   const [cursor, setCursor] = useState({ year: today.getFullYear(), month: today.getMonth() })
   const [touched, setTouched] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  // Coupon (online only). `coupon` holds the validated {code,type,value,maxDiscount}
+  // so the live preview mirrors the server's best-of math; the server re-validates.
+  const [couponInput, setCouponInput] = useState('')
+  const [coupon, setCoupon] = useState(null)
+  const [couponBusy, setCouponBusy] = useState(false)
+  const [couponMsg, setCouponMsg] = useState(null) // { tone, text }
 
   const selected = services.filter((s) => selectedIds.includes(s.id))
   const servicesTotal = selected.reduce((sum, s) => sum + s.amount, 0)
@@ -159,6 +165,10 @@ export default function Book() {
     isFirstBooking,
     homeServiceFee: homeFee,
     offerPercent: salon?.offerActive ? salon.offerPercent : 0,
+    coupon:
+      paymentMode === 'online' && coupon && servicesTotal >= (coupon.minOrder || 0)
+        ? coupon
+        : null,
   })
 
   // Cash-blocked customer AND no online gateway → they can't pay at all.
@@ -180,6 +190,58 @@ export default function Book() {
   }
   if (!salon) return <Navigate to="/salons" replace />
 
+  const applyCoupon = async () => {
+    const code = couponInput.trim()
+    if (!code || couponBusy) return
+    if (paymentMode !== 'online') {
+      setCouponMsg({ tone: 'warn', text: t('book.couponOnlineOnly') })
+      return
+    }
+    if (selected.length === 0) {
+      setCouponMsg({ tone: 'warn', text: t('book.couponPickService') })
+      return
+    }
+    setCouponBusy(true)
+    setCouponMsg(null)
+    try {
+      const { coupon: c, applied } = await api.validateCoupon({
+        couponCode: code,
+        salonId: salon.id,
+        serviceIds: selected.map((s) => s.id),
+        mode,
+      })
+      if (!c) {
+        setCoupon(null)
+        setCouponMsg({ tone: 'warn', text: t('book.couponInvalid') })
+        return
+      }
+      setCoupon({
+        code: c.code,
+        type: c.type,
+        value: c.value,
+        maxDiscount: c.maxDiscount,
+        minOrder: c.minOrder,
+      })
+      setCouponInput(c.code)
+      setCouponMsg(
+        applied
+          ? { tone: 'success', text: t('book.couponApplied', { code: c.code }) }
+          : { tone: 'info', text: t('book.couponNotBetter') },
+      )
+    } catch (err) {
+      setCoupon(null)
+      setCouponMsg({ tone: 'warn', text: err.message || t('book.couponInvalid') })
+    } finally {
+      setCouponBusy(false)
+    }
+  }
+
+  const clearCoupon = () => {
+    setCoupon(null)
+    setCouponInput('')
+    setCouponMsg(null)
+  }
+
   const confirm = async () => {
     setTouched(true)
     if (!ready || submitting) return
@@ -196,6 +258,8 @@ export default function Book() {
       dateLabel: formatDateLabel(date),
       slot,
       paymentMode,
+      // Only online bookings honour a coupon; the server re-validates it.
+      couponCode: paymentMode === 'online' && coupon ? coupon.code : undefined,
     }
 
     setSubmitting(true)
@@ -561,6 +625,45 @@ export default function Book() {
               <div className="summary__row summary__row--save">
                 <span>{t('book.firstDiscount')}</span>
                 <span className="summary__val money">−{formatINR(priced.discount)}</span>
+              </div>
+            )}
+            {priced.couponDiscount > 0 && (
+              <div className="summary__row summary__row--save">
+                <span>{t('book.couponRow', { code: priced.couponCode })}</span>
+                <span className="summary__val money">−{formatINR(priced.couponDiscount)}</span>
+              </div>
+            )}
+
+            {paymentMode === 'online' && (
+              <div className="coupon">
+                <div className="coupon__field">
+                  <input
+                    className="coupon__input"
+                    value={couponInput}
+                    onChange={(e) => setCouponInput(e.target.value.toUpperCase().slice(0, 24))}
+                    placeholder={t('book.couponPlaceholder')}
+                    aria-label={t('book.couponPlaceholder')}
+                    disabled={couponBusy || Boolean(coupon)}
+                    onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), applyCoupon())}
+                  />
+                  {coupon ? (
+                    <button type="button" className="btn btn--outline btn--sm" onClick={clearCoupon}>
+                      {t('book.couponRemove')}
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      className="btn btn--gold btn--sm"
+                      onClick={applyCoupon}
+                      disabled={couponBusy || couponInput.trim().length < 3}
+                    >
+                      {couponBusy ? t('book.couponChecking') : t('book.couponApply')}
+                    </button>
+                  )}
+                </div>
+                {couponMsg && (
+                  <p className={`coupon__msg coupon__msg--${couponMsg.tone}`}>{couponMsg.text}</p>
+                )}
               </div>
             )}
 

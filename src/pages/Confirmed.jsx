@@ -135,6 +135,12 @@ export default function Confirmed() {
                 <dd className="money">−{formatINR(booking.discount)}</dd>
               </div>
             )}
+            {booking.couponDiscount > 0 && (
+              <div className="done__row done__row--save">
+                <dt>{t('book.couponRow', { code: booking.couponCode })}</dt>
+                <dd className="money">−{formatINR(booking.couponDiscount)}</dd>
+              </div>
+            )}
             <div className="done__row done__row--total">
               <dt>{booking.paymentMode === 'online' ? t('done.paid') : t('done.dueAtSalon')}</dt>
               <dd className="money">{formatINR(booking.total)}</dd>

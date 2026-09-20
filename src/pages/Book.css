@@ -534,6 +534,43 @@
   margin: 4px 0;
 }
 
+/* Coupon field inside the booking summary. */
+.coupon {
+  margin-top: 10px;
+}
+.coupon__field {
+  display: flex;
+  gap: 8px;
+}
+.coupon__input {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  color: var(--heading);
+  font-size: 14px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.coupon__input:disabled {
+  opacity: 0.7;
+}
+.coupon__msg {
+  margin: 8px 0 0;
+  font-size: 13px;
+}
+.coupon__msg--success {
+  color: var(--green);
+}
+.coupon__msg--info {
+  color: var(--muted-2);
+}
+.coupon__msg--warn {
+  color: var(--red);
+}
+
 .summary__total {
   display: flex;
   justify-content: space-between;

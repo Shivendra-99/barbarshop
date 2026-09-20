@@ -32,8 +32,23 @@ router.post(
   asyncHandler(async (req, res) => {
     // Coupons are online-only, so price as online. priceBookingDraft throws with
     // a clear message if the code is invalid; otherwise quote() decides best-of.
-    const { priced } = await priceBookingDraft(req.user, { ...req.body, paymentMode: 'online' })
-    res.json({ priced, applied: priced.couponDiscount > 0 })
+    const { priced, coupon } = await priceBookingDraft(req.user, {
+      ...req.body,
+      paymentMode: 'online',
+    })
+    res.json({
+      priced,
+      applied: priced.couponDiscount > 0,
+      coupon: coupon
+        ? {
+            code: coupon.code,
+            type: coupon.type,
+            value: coupon.value,
+            maxDiscount: coupon.maxDiscount,
+            minOrder: coupon.minOrder,
+          }
+        : null,
+    })
   }),
 )
 
