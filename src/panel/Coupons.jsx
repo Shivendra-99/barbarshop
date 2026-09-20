@@ -54,7 +54,10 @@ export default function Coupons() {
       .then((r) => setCoupons(r.coupons))
       .catch(() => setCoupons([]))
       .finally(() => setLoaded(true))
-  useEffect(load, [])
+  // Don't return load()'s Promise to useEffect — it expects a cleanup fn or nothing.
+  useEffect(() => {
+    load()
+  }, [])
 
   const set = (k) => (e) => {
     setForm((f) => ({ ...f, [k]: e.target.value }))
