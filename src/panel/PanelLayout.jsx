@@ -15,6 +15,7 @@ const NAV = {
       { to: '/admin/salons/new', label: 'Add salon', icon: 'plus', end: true },
       { to: '/admin/owners', label: 'Owners', icon: 'users' },
       { to: '/admin/bookings', label: 'Bookings', icon: 'calendar' },
+      { to: '/admin/coupons', label: 'Coupons', icon: 'tag' },
     ],
   },
   owner: {
@@ -24,6 +25,7 @@ const NAV = {
       { to: '/owner/add', label: 'Add salon', icon: 'plus' },
       { to: '/owner/services', label: 'Services', icon: 'store' },
       { to: '/owner/bookings', label: 'Bookings', icon: 'calendar' },
+      { to: '/owner/coupons', label: 'Coupons', icon: 'tag' },
       { to: '/owner/wallet', label: 'Wallet', icon: 'wallet' },
       { to: '/owner/profile', label: 'My Profile', icon: 'user' },
     ],
@@ -40,6 +42,7 @@ const ICONS = {
   wallet:
     'M3 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM3 9h18M16 13h2',
   user: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM5 20a7 7 0 0 1 14 0',
+  tag: 'M3 12V4a1 1 0 0 1 1-1h8l8 8-9 9-8-8ZM7.5 7.5h.01',
 }
 
 function Icon({ name }) {

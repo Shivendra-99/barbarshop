@@ -29,6 +29,7 @@ import OwnerServices from './panel/OwnerServices'
 import OwnerBookings from './panel/OwnerBookings'
 import OwnerWallet from './panel/OwnerWallet'
 import OwnerProfile from './panel/OwnerProfile'
+import Coupons from './panel/Coupons'
 
 export default function App() {
   return (
@@ -106,6 +107,7 @@ export default function App() {
           <Route path="salons/new" element={<OwnerAddSalon asFounder />} />
           <Route path="owners" element={<FounderOwners />} />
           <Route path="bookings" element={<FounderBookings />} />
+          <Route path="coupons" element={<Coupons />} />
         </Route>
 
         {/* ---------------- Owner dashboard ---------------- */}
@@ -121,6 +123,7 @@ export default function App() {
           <Route path="add" element={<OwnerAddSalon />} />
           <Route path="services" element={<OwnerServices />} />
           <Route path="bookings" element={<OwnerBookings />} />
+          <Route path="coupons" element={<Coupons />} />
           <Route path="wallet" element={<OwnerWallet />} />
           <Route path="profile" element={<OwnerProfile />} />
         </Route>

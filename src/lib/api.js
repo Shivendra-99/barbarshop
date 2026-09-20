@@ -110,6 +110,11 @@ export const api = {
   // --- Coupons ---
   // Preview a coupon against a draft → { priced, applied, coupon }.
   validateCoupon: (body) => request('/coupons/validate', { method: 'POST', body }),
+  // Owner/founder coupon management.
+  coupons: () => request('/coupons'),
+  createCoupon: (body) => request('/coupons', { method: 'POST', body }),
+  updateCoupon: (id, body) => request(`/coupons/${id}`, { method: 'PATCH', body }),
+  deleteCoupon: (id) => request(`/coupons/${id}`, { method: 'DELETE' }),
 
   // --- Bookings ---
   createBooking: (draft) => request('/bookings', { method: 'POST', body: draft }),
