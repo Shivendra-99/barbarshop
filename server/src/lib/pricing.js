@@ -12,30 +12,73 @@ export const ONLINE_PAYEE = 'founder'
 export const OFFLINE_PAYEE = 'salon'
 
 /**
- * Quotes a booking. The 10% discount applies only when paying online AND the
- * customer has never booked before.
+ * Discount a coupon would give on a services subtotal. `coupon` is an
+ * already-validated { type, value, maxDiscount }. Capped so it can never exceed
+ * the subtotal (or the coupon's maxDiscount, for percent coupons).
  */
-export function quote({ amount, paymentMode, isFirstBooking, homeServiceFee = 0, offerPercent = 0 }) {
-  // Salon offer comes off the service subtotal first.
+export function couponDiscount(coupon, subtotal) {
+  if (!coupon || !(subtotal > 0)) return 0
+  if (coupon.type === 'percent') {
+    let d = Math.round((subtotal * coupon.value) / 100)
+    if (coupon.maxDiscount > 0) d = Math.min(d, coupon.maxDiscount)
+    return Math.min(d, subtotal)
+  }
+  return Math.min(Math.round(coupon.value), subtotal) // flat
+}
+
+/**
+ * Quotes a booking. Automatic discounts are the salon offer (off the subtotal)
+ * then the first-booking 10% (online + never-booked). A coupon (online only)
+ * does NOT stack: it competes with those, and the booking takes whichever single
+ * path saves the customer more (coupon only wins when strictly greater, so the
+ * automatic discounts stay the default). `coupon` is a validated object or null.
+ */
+export function quote({
+  amount,
+  paymentMode,
+  isFirstBooking,
+  homeServiceFee = 0,
+  offerPercent = 0,
+  coupon = null,
+}) {
+  const online = paymentMode === 'online'
+  const homeFee = homeServiceFee || 0
+
+  // Path A — automatic: salon offer, then first-booking 10% on the remainder.
   const pct = Math.max(0, Math.min(50, Math.round(offerPercent || 0)))
   const offerDiscount = pct > 0 ? Math.round((amount * pct) / 100) : 0
-  const base = amount - offerDiscount + (homeServiceFee || 0)
-  const discountEligible = paymentMode === 'online' && Boolean(isFirstBooking)
-  const discount = discountEligible ? Math.round(base * FIRST_BOOKING_DISCOUNT_RATE) : 0
-  const total = base - discount
+  const discountEligible = online && Boolean(isFirstBooking)
+  const firstBookingDiscount = discountEligible
+    ? Math.round((amount - offerDiscount) * FIRST_BOOKING_DISCOUNT_RATE)
+    : 0
+  const autoDiscount = offerDiscount + firstBookingDiscount
+
+  // Path B — coupon alone (online only), off the services subtotal.
+  const couponAmount = online ? couponDiscount(coupon, amount) : 0
+
+  // Best-of: coupon wins only when it beats the automatic discounts.
+  const useCoupon = couponAmount > autoDiscount
+  const appliedOffer = useCoupon ? 0 : offerDiscount
+  const appliedFirst = useCoupon ? 0 : firstBookingDiscount
+  const appliedCoupon = useCoupon ? couponAmount : 0
+
+  const base = amount - appliedOffer + homeFee
+  const total = base - appliedFirst - appliedCoupon
   const commission = Math.round(total * COMMISSION_RATE)
 
   return {
     base,
-    offerPercent: pct,
-    offerDiscount,
-    discount,
-    discountEligible,
+    offerPercent: useCoupon ? 0 : pct,
+    offerDiscount: appliedOffer,
+    discount: appliedFirst,
+    discountEligible: discountEligible && !useCoupon,
+    couponCode: useCoupon ? coupon?.code ?? null : null,
+    couponDiscount: appliedCoupon,
     total,
     commission,
     salonPayout: total - commission,
-    payee: paymentMode === 'online' ? ONLINE_PAYEE : OFFLINE_PAYEE,
-    dueAtSalon: paymentMode === 'offline' ? total : 0,
+    payee: online ? ONLINE_PAYEE : OFFLINE_PAYEE,
+    dueAtSalon: online ? 0 : total,
   }
 }
 

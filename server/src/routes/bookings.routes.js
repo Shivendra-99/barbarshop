@@ -7,6 +7,7 @@ import { Service } from '../models/Service.js'
 import { User } from '../models/User.js'
 import { WalletTxn } from '../models/WalletTxn.js'
 import { quote, refundFor, noShowRefund, ownerCancelRefund } from '../lib/pricing.js'
+import { resolveCoupon, couponForQuote, redeemCoupon } from '../lib/coupons.js'
 import { validate } from '../middleware/validate.js'
 import { requireAuth, requireRole } from '../middleware/auth.js'
 import { asyncHandler, ApiError } from '../middleware/error.js'
@@ -72,6 +73,8 @@ export const createSchema = z
     dateLabel: z.string().optional(),
     slot: z.string().min(1),
     paymentMode: z.enum(['online', 'offline']),
+    // Optional discount code — only honoured for online bookings.
+    couponCode: z.string().trim().max(24).optional(),
   })
   .refine((b) => b.serviceId || (b.serviceIds && b.serviceIds.length), {
     message: 'Choose at least one service.',
@@ -224,22 +227,34 @@ export async function priceBookingDraft(user, body) {
 
   const homeServiceFee = body.mode === 'home' ? salon.homeServiceFee : 0
   const offerPercent = salon.offerActive ? salon.offerPercent || 0 : 0
+
+  // Coupons apply to online bookings only. resolveCoupon throws on an invalid
+  // code; quote() then decides best-of (coupon vs the automatic discounts).
+  let coupon = null
+  if (body.couponCode && body.paymentMode === 'online') {
+    coupon = await resolveCoupon({
+      code: body.couponCode,
+      salonId: salon._id,
+      user,
+      subtotal: servicesTotal,
+    })
+  }
+
   const priced = quote({
     amount: servicesTotal,
     paymentMode: body.paymentMode,
     isFirstBooking,
     homeServiceFee,
     offerPercent,
+    coupon: couponForQuote(coupon),
   })
 
-  return { salon, services, primary: services[0], items, serviceName, priced, homeServiceFee }
+  return { salon, services, primary: services[0], items, serviceName, priced, homeServiceFee, coupon }
 }
 
 export async function createBookingRecord(user, body, payment = {}) {
-  const { salon, primary, items, serviceName, priced, homeServiceFee } = await priceBookingDraft(
-    user,
-    body,
-  )
+  const { salon, primary, items, serviceName, priced, homeServiceFee, coupon } =
+    await priceBookingDraft(user, body)
 
   // Geo reference for a home address: eLoc from the pick + lat/lng if the
   // geocoder can resolve them (null otherwise; never blocks the booking).
@@ -286,6 +301,17 @@ export async function createBookingRecord(user, body, payment = {}) {
     },
     salon,
   )
+
+  // Consume the coupon (once per booking) only when it actually applied.
+  if (priced.couponDiscount > 0) {
+    await redeemCoupon({
+      coupon,
+      user,
+      booking,
+      code: priced.couponCode,
+      discount: priced.couponDiscount,
+    })
+  }
 
   // One booking event → three inboxes (customer, owner, founder).
   await notify([
