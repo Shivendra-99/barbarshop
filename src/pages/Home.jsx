@@ -9,6 +9,7 @@ import { IMG_MENS_INTERIOR, IMG_UNISEX, IMG_PARLOUR } from '../assets'
 import { formatINR } from '../lib/money'
 import { distanceKm, salonDistance } from '../lib/geo'
 import './Home.css'
+import { useSeo } from '../lib/seo'
 
 const CARD_IMAGES = {
   mens: IMG_MENS_INTERIOR,
@@ -60,6 +61,7 @@ function SalonCard({ salon, dist, index, onOpen, t }) {
 }
 
 export default function Home() {
+  useSeo({ path: '/' })
   const navigate = useNavigate()
   const { publicSalons, isFirstBooking, isSignedIn, settings } = useApp()
   const { city, setCategory, coords, detectLocation, detecting } = usePrefs()

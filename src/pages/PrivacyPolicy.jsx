@@ -1,6 +1,8 @@
 import './Simple.css'
+import { useSeo } from '../lib/seo'
 
 export default function PrivacyPolicy() {
+  useSeo({ title: 'Privacy Policy', description: 'How SalonSaathi collects, uses and protects your personal information.', path: '/privacy-policy' })
   return (
     <div className="shell shell--narrow simple legal">
       <h1 className="display simple__title">Privacy Policy</h1>

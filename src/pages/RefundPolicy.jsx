@@ -1,6 +1,8 @@
 import './Simple.css'
+import { useSeo } from '../lib/seo'
 
 export default function RefundPolicy() {
+  useSeo({ title: 'Cancellation & Refund Policy', description: 'Cancellation fees, refund timelines and no-show rules for SalonSaathi bookings.', path: '/refund-policy' })
   return (
     <div className="shell shell--narrow simple legal">
       <h1 className="display simple__title">Cancellation &amp; Refund Policy</h1>

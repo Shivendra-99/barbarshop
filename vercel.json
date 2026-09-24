@@ -4,6 +4,10 @@
       "source": "/api/(.*)",
       "destination": "https://server-eta-eight-74.vercel.app/api/$1"
     },
+    {
+      "source": "/sitemap.xml",
+      "destination": "https://server-eta-eight-74.vercel.app/api/sitemap.xml"
+    },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }

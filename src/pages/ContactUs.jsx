@@ -1,7 +1,9 @@
 import { SUPPORT } from '../data/seed'
 import './Simple.css'
+import { useSeo } from '../lib/seo'
 
 export default function ContactUs() {
+  useSeo({ title: 'Contact Us', description: 'Get in touch with SalonSaathi support by phone, email or WhatsApp.', path: '/contact-us' })
   return (
     <div className="shell shell--narrow simple legal">
       <h1 className="display simple__title">Contact Us</h1>

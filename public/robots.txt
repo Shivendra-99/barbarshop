@@ -1,6 +1,13 @@
 User-agent: *
 Allow: /
-Disallow: /panel
+# Signed-in areas: nothing useful for search, and they redirect to login.
+Disallow: /admin
+Disallow: /owner
 Disallow: /login
+Disallow: /book/
+Disallow: /confirmed/
+Disallow: /appointments
+Disallow: /wallet
+Disallow: /account
 
 Sitemap: https://www.salonsaathi.in/sitemap.xml

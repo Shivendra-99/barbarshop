@@ -2,11 +2,47 @@ import { useEffect, useMemo, useState } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { useApp } from '../store/AppStore'
 import { useT } from '../lib/i18n'
-import { categoryById } from '../data/seed'
+import { categoryById, cityById } from '../data/seed'
+import { useSeo, SITE } from '../lib/seo'
 import { api } from '../lib/api'
 import { formatINR } from '../lib/money'
 import { formatTime12 } from '../lib/datetime'
 import './Salon.css'
+
+const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+
+/** schema.org LocalBusiness for a salon page (what Google shows in local results). */
+function salonJsonLd(s, cityLabel, fromPrice) {
+  const img = typeof s.img === 'string' && !s.img.startsWith('data:') ? s.img : null
+  return {
+    '@context': 'https://schema.org',
+    '@type': s.category === 'parlour' ? 'BeautySalon' : 'HairSalon',
+    name: s.name,
+    url: `${SITE}/salon/${s.id}`,
+    ...(img ? { image: img.startsWith('http') ? img : `${SITE}${img}` } : {}),
+    ...(s.phone ? { telephone: `+91${s.phone}` } : {}),
+    address: {
+      '@type': 'PostalAddress',
+      streetAddress: s.address,
+      addressLocality: cityLabel,
+      ...(s.state ? { addressRegion: s.state } : {}),
+      ...(s.pin ? { postalCode: s.pin } : {}),
+      addressCountry: 'IN',
+    },
+    ...(s.location?.lat != null
+      ? { geo: { '@type': 'GeoCoordinates', latitude: s.location.lat, longitude: s.location.lng } }
+      : {}),
+    ...(fromPrice ? { priceRange: `From ₹${fromPrice}` } : {}),
+    openingHoursSpecification: [
+      {
+        '@type': 'OpeningHoursSpecification',
+        dayOfWeek: DAYS.filter((_, i) => !(s.daysOff || []).includes(i)),
+        opens: s.opens,
+        closes: s.closes,
+      },
+    ],
+  }
+}
 
 const TABS = [
   { key: 'services', labelKey: 'salon.tabServices' },
@@ -44,6 +80,20 @@ export default function Salon() {
   const fromPrice = useMemo(
     () => (services.length ? Math.min(...services.map((s) => s.amount)) : salon?.from ?? 0),
     [services, salon],
+  )
+
+  // Search: a unique title/description per salon + LocalBusiness data. No
+  // review stars in the markup — only ratings we can stand behind belong there.
+  const cityLabel = salon ? salon.district || cityById(salon.city)?.label || salon.city : ''
+  useSeo(
+    salon
+      ? {
+          title: `${salon.name}, ${salon.area}, ${cityLabel} — Book appointment`,
+          description: `Book ${categoryById(salon.category)?.label?.toLowerCase() || 'salon'} services at ${salon.name}, ${salon.area}, ${cityLabel}. From ${formatINR(fromPrice)}. Pick a slot online and skip the wait.`,
+          path: `/salon/${salon.id}`,
+          jsonLd: salonJsonLd(salon, cityLabel, fromPrice),
+        }
+      : { noindex: true },
   )
 
   // Wait for the salon list before deciding — a direct link lands here before

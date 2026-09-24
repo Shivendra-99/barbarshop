@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom'
+import { useNoIndex } from '../lib/seo'
 
 export default function NotFound() {
+  useNoIndex('Page not found')
   return (
     <div
       style={{

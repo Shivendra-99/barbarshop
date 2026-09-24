@@ -3,8 +3,10 @@ import { COMMISSION_RATE, FIRST_BOOKING_DISCOUNT_RATE } from '../lib/pricing'
 import { useT } from '../lib/i18n'
 import SupportChat from '../components/SupportChat'
 import './Simple.css'
+import { useSeo } from '../lib/seo'
 
 export default function Help() {
+  useSeo({ title: 'Help & FAQs', description: 'Answers about booking, payments, cancellations and refunds on SalonSaathi.', path: '/help' })
   const t = useT()
 
   const howItPays = [

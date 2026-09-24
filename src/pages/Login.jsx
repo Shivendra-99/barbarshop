@@ -14,6 +14,7 @@ import {
 } from '../lib/msg91Widget'
 import LogoMark from '../components/LogoMark'
 import './Login.css'
+import { useNoIndex } from '../lib/seo'
 
 const WIDGET = widgetConfigured()
 
@@ -72,6 +73,7 @@ const lockedText = (mins) =>
   `Login locked after ${LOCK_MAX_FAILS} wrong codes. Try again in ${mins} min.`
 
 export default function Login() {
+  useNoIndex('Login')
   const navigate = useNavigate()
   const [params] = useSearchParams()
   const location = useLocation()

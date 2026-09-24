@@ -1,7 +1,9 @@
 import { Link } from 'react-router-dom'
 import './Simple.css'
+import { useSeo } from '../lib/seo'
 
 export default function AboutUs() {
+  useSeo({ title: 'About Us', description: 'SalonSaathi helps you discover and book trusted salons and beauty parlours near you — at the salon or at home.', path: '/about-us' })
   return (
     <div className="shell shell--narrow simple legal">
       <h1 className="display simple__title">About Us</h1>

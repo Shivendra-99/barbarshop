@@ -1,6 +1,8 @@
 import './Simple.css'
+import { useSeo } from '../lib/seo'
 
 export default function Terms() {
+  useSeo({ title: 'Terms & Conditions', description: 'The terms for using SalonSaathi to discover and book salon services.', path: '/terms-and-conditions' })
   return (
     <div className="shell shell--narrow simple legal">
       <h1 className="display simple__title">Terms &amp; Conditions</h1>

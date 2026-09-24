@@ -1,5 +1,6 @@
 import { Navigate, useLocation } from 'react-router-dom'
 import { useApp } from '../store/AppStore'
+import { useNoIndex } from '../lib/seo'
 
 /**
  * Gates a route behind a session. Waits for the initial session-restore to
@@ -9,6 +10,8 @@ import { useApp } from '../store/AppStore'
 export default function Protected({ children, role }) {
   const { ready, isSignedIn, role: currentRole } = useApp()
   const location = useLocation()
+  // Everything behind sign-in (bookings, account, panels) stays out of search.
+  useNoIndex()
 
   if (!ready) {
     return (

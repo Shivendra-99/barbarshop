@@ -8,6 +8,7 @@ import { CATEGORIES } from '../data/seed'
 import { formatINR } from '../lib/money'
 import { distanceKm, salonDistance } from '../lib/geo'
 import './Salons.css'
+import { useSeo } from '../lib/seo'
 
 const SORTS = [
   { id: 'rating', key: 'salons.sortRating' },
@@ -25,6 +26,11 @@ export default function Salons() {
   const navigate = useNavigate()
   const { publicSalons, settings } = useApp()
   const { city, category, setCategory, coords, detectLocation } = usePrefs()
+  useSeo({
+    title: `Salons in ${city.label} — Book online`,
+    description: `Book the best men's salons, unisex salons and beauty parlours in ${city.label}. See prices, pick a slot and skip the wait.`,
+    path: '/salons',
+  })
   const t = useT()
   const [mode, setMode] = useState('all')
   const [sort, setSort] = useState('rating')
