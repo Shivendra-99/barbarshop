@@ -3,6 +3,7 @@ import { useApp } from '../store/AppStore'
 import { useT } from '../lib/i18n'
 import { formatINR } from '../lib/money'
 import { formatTime12 } from '../lib/datetime'
+import { directionsUrl } from '../lib/maps'
 import './Confirmed.css'
 
 export default function Confirmed() {
@@ -16,6 +17,11 @@ export default function Confirmed() {
   const salon = publicSalons.find((s) => s.id === booking.salonId)
   // Live salon number wins; fall back to the snapshot saved on the booking.
   const salonPhone = salon?.phone || booking.salonPhone || ''
+  // Directions only make sense when the customer goes to the salon.
+  const mapsUrl =
+    booking.mode === 'home'
+      ? null
+      : directionsUrl({ name: salon?.name || booking.salonName, address: salon?.address, location: salon?.location })
 
   const items = booking.items ?? []
   // A real Razorpay payment carries a paymentId; the demo online flow doesn't.
@@ -152,6 +158,16 @@ export default function Confirmed() {
           <Link to="/appointments" className="btn btn--gold done__action">
             {t('nav.mybookings')}
           </Link>
+          {mapsUrl && (
+            <a
+              href={mapsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn btn--outline done__action"
+            >
+              {t('done.directions')}
+            </a>
+          )}
           {salonPhone && (
             <a
               href={`https://wa.me/91${salonPhone.replace(/\D/g, '').slice(-10)}?text=${encodeURIComponent(

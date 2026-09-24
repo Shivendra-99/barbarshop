@@ -7,6 +7,7 @@ import RescheduleDialog from '../components/RescheduleDialog'
 import RatingDialog from '../components/RatingDialog'
 import QueueBadge from '../components/QueueBadge'
 import { formatINR } from '../lib/money'
+import { directionsUrl } from '../lib/maps'
 import { REFUND_METHODS, refundFor, noShowRefund, slotStartMs } from '../lib/pricing'
 import { fromISO, startOfToday, toISO, formatTime12, toMins } from '../lib/datetime'
 import './Appointments.css'
@@ -220,7 +221,8 @@ function NoShowRefundDialog({ booking, onClose, onConfirm }) {
    ------------------------------------------------------------------ */
 
 export default function Appointments() {
-  const { myBookings, cancelBooking, resolveNoShowRefund, rescheduleBooking, rateBooking } = useApp()
+  const { myBookings, cancelBooking, resolveNoShowRefund, rescheduleBooking, rateBooking, findSalon } =
+    useApp()
   const { push } = useToast()
   const t = useT()
   const [tab, setTab] = useState('Upcoming')
@@ -374,6 +376,16 @@ export default function Appointments() {
         <ul className="appts__list">
           {rows.map((b) => {
             const cancelled = b.status === 'cancelled'
+            // Directions for an upcoming at-salon visit (not home service).
+            const salonInfo = findSalon(b.salonId)
+            const dirUrl =
+              b.status === 'confirmed' && b.mode !== 'home'
+                ? directionsUrl({
+                    name: salonInfo?.name || b.salonName,
+                    address: salonInfo?.address,
+                    location: salonInfo?.location,
+                  })
+                : null
             return (
               <li key={b.id} className={`appt${cancelled ? ' is-cancelled' : ''}`}>
                 <div className="appt__date">
@@ -431,17 +443,34 @@ export default function Appointments() {
                       )}
                     </div>
                   )}
-                  {!cancelled && b.salonPhone && (
-                    <a className="appt__call" href={`tel:+91${b.salonPhone}`}>
-                      <svg viewBox="0 0 24 24" aria-hidden="true" width="14" height="14">
-                        <path
-                          fill="currentColor"
-                          d="M6.6 10.8a15.5 15.5 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.24 11.4 11.4 0 0 0 3.6.58 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1 11.4 11.4 0 0 0 .58 3.6 1 1 0 0 1-.24 1Z"
-                        />
-                      </svg>
-                      {t('appt.callSalon')}
-                    </a>
-                  )}
+                  <div className="appt__links">
+                    {!cancelled && b.salonPhone && (
+                      <a className="appt__call" href={`tel:+91${b.salonPhone}`}>
+                        <svg viewBox="0 0 24 24" aria-hidden="true" width="14" height="14">
+                          <path
+                            fill="currentColor"
+                            d="M6.6 10.8a15.5 15.5 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.24 11.4 11.4 0 0 0 3.6.58 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1 11.4 11.4 0 0 0 .58 3.6 1 1 0 0 1-.24 1Z"
+                          />
+                        </svg>
+                        {t('appt.callSalon')}
+                      </a>
+                    )}
+                    {dirUrl && (
+                      <a className="appt__call" href={dirUrl} target="_blank" rel="noopener noreferrer">
+                        <svg viewBox="0 0 24 24" aria-hidden="true" width="14" height="14">
+                          <path
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21ZM12 12a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z"
+                          />
+                        </svg>
+                        {t('appt.directions')}
+                      </a>
+                    )}
+                  </div>
                   {b.address && <div className="appt__addr">{b.address}</div>}
                   {cancelled && b.cancelledBy === 'owner' && (
                     <div className="appt__meta">

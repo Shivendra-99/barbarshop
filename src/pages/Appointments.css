@@ -138,6 +138,15 @@
   background: var(--gold-wash);
 }
 
+.appt__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.appt__links:empty {
+  display: none;
+}
+
 .appt__items {
   list-style: none;
   margin: 2px 0 0;

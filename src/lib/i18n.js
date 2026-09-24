@@ -292,6 +292,7 @@ const EN = {
   'done.paymentId': 'Payment ID',
   'done.dueAtSalon': 'Due at salon',
   'done.bookAnother': 'Book another',
+  'done.directions': 'Get directions',
   'done.fine': 'Free cancellation up to 2 hours before your slot. Refunds go to your wallet instantly or back to UPI in 5–7 working days.',
 
   // --- Appointments (My bookings) ---
@@ -310,6 +311,7 @@ const EN = {
   'appt.otpShow': 'Show service OTP',
   'appt.otpHide': 'Hide',
   'appt.callSalon': 'Call salon',
+  'appt.directions': 'Directions',
   'appt.refundedTo': '{amount} refunded to {method}',
   'appt.completed': 'Completed',
   'appt.processing': 'Processing',
@@ -704,6 +706,7 @@ const HI = {
   'done.paymentId': 'पेमेंट ID',
   'done.dueAtSalon': 'सैलून पर देय',
   'done.bookAnother': 'दूसरी बुकिंग करें',
+  'done.directions': 'रास्ता देखें',
   'done.fine': 'स्लॉट से 2 घंटे पहले तक मुफ़्त कैंसिलेशन। रिफंड तुरंत आपके वॉलेट में या 5–7 कार्यदिवस में UPI पर वापस।',
 
   // --- Appointments (My bookings) ---
@@ -722,6 +725,7 @@ const HI = {
   'appt.otpShow': 'सर्विस OTP देखें',
   'appt.otpHide': 'छुपाएं',
   'appt.callSalon': 'सैलून को कॉल करें',
+  'appt.directions': 'रास्ता',
   'appt.refundedTo': '{amount} {method} में रिफंड',
   'appt.completed': 'पूर्ण',
   'appt.processing': 'प्रोसेस हो रहा',
