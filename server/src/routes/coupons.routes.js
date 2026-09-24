@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import { z } from 'zod'
 import { Coupon } from '../models/Coupon.js'
+import { CouponRedemption } from '../models/CouponRedemption.js'
 import { Salon } from '../models/Salon.js'
 import { priceBookingDraft } from './bookings.routes.js'
 import { validate } from '../middleware/validate.js'
@@ -51,6 +52,55 @@ router.post(
     })
   }),
 )
+
+/* ---- Customer: coupons usable at a salon right now ---- */
+
+router.get(
+  '/available',
+  requireAuth,
+  requireRole('customer'),
+  asyncHandler(async (req, res) => {
+    const salonId = String(req.query.salonId || '')
+    const now = new Date()
+    const scope = /^[a-f0-9]{24}$/i.test(salonId)
+      ? [{ salon: null }, { salon: salonId }]
+      : [{ salon: null }]
+    const found = await Coupon.find({
+      active: true,
+      $and: [
+        { $or: scope },
+        { $or: [{ validFrom: null }, { validFrom: { $lte: now } }] },
+        { $or: [{ validTo: null }, { validTo: { $gte: now } }] },
+      ],
+    })
+      .sort({ createdAt: -1 })
+      .limit(20)
+
+    // Drop exhausted codes and ones this customer has already used up.
+    const mine = await CouponRedemption.find(
+      { user: req.user._id, coupon: { $in: found.map((c) => c._id) } },
+      { coupon: 1 },
+    )
+    const usedByMe = new Map()
+    for (const r of mine) usedByMe.set(String(r.coupon), (usedByMe.get(String(r.coupon)) || 0) + 1)
+
+    const coupons = found
+      .filter((c) => !(c.usageLimit > 0 && c.usedCount >= c.usageLimit))
+      .filter((c) => !(c.perUserLimit > 0 && (usedByMe.get(String(c._id)) || 0) >= c.perUserLimit))
+      .map((c) => ({
+        code: c.code,
+        description: c.description,
+        type: c.type,
+        value: c.value,
+        maxDiscount: c.maxDiscount,
+        minOrder: c.minOrder,
+      }))
+    res.json({ coupons })
+  }),
+)
+
+/** "Valid until 30 Sep" means through the end of 30 Sep in India, not its first second in UTC. */
+const endOfDayIST = (ymd) => (ymd ? new Date(`${String(ymd).slice(0, 10)}T23:59:59.999+05:30`) : null)
 
 /* ---- Owner / founder: manage coupons ---- */
 
@@ -128,7 +178,7 @@ router.post(
       usageLimit: b.usageLimit || 0,
       perUserLimit: b.perUserLimit ?? 1,
       validFrom: b.validFrom ? new Date(b.validFrom) : null,
-      validTo: b.validTo ? new Date(b.validTo) : null,
+      validTo: endOfDayIST(b.validTo),
     })
     res.status(201).json({ coupon: coupon.toPublic() })
   }),
@@ -173,7 +223,7 @@ router.patch(
     if (b.description !== undefined) coupon.description = b.description
     if (b.usageLimit !== undefined) coupon.usageLimit = b.usageLimit
     if (b.perUserLimit !== undefined) coupon.perUserLimit = b.perUserLimit
-    if (b.validTo !== undefined) coupon.validTo = b.validTo ? new Date(b.validTo) : null
+    if (b.validTo !== undefined) coupon.validTo = endOfDayIST(b.validTo)
     await coupon.save()
     res.json({ coupon: coupon.toPublic() })
   }),

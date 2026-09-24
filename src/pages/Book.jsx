@@ -108,6 +108,19 @@ export default function Book() {
   const [coupon, setCoupon] = useState(null)
   const [couponBusy, setCouponBusy] = useState(false)
   const [couponMsg, setCouponMsg] = useState(null) // { tone, text }
+  // Codes this customer can use at this salon right now, shown as tappable offers.
+  const [offers, setOffers] = useState([])
+  useEffect(() => {
+    if (!salonId || session?.role !== 'customer') return undefined
+    let alive = true
+    api
+      .availableCoupons(salonId)
+      .then((r) => alive && setOffers(r.coupons || []))
+      .catch(() => alive && setOffers([]))
+    return () => {
+      alive = false
+    }
+  }, [salonId, session?.role])
 
   const selected = services.filter((s) => selectedIds.includes(s.id))
   const servicesTotal = selected.reduce((sum, s) => sum + s.amount, 0)
@@ -190,8 +203,9 @@ export default function Book() {
   }
   if (!salon) return <Navigate to="/salons" replace />
 
-  const applyCoupon = async () => {
-    const code = couponInput.trim()
+  // `override` lets a tapped offer apply its code directly (state updates are async).
+  const applyCoupon = async (override) => {
+    const code = (typeof override === 'string' ? override : couponInput).trim()
     if (!code || couponBusy) return
     if (paymentMode !== 'online') {
       setCouponMsg({ tone: 'warn', text: t('book.couponOnlineOnly') })
@@ -685,6 +699,49 @@ export default function Book() {
                 )}
                 {couponMsg && priced.couponDiscount === 0 && (
                   <p className={`coupon__msg coupon__msg--${couponMsg.tone}`}>{couponMsg.text}</p>
+                )}
+
+                {priced.couponDiscount === 0 && offers.length > 0 && (
+                  <div className="coupon__offers">
+                    <p className="coupon__offersLabel">{t('book.couponOffers')}</p>
+                    <ul className="coupon__offerList">
+                      {offers.map((o) => {
+                        const short = Math.max(0, (o.minOrder || 0) - servicesTotal)
+                        const terms = [
+                          o.type === 'percent'
+                            ? t('book.couponOffPct', { pct: o.value })
+                            : t('book.couponOffFlat', { amount: formatINR(o.value) }),
+                          o.type === 'percent' && o.maxDiscount
+                            ? t('book.couponUpTo', { amount: formatINR(o.maxDiscount) })
+                            : null,
+                          o.minOrder ? t('book.couponMin', { amount: formatINR(o.minOrder) }) : null,
+                        ]
+                          .filter(Boolean)
+                          .join(' · ')
+                        return (
+                          <li key={o.code}>
+                            <button
+                              type="button"
+                              className="coupon__offer"
+                              disabled={couponBusy || short > 0}
+                              onClick={() => {
+                                setCouponInput(o.code)
+                                applyCoupon(o.code)
+                              }}
+                            >
+                              <span className="coupon__offerCode">{o.code}</span>
+                              <span className="coupon__offerTerms">{terms}</span>
+                              {short > 0 && (
+                                <span className="coupon__offerHint">
+                                  {t('book.couponAddMore', { amount: formatINR(short) })}
+                                </span>
+                              )}
+                            </button>
+                          </li>
+                        )
+                      })}
+                    </ul>
+                  </div>
                 )}
               </div>
             )}

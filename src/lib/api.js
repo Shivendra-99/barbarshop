@@ -110,6 +110,8 @@ export const api = {
   // --- Coupons ---
   // Preview a coupon against a draft → { priced, applied, coupon }.
   validateCoupon: (body) => request('/coupons/validate', { method: 'POST', body }),
+  // Coupons a customer can use at this salon right now.
+  availableCoupons: (salonId) => request(`/coupons/available?salonId=${encodeURIComponent(salonId)}`),
   // Owner/founder coupon management.
   coupons: () => request('/coupons'),
   createCoupon: (body) => request('/coupons', { method: 'POST', body }),
