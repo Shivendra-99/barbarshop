@@ -6,6 +6,7 @@ import { usePrefs } from '../store/Prefs'
 import { useT } from '../lib/i18n'
 import { CATEGORIES } from '../data/seed'
 import { formatINR } from '../lib/money'
+import { distanceKm, salonDistance } from '../lib/geo'
 import './Salons.css'
 
 const SORTS = [
@@ -23,7 +24,7 @@ const MODE_FILTERS = [
 export default function Salons() {
   const navigate = useNavigate()
   const { publicSalons, settings } = useApp()
-  const { city, category, setCategory } = usePrefs()
+  const { city, category, setCategory, coords, detectLocation } = usePrefs()
   const t = useT()
   const [mode, setMode] = useState('all')
   const [sort, setSort] = useState('rating')
@@ -36,9 +37,11 @@ export default function Salons() {
     const sorted = [...list]
     if (sort === 'rating') sorted.sort((a, b) => b.rating - a.rating)
     if (sort === 'price') sorted.sort((a, b) => a.from - b.from)
-    if (sort === 'distance') sorted.sort((a, b) => parseFloat(a.dist) - parseFloat(b.dist))
+    // Real distance from the device; salons without a pin (or no location yet) sort last.
+    const km = (x) => distanceKm(coords, x.location) ?? Infinity
+    if (sort === 'distance') sorted.sort((a, b) => km(a) - km(b))
     return sorted
-  }, [publicSalons, city.id, category, mode, sort])
+  }, [publicSalons, city.id, category, mode, sort, coords])
 
   const activeCategory = CATEGORIES.find((c) => c.id === category)
   const cityHasNoSalons = !publicSalons.some((s) => s.city === city.id)
@@ -64,7 +67,11 @@ export default function Salons() {
           <select
             className="salons__select"
             value={sort}
-            onChange={(e) => setSort(e.target.value)}
+            onChange={(e) => {
+              setSort(e.target.value)
+              // Nearest needs a position — ask for it once if we don't have one.
+              if (e.target.value === 'distance' && !coords) detectLocation().catch(() => {})
+            }}
           >
             {SORTS.map((s) => (
               <option key={s.id} value={s.id}>
@@ -164,7 +171,9 @@ export default function Salons() {
                     <span className="salonCard__rating">★ {salon.rating.toFixed(1)}</span>
                   </span>
                   <span className="salonCard__meta">
-                    {salon.area} · {salon.dist} · {salon.reviews} {t('card.reviews')}
+                    {[salon.area, salonDistance(coords, salon), `${salon.reviews} ${t('card.reviews')}`]
+                      .filter(Boolean)
+                      .join(' · ')}
                   </span>
                   <span className="salonCard__modes">
                     {salon.serviceModes.includes('salon') && (

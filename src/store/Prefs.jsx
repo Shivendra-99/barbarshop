@@ -73,6 +73,9 @@ export function PrefsProvider({ children }) {
   }, [])
 
   const [detecting, setDetecting] = useState(false)
+  // Last known device position — powers "Near you" and real salon distances.
+  const [coords, setCoords] = useState(() => load('prefs:coords', null))
+  useEffect(() => save('prefs:coords', coords), [coords])
 
   /** Ask the browser for location → reverse-geocode → set the city. */
   const detectLocation = useCallback(async () => {
@@ -83,6 +86,8 @@ export function PrefsProvider({ children }) {
         navigator.geolocation.getCurrentPosition(res, rej, { timeout: 8000, maximumAge: 600000 }),
       )
       const { latitude, longitude } = pos.coords
+      // Keep the position even if reverse-geocoding the city fails below.
+      setCoords({ lat: latitude, lng: longitude, at: Date.now() })
       const r = await api.reverseGeocode(latitude, longitude)
       return setCityFromPincode({ district: r.city || r.district, state: r.state, pincode: r.pincode })
     } finally {
@@ -133,6 +138,7 @@ export function PrefsProvider({ children }) {
       setCityFromPincode,
       detectLocation,
       detecting,
+      coords,
       category,
       setCategory,
       theme,
@@ -141,7 +147,7 @@ export function PrefsProvider({ children }) {
       lang,
       setLang,
     }),
-    [city, cities, setCity, setCityFromPincode, detectLocation, detecting, category, theme, resolvedTheme, lang],
+    [city, cities, setCity, setCityFromPincode, detectLocation, detecting, coords, category, theme, resolvedTheme, lang],
   )
 
   return <PrefsContext.Provider value={value}>{children}</PrefsContext.Provider>

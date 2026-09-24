@@ -54,6 +54,34 @@ export default function SalonEditDialog({ salon, role = 'founder', onClose, onSa
     }
   }
 
+  // Owner's exact GPS pin, captured on demand and saved with the form.
+  const [mapPin, setMapPin] = useState(null) // { lat, lng, accuracy }
+  const [pinning, setPinning] = useState(false)
+  const [pinErr, setPinErr] = useState('')
+
+  const pinHere = () => {
+    if (!navigator.geolocation) return setPinErr('This device can’t share its location.')
+    setPinning(true)
+    setPinErr('')
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setPinning(false)
+        const accuracy = Math.round(pos.coords.accuracy)
+        // A laptop's Wi-Fi guess can be kilometres off; don't save that as "exact".
+        if (accuracy > 500) {
+          setPinErr(`Location is only accurate to ±${accuracy} m. Try again on your phone, inside the salon.`)
+          return
+        }
+        setMapPin({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy })
+      },
+      () => {
+        setPinning(false)
+        setPinErr('Location permission was denied. Allow location access and try again.')
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
+    )
+  }
+
   const set = (k) => (e) =>
     setForm((f) => ({ ...f, [k]: e.target.type === 'checkbox' ? e.target.checked : e.target.value }))
 
@@ -105,6 +133,7 @@ export default function SalonEditDialog({ salon, role = 'founder', onClose, onSa
       }
       // Category is founder-only.
       if (role === 'founder') changes.category = form.category
+      if (mapPin) changes.mapPin = { lat: mapPin.lat, lng: mapPin.lng }
       await onSave(changes)
     } finally {
       setBusy(false)
@@ -169,6 +198,27 @@ export default function SalonEditDialog({ salon, role = 'founder', onClose, onSa
             <span className="field__label">Address</span>
             <input className="field__input" value={form.address} onChange={set('address')} />
           </label>
+          {role === 'owner' && (
+            <div className="field pmodal__full">
+              <span className="field__label">Map location</span>
+              <div className="sed-pin">
+                <span className="sed-pin__status">
+                  {mapPin
+                    ? `Exact pin captured (±${mapPin.accuracy} m). Click Save to keep it.`
+                    : salon.location?.source === 'pin'
+                      ? 'Exact pin set. Customers see your true distance.'
+                      : salon.location?.lat != null
+                        ? 'Approximate (from your address). Pin it for exact distance.'
+                        : 'Not on the map yet. Pin it so nearby customers find you.'}
+                </span>
+                <button type="button" className="btn btn--outline btn--sm" onClick={pinHere} disabled={pinning}>
+                  {pinning ? 'Locating…' : 'Pin my salon here'}
+                </button>
+              </div>
+              <span className="field__hint">Do this while standing inside your salon, on your phone.</span>
+              {pinErr && <span className="field__error">{pinErr}</span>}
+            </div>
+          )}
           <label className="field pmodal__full">
             <span className="field__label">Contact number (shown to customers as “Call salon”)</span>
             <input

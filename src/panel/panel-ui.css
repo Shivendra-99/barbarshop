@@ -838,3 +838,19 @@ a.ptable__mono {
   font-weight: 600;
   color: var(--heading);
 }
+
+/* Salon edit — owner's map pin row. */
+.sed-pin {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+}
+.sed-pin__status {
+  font-size: 13.5px;
+  color: var(--heading);
+}

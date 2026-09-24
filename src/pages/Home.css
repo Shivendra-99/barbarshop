@@ -452,3 +452,28 @@
     padding-right: 16px;
   }
 }
+
+/* ---------------- Near you ---------------- */
+.near__sub {
+  margin: 8px 0 0;
+  max-width: 560px;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+.near__cta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+.near__err {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--red);
+}
+.near__empty {
+  margin: 0;
+  font-size: 14.5px;
+  color: var(--muted-2);
+}

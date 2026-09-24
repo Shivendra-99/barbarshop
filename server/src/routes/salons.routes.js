@@ -7,7 +7,7 @@ import { validate } from '../middleware/validate.js'
 import { requireAuth, requireRole } from '../middleware/auth.js'
 import { asyncHandler, ApiError } from '../middleware/error.js'
 import { notify } from '../lib/notify.js'
-import { geocode } from '../lib/geo/mappls.js'
+import { geocodeFirst, salonQueries } from '../lib/geo/geocode.js'
 
 const router = Router()
 
@@ -61,6 +61,11 @@ const editSchema = z.object({
   // Owner promotional discount.
   offerActive: z.boolean().optional(),
   offerPercent: z.number().int().min(0).max(50).optional(),
+  // Owner's exact GPS pin, taken at the salon. Bounded to India so a stray
+  // reading can't send customers to the ocean.
+  mapPin: z
+    .object({ lat: z.number().min(6).max(38), lng: z.number().min(68).max(98) })
+    .optional(),
   // Cover photo as a compressed data URL, or null/'' to clear it. Bounded so a
   // huge upload can't be stored (client resizes to well under this).
   photo: z.string().max(1500000).nullable().optional(),
@@ -89,7 +94,7 @@ function assertHoursValid(opens, closes) {
 const OWNER_EDITABLE = new Set([
   'name', 'area', 'address', 'phone', 'opens', 'closes', 'serviceModes',
   'homeServiceFee', 'slotMinutes', 'daysOff', 'closedDates', 'photo', 'capacity',
-  'offerActive', 'offerPercent',
+  'offerActive', 'offerPercent', 'mapPin',
 ])
 
 /**
@@ -224,8 +229,13 @@ router.post(
 
     // Resolve the address to a geo reference: eLoc from the pick, lat/lng from
     // the geocoder (null if unavailable — never blocks salon submission).
-    const coords = await geocode({ eLoc: addressELoc, address: salonBody.address })
-    const location = { eLoc: addressELoc ?? null, lat: coords?.lat ?? null, lng: coords?.lng ?? null }
+    const coords = await geocodeFirst(salonQueries(salonBody), { eLoc: addressELoc })
+    const location = {
+      eLoc: addressELoc ?? null,
+      lat: coords?.lat ?? null,
+      lng: coords?.lng ?? null,
+      source: coords?.source ?? null,
+    }
 
     const salon = await Salon.create({
       ...salonBody,
@@ -302,7 +312,18 @@ router.patch(
     // Guard the effective hours (a PATCH may change only one of the two).
     assertHoursValid(changes.opens ?? salon.opens, changes.closes ?? salon.closes)
 
-    Object.assign(salon, changes)
+    const { mapPin, ...fields } = changes
+    const addressChanged = ['address', 'area'].some((k) => k in fields && fields[k] !== salon[k])
+    Object.assign(salon, fields)
+
+    const eLoc = salon.location?.eLoc ?? null
+    if (mapPin) {
+      // The owner's exact pin wins and is never auto-overwritten later.
+      salon.location = { eLoc, lat: mapPin.lat, lng: mapPin.lng, source: 'pin' }
+    } else if (addressChanged && salon.location?.source !== 'pin') {
+      const c = await geocodeFirst(salonQueries(salon), { eLoc })
+      salon.location = { eLoc, lat: c?.lat ?? null, lng: c?.lng ?? null, source: c?.source ?? null }
+    }
     await salon.save()
     const [withPrice] = await withFrom([salon])
     res.json({ salon: withPrice })

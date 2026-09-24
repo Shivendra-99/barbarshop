@@ -10,12 +10,15 @@ const salonSchema = new mongoose.Schema(
     pin: { type: String, default: '' },
     area: { type: String, required: true },
     address: { type: String, required: true },
-    // Mappls geo reference for the address: compact eLoc always; lat/lng when
-    // the geocoder can resolve them.
+    // Geo reference: Mappls eLoc from the address pick; lat/lng from the
+    // geocoder or the owner's GPS pin. `source` records which: 'pin' (owner,
+    // exact — never auto-overwritten), 'auto' (OpenStreetMap, area-level) or
+    // 'mappls'.
     location: {
       eLoc: { type: String, default: null },
       lat: { type: Number, default: null },
       lng: { type: Number, default: null },
+      source: { type: String, default: null },
     },
     owner: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
 

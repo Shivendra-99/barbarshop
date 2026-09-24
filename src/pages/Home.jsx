@@ -7,6 +7,7 @@ import { useT } from '../lib/i18n'
 import { CATEGORIES, FAQS, STEPS, TESTIMONIALS } from '../data/seed'
 import { IMG_MENS_INTERIOR, IMG_UNISEX, IMG_PARLOUR } from '../assets'
 import { formatINR } from '../lib/money'
+import { distanceKm, salonDistance } from '../lib/geo'
 import './Home.css'
 
 const CARD_IMAGES = {
@@ -15,15 +16,79 @@ const CARD_IMAGES = {
   parlour: IMG_PARLOUR,
 }
 
+/** "Near you" only lists salons within this radius. */
+const NEAR_KM = 30
+
+function SalonCard({ salon, dist, index, onOpen, t }) {
+  return (
+    <Reveal className="salonCard" style={{ transitionDelay: `${index * 80}ms` }}>
+      <button
+        type="button"
+        className="salonCard__btn"
+        onClick={() => onOpen(salon)}
+        aria-label={`${salon.name}, ${salon.area}, rated ${salon.rating}, from ${formatINR(salon.from)}`}
+      >
+        <span className="salonCard__media">
+          <img src={salon.img} alt="" aria-hidden="true" loading="lazy" />
+          <span className="salonCard__badge">{salon.badge}</span>
+          {salon.offerActive && salon.offerPercent > 0 && (
+            <span className="salonCard__offer">{t('card.offerBadge', { pct: salon.offerPercent })}</span>
+          )}
+        </span>
+        <span className="salonCard__body">
+          <span className="salonCard__row">
+            <span className="salonCard__name">{salon.name}</span>
+            <span className="salonCard__rating">★ {salon.rating.toFixed(1)}</span>
+          </span>
+          <span className="salonCard__meta">
+            {[salon.area, dist, `${salon.reviews} ${t('card.reviews')}`].filter(Boolean).join(' · ')}
+          </span>
+          <span className="salonCard__modes">
+            {salon.serviceModes.includes('salon') && <span className="tag">{t('card.atSalon')}</span>}
+            {salon.serviceModes.includes('home') && <span className="tag">{t('card.homeService')}</span>}
+          </span>
+          <span className="salonCard__foot">
+            <span className="salonCard__price money">
+              {t('card.from')} <strong>{formatINR(salon.from)}</strong>
+            </span>
+            <span className="salonCard__open">{t('card.openTill', { t: salon.closes })}</span>
+          </span>
+        </span>
+      </button>
+    </Reveal>
+  )
+}
+
 export default function Home() {
   const navigate = useNavigate()
   const { publicSalons, isFirstBooking, isSignedIn, settings } = useApp()
-  const { city, setCategory } = usePrefs()
+  const { city, setCategory, coords, detectLocation, detecting } = usePrefs()
   const t = useT()
   const [openFaq, setOpenFaq] = useState(0)
+  const [locErr, setLocErr] = useState('')
 
   const inCity = publicSalons.filter((s) => s.city === city.id)
   const featured = [...inCity].sort((a, b) => b.rating - a.rating).slice(0, 3)
+
+  // Closest salons to the device, within NEAR_KM. Needs both our position and
+  // the salon's pin; salons without a pin simply don't appear here.
+  const nearby = coords
+    ? publicSalons
+        .map((s) => ({ s, km: distanceKm(coords, s.location) }))
+        .filter((x) => x.km != null && x.km <= NEAR_KM)
+        .sort((a, b) => a.km - b.km)
+        .slice(0, 3)
+        .map((x) => x.s)
+    : []
+
+  const locate = async () => {
+    setLocErr('')
+    try {
+      await detectLocation()
+    } catch {
+      setLocErr(t('home.nearDenied'))
+    }
+  }
   const showComingSoon = inCity.length === 0 && settings.comingSoonEnabled
 
   const goCategory = (id) => {
@@ -106,6 +171,53 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ---------------- Near you ---------------- */}
+      <section className="shell section near">
+        <Reveal className="section__head">
+          <div>
+            <h2 className="section-title">{t('home.nearTitle')}</h2>
+            <p className="near__sub">{coords ? t('home.nearSub') : t('home.nearPrompt')}</p>
+          </div>
+          {coords && (
+            <button type="button" className="section__more" onClick={locate} disabled={detecting}>
+              {detecting ? t('home.nearLocating') : t('home.nearRefresh')}
+            </button>
+          )}
+        </Reveal>
+
+        {!coords && (
+          <div className="near__cta">
+            <button type="button" className="btn btn--gold" onClick={locate} disabled={detecting}>
+              {detecting ? t('home.nearLocating') : t('home.nearCta')}
+            </button>
+            {locErr && (
+              <p className="near__err" role="alert">
+                {locErr}
+              </p>
+            )}
+          </div>
+        )}
+
+        {coords && nearby.length === 0 && (
+          <p className="near__empty">{t('home.nearNone', { km: NEAR_KM })}</p>
+        )}
+
+        {nearby.length > 0 && (
+          <div className="grid3">
+            {nearby.map((salon, i) => (
+              <SalonCard
+                key={salon.id}
+                salon={salon}
+                dist={salonDistance(coords, salon)}
+                index={i}
+                onOpen={openSalon}
+                t={t}
+              />
+            ))}
+          </div>
+        )}
+      </section>
+
       {/* ---------------- Featured salons ---------------- */}
       <section className="shell section">
         <Reveal className="section__head">
@@ -131,51 +243,14 @@ export default function Home() {
 
         <div className="grid3">
           {featured.map((salon, i) => (
-            <Reveal
+            <SalonCard
               key={salon.id}
-              className="salonCard"
-              style={{ transitionDelay: `${i * 80}ms` }}
-            >
-              <button
-                type="button"
-                className="salonCard__btn"
-                onClick={() => openSalon(salon)}
-                aria-label={`${salon.name}, ${salon.area}, rated ${salon.rating}, from ${formatINR(salon.from)}`}
-              >
-                <span className="salonCard__media">
-                  <img src={salon.img} alt="" aria-hidden="true" loading="lazy" />
-                  <span className="salonCard__badge">{salon.badge}</span>
-                  {salon.offerActive && salon.offerPercent > 0 && (
-                    <span className="salonCard__offer">
-                      {t('card.offerBadge', { pct: salon.offerPercent })}
-                    </span>
-                  )}
-                </span>
-                <span className="salonCard__body">
-                  <span className="salonCard__row">
-                    <span className="salonCard__name">{salon.name}</span>
-                    <span className="salonCard__rating">★ {salon.rating.toFixed(1)}</span>
-                  </span>
-                  <span className="salonCard__meta">
-                    {salon.area} · {salon.dist} · {salon.reviews} {t('card.reviews')}
-                  </span>
-                  <span className="salonCard__modes">
-                    {salon.serviceModes.includes('salon') && (
-                      <span className="tag">{t('card.atSalon')}</span>
-                    )}
-                    {salon.serviceModes.includes('home') && (
-                      <span className="tag">{t('card.homeService')}</span>
-                    )}
-                  </span>
-                  <span className="salonCard__foot">
-                    <span className="salonCard__price money">
-                      {t('card.from')} <strong>{formatINR(salon.from)}</strong>
-                    </span>
-                    <span className="salonCard__open">{t('card.openTill', { t: salon.closes })}</span>
-                  </span>
-                </span>
-              </button>
-            </Reveal>
+              salon={salon}
+              dist={salonDistance(coords, salon)}
+              index={i}
+              onOpen={openSalon}
+              t={t}
+            />
           ))}
         </div>
       </section>
