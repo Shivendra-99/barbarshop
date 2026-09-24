@@ -25,7 +25,7 @@ const NAV = {
       { to: '/owner/add', label: 'Add salon', icon: 'plus' },
       { to: '/owner/services', label: 'Services', icon: 'store' },
       { to: '/owner/bookings', label: 'Bookings', icon: 'calendar' },
-      { to: '/owner/coupons', label: 'Coupons', icon: 'tag' },
+      { to: '/owner/coupons', label: 'Offers & Coupons', icon: 'tag' },
       { to: '/owner/wallet', label: 'Wallet', icon: 'wallet' },
       { to: '/owner/profile', label: 'My Profile', icon: 'user' },
     ],

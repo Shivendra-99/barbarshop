@@ -260,7 +260,7 @@ export default function OwnerBookings() {
                                 className="btn btn--gold btn--sm"
                                 onClick={() => openComplete(b)}
                               >
-                                {b.paymentMode === 'offline' ? 'Payment complete' : 'Mark served'}
+                                {b.paymentMode === 'offline' ? 'Mark as done · cash received' : 'Mark as done'}
                               </button>
                               <button
                                 type="button"

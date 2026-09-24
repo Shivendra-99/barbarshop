@@ -37,9 +37,47 @@ function statusOf(c) {
 }
 
 export default function Coupons() {
-  const { session } = useApp()
+  const { session, mySalons = [], updateSalon } = useApp()
   const { push } = useToast()
   const isFounder = session?.role === 'founder'
+
+  // Owner: the salon-wide % offer (lives on the salon; edited here so it's findable).
+  const [offerFor, setOfferFor] = useState(null)
+  const [offerForm, setOfferForm] = useState({ active: false, pct: '' })
+  const [offerBusy, setOfferBusy] = useState(false)
+  const [offerErr, setOfferErr] = useState('')
+
+  const openOffer = (s) => {
+    setOfferFor(s)
+    setOfferForm({ active: Boolean(s.offerActive), pct: s.offerPercent ? String(s.offerPercent) : '' })
+    setOfferErr('')
+  }
+
+  const saveOffer = async () => {
+    if (offerBusy) return
+    const pct = Number(offerForm.pct)
+    if (offerForm.active && (!pct || pct < 1 || pct > 50)) {
+      return setOfferErr('Enter an offer between 1% and 50%.')
+    }
+    setOfferBusy(true)
+    setOfferErr('')
+    try {
+      await updateSalon(offerFor, {
+        offerActive: offerForm.active,
+        offerPercent: offerForm.active ? pct : 0,
+      })
+      push({
+        tone: 'success',
+        title: offerForm.active ? `Offer live: ${pct}% off` : 'Offer turned off',
+        body: offerFor.name,
+      })
+      setOfferFor(null)
+    } catch (e) {
+      setOfferErr(e.message || 'Could not save the offer.')
+    } finally {
+      setOfferBusy(false)
+    }
+  }
 
   const [coupons, setCoupons] = useState([])
   const [loaded, setLoaded] = useState(false)
@@ -132,14 +170,54 @@ export default function Coupons() {
   return (
     <>
       <div className="p-head">
-        <h2 className="p-head__title">Coupons</h2>
+        <h2 className="p-head__title">{isFounder ? 'Coupons' : 'Offers & Coupons'}</h2>
         <p className="p-head__sub">
           {isFounder
             ? 'Platform-wide discount codes, valid at every salon. Online bookings only.'
-            : 'Discount codes for your salon. Online bookings only; they never stack with other offers.'}
+            : 'Run a % offer on your whole salon, or create coupon codes. Customers always get the single best discount, never both.'}
         </p>
       </div>
 
+      {!isFounder && mySalons.length > 0 && (
+        <div className="p-section">
+          <h3 className="p-section__title">Salon offer</h3>
+          <p className="cpn-note">
+            A % off every service, shown to all customers on your salon page and at checkout.
+          </p>
+          <div className="ptable-wrap">
+            <table className="ptable">
+              <thead>
+                <tr>
+                  <th>Salon</th>
+                  <th>Offer</th>
+                  <th aria-label="Actions" />
+                </tr>
+              </thead>
+              <tbody>
+                {mySalons.map((s) => (
+                  <tr key={s.id}>
+                    <td className="ptable__strong">{s.name}</td>
+                    <td>
+                      {s.offerActive && s.offerPercent ? (
+                        <span className="badge badge--green">{s.offerPercent}% off all services</span>
+                      ) : (
+                        <span className="badge badge--neutral">No offer running</span>
+                      )}
+                    </td>
+                    <td style={{ textAlign: 'right' }}>
+                      <button type="button" className="btn btn--outline btn--sm" onClick={() => openOffer(s)}>
+                        {s.offerActive && s.offerPercent ? 'Edit offer' : 'Create offer'}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {!isFounder && <h3 className="p-section__title">Coupon codes</h3>}
       <div style={{ marginBottom: 16 }}>
         <button
           type="button"
@@ -350,6 +428,82 @@ export default function Coupons() {
               </button>
               <button type="button" className="btn btn--gold" onClick={submit} disabled={busy}>
                 {busy ? 'Creating…' : 'Create coupon'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {offerFor && (
+        <div className="pmodal" role="presentation" onMouseDown={() => !offerBusy && setOfferFor(null)}>
+          <div
+            className="pmodal__box pmodal__box--sm"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="offer-modal-title"
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            <h3 className="pmodal__title" id="offer-modal-title">
+              Salon offer · {offerFor.name}
+            </h3>
+
+            <label className="cpn-switch">
+              <input
+                type="checkbox"
+                checked={offerForm.active}
+                onChange={(e) => {
+                  setOfferForm((f) => ({ ...f, active: e.target.checked }))
+                  setOfferErr('')
+                }}
+              />
+              <span>Run a salon-wide offer</span>
+            </label>
+
+            {offerForm.active && (
+              <label className="field">
+                <span className="field__label">Discount on every service (%)</span>
+                <input
+                  type="number"
+                  min="1"
+                  max="50"
+                  className="field__input"
+                  value={offerForm.pct}
+                  onChange={(e) => {
+                    setOfferForm((f) => ({ ...f, pct: e.target.value.replace(/\D/g, '').slice(0, 2) }))
+                    setOfferErr('')
+                  }}
+                  placeholder="e.g. 15"
+                  autoFocus
+                />
+              </label>
+            )}
+
+            <div className="cpn-preview">
+              <p className="cpn-preview__label">Customers will see</p>
+              <p className="cpn-preview__terms">
+                {offerForm.active && Number(offerForm.pct) > 0
+                  ? `${Number(offerForm.pct)}% off every service at ${offerFor.name}`
+                  : 'No salon offer'}
+              </p>
+              <p className="cpn-preview__meta">
+                Max 50%. Doesn’t stack with coupons or the first-booking discount; customers get
+                whichever saves them more.
+              </p>
+            </div>
+
+            {offerErr && <p className="field__error">{offerErr}</p>}
+
+            <div className="pmodal__actions">
+              <button
+                type="button"
+                className="btn btn--outline"
+                onClick={() => setOfferFor(null)}
+                disabled={offerBusy}
+              >
+                Cancel
+              </button>
+              <button type="button" className="btn btn--gold" onClick={saveOffer} disabled={offerBusy}>
+                {offerBusy ? 'Saving…' : 'Save offer'}
               </button>
             </div>
           </div>
