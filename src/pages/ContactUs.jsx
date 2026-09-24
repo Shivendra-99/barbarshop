@@ -5,6 +5,7 @@ export default function ContactUs() {
   return (
     <div className="shell shell--narrow simple legal">
       <h1 className="display simple__title">Contact Us</h1>
+      <p className="legal__meta">Last Updated: 24 September 2026</p>
       <p className="legal__p">
         If you have any questions, queries or need support, feel free to reach us.
       </p>

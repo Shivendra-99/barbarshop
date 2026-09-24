@@ -118,7 +118,7 @@ export const REFUND_METHODS = {
   upi: {
     id: 'upi',
     label: 'Original UPI / bank',
-    eta: '2–3 working days',
+    eta: '5–7 working days',
     note: 'Sent back to the account you paid from.',
     instant: false,
   },

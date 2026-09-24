@@ -14,7 +14,7 @@ import './Appointments.css'
 const TABS = ['Upcoming', 'Past']
 
 /* ------------------------------------------------------------------
-   Cancel dialog — rule 6: refund goes to Wallet (instant) or UPI (2–3 days)
+   Cancel dialog — rule 6: refund goes to Wallet (instant) or UPI (5–7 working days)
    ------------------------------------------------------------------ */
 
 function CancelDialog({ booking, onClose, onConfirm }) {
@@ -135,7 +135,7 @@ function CancelDialog({ booking, onClose, onConfirm }) {
 
 /* ------------------------------------------------------------------
    No-show refund chooser — the customer picks where their 85% goes
-   (Wallet instant, or original UPI/bank in 2–3 days) after the salon
+   (Wallet instant, or original UPI/bank in 5–7 working days) after the salon
    marked them a no-show. Flat 15% penalty, so the amount is the same
    for both methods; only the destination and ETA differ.
    ------------------------------------------------------------------ */
@@ -304,10 +304,11 @@ export default function Appointments() {
         tone: refund.amount > 0 ? 'success' : 'info',
         title: 'Booking cancelled',
         body:
-          refund.amount > 0
-            ? `${formatINR(refund.amount)} refunded to ${REFUND_METHODS[refund.method].label}`
-            : 'Nothing to refund — this was a pay-at-salon booking.',
-        meta: refund.amount > 0 ? REFUND_METHODS[refund.method].eta : undefined,
+          refund.amount <= 0
+            ? 'Nothing to refund — this was a pay-at-salon booking.'
+            : refund.method === 'wallet'
+              ? `${formatINR(refund.amount)} credited to your SalonSaathi Wallet instantly.`
+              : `Your refund of ${formatINR(refund.amount)} will be processed to your original UPI/bank within 5–7 working days.`,
       })
     } catch (err) {
       push({ tone: 'warn', title: 'Could not cancel', body: err.message })
@@ -323,8 +324,10 @@ export default function Appointments() {
       push({
         tone: 'success',
         title: 'Refund on the way',
-        body: `${formatINR(refund.amount)} to ${REFUND_METHODS[refund.method].label}`,
-        meta: REFUND_METHODS[refund.method].eta,
+        body:
+          refund.method === 'wallet'
+            ? `${formatINR(refund.amount)} credited to your SalonSaathi Wallet instantly.`
+            : `Your refund of ${formatINR(refund.amount)} will be processed to your original UPI/bank within 5–7 working days.`,
       })
     } catch (err) {
       push({ tone: 'warn', title: 'Could not process refund', body: err.message })

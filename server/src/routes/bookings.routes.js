@@ -701,7 +701,7 @@ router.patch(
   }),
 )
 
-/* ---- Customer: cancel a booking (refund → wallet instant / UPI 2-3 days) ---- */
+/* ---- Customer: cancel a booking (refund → wallet instant / UPI 5-7 working days) ---- */
 
 const cancelSchema = z.object({ method: z.enum(['wallet', 'upi']) })
 
@@ -757,7 +757,7 @@ router.post(
       refund.status === 'completed'
         ? `${formatINR(refund.amount)} credited to your wallet${feeLine}`
         : refund.status === 'processing'
-          ? `${formatINR(refund.amount)} refunded to UPI in 2–3 days${feeLine}`
+          ? `${formatINR(refund.amount)} refunded to UPI/bank in 5–7 working days${feeLine}`
           : 'No payment was taken, so nothing to refund'
     await notify([
       {

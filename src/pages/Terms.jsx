@@ -5,7 +5,7 @@ export default function Terms() {
     <div className="shell shell--narrow simple legal">
       <h1 className="display simple__title">Terms &amp; Conditions</h1>
       <p className="legal__meta">
-        Effective Date: September 6, 2026 · Website:{' '}
+        Last Updated: 24 September 2026 · Website:{' '}
         <a href="https://salonsaathi.in">https://salonsaathi.in</a>
       </p>
 
@@ -30,8 +30,9 @@ export default function Terms() {
       <h2 className="simple__heading">3. User Accounts &amp; Eligibility</h2>
       <ul className="legal__list">
         <li>
-          Our service can be used by users of all ages. If you are under 18, you must use the
-          service under the supervision of your parent or guardian.
+          Our service is intended for users who are 18 years of age or older. If you are under 18,
+          you may use our service only under the supervision of a parent or guardian. We do not
+          knowingly collect personal data of children under the age of 13.
         </li>
         <li>You must provide correct mobile number and name for booking.</li>
         <li>You are responsible for keeping your OTP and account secure.</li>
@@ -138,7 +139,7 @@ export default function Terms() {
 
       <h2 className="simple__heading">14. Contact Us</h2>
       <p className="legal__p">
-        If you have any questions about this Privacy Policy, please contact us:
+        If you have any questions about these Terms, please contact us:
         <br />
         <strong>SalonSaathi</strong>
         <br />

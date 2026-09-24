@@ -5,7 +5,7 @@ export default function PrivacyPolicy() {
     <div className="shell shell--narrow simple legal">
       <h1 className="display simple__title">Privacy Policy</h1>
       <p className="legal__meta">
-        Effective Date: September 6, 2026 · Website:{' '}
+        Last Updated: 24 September 2026 · Website:{' '}
         <a href="https://salonsaathi.in">https://salonsaathi.in</a>
       </p>
 
@@ -77,11 +77,10 @@ export default function PrivacyPolicy() {
 
       <h2 className="simple__heading">8. Children&rsquo;s Privacy</h2>
       <p className="legal__p">
-        Our service can be used by users of all ages, including users under 18 years. If you are
-        under 18, please use our website and make bookings under the supervision of your parent or
-        guardian. We do not knowingly collect personal data from children under 13 without parental
-        consent. If you are a parent and believe your child has provided us data, please contact us
-        and we will delete it immediately.
+        Our service is intended for users who are 18 years of age or older. If you are under 18, you
+        may use our service only under the supervision of a parent or guardian. We do not knowingly
+        collect personal data of children under the age of 13. If you are a parent and believe your
+        child has provided us data, please contact us and we will delete it immediately.
       </p>
 
       <h2 className="simple__heading">9. Changes to This Policy</h2>

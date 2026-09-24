@@ -5,6 +5,7 @@ export default function AboutUs() {
   return (
     <div className="shell shell--narrow simple legal">
       <h1 className="display simple__title">About Us</h1>
+      <p className="legal__meta">Last Updated: 24 September 2026</p>
 
       <p className="legal__p">
         SalonSaathi is a platform to discover and book the best salons near you in Lucknow and across

@@ -373,7 +373,7 @@ export const FAQS = [
   },
   {
     q: 'How do refunds work if I cancel?',
-    a: 'Choose SalonSaathi Wallet for an instant credit, or send it back to your UPI or bank account, which takes 2–3 working days. Cash bookings have nothing to refund.',
+    a: 'Choose SalonSaathi Wallet for an instant credit, or send it back to your UPI or bank account, which takes 5–7 working days. Cash bookings have nothing to refund.',
   },
   {
     q: 'How to list your salon?',

@@ -100,7 +100,7 @@ const EN = {
     'Wherever the salon offers it. Each salon decides whether it does home service, and you will see a Home service option on its page when available.',
   'faq.4.q': 'How do refunds work if I cancel?',
   'faq.4.a':
-    'Choose SalonSaathi Wallet for an instant credit, or send it back to your UPI or bank account, which takes 2–3 working days. Cash bookings have nothing to refund.',
+    'Choose SalonSaathi Wallet for an instant credit, or send it back to your UPI or bank account, which takes 5–7 working days. Cash bookings have nothing to refund.',
   'faq.4.terms': 'See our full Terms & Conditions →',
   'faq.5.q': 'How to list your salon?',
   'faq.5.a':
@@ -171,7 +171,7 @@ const EN = {
   'refund.walletEta': 'Instant',
   'refund.walletNote': 'Credited immediately, usable on your next booking.',
   'refund.upi': 'Original UPI / bank',
-  'refund.upiEta': '2–3 working days',
+  'refund.upiEta': '5–7 working days',
   'refund.upiNote': 'Refunded automatically to the account you paid from — no details needed.',
 
   // --- Salons list ---
@@ -292,7 +292,7 @@ const EN = {
   'done.paymentId': 'Payment ID',
   'done.dueAtSalon': 'Due at salon',
   'done.bookAnother': 'Book another',
-  'done.fine': 'Free cancellation up to 2 hours before your slot. Refunds go to your wallet instantly or back to UPI in 2–3 working days.',
+  'done.fine': 'Free cancellation up to 2 hours before your slot. Refunds go to your wallet instantly or back to UPI in 5–7 working days.',
 
   // --- Appointments (My bookings) ---
   'appt.title': 'My bookings',
@@ -512,7 +512,7 @@ const HI = {
     'जहाँ सैलून यह सुविधा देता है। हर सैलून तय करता है कि वह होम सर्विस देता है या नहीं, और उपलब्ध होने पर आपको उसके पेज पर होम सर्विस विकल्प दिखेगा।',
   'faq.4.q': 'रद्द करने पर रिफंड कैसे मिलता है?',
   'faq.4.a':
-    'तुरंत क्रेडिट के लिए SalonSaathi वॉलेट चुनें, या इसे अपने UPI या बैंक खाते में वापस भेजें, जिसमें 2–3 कार्यदिवस लगते हैं। नकद बुकिंग में रिफंड के लिए कुछ नहीं होता।',
+    'तुरंत क्रेडिट के लिए SalonSaathi वॉलेट चुनें, या इसे अपने UPI या बैंक खाते में वापस भेजें, जिसमें 5–7 कार्यदिवस लगते हैं। नकद बुकिंग में रिफंड के लिए कुछ नहीं होता।',
   'faq.4.terms': 'हमारी पूरी नियम और शर्तें देखें →',
   'faq.5.q': 'अपना सैलून कैसे सूचीबद्ध करें?',
   'faq.5.a':
@@ -583,7 +583,7 @@ const HI = {
   'refund.walletEta': 'तुरंत',
   'refund.walletNote': 'तुरंत क्रेडिट, अगली बुकिंग पर इस्तेमाल करें।',
   'refund.upi': 'मूल UPI / बैंक',
-  'refund.upiEta': '2–3 कार्यदिवस',
+  'refund.upiEta': '5–7 कार्यदिवस',
   'refund.upiNote': 'जिस खाते से भुगतान किया, वहीं अपने-आप वापस — कोई जानकारी नहीं चाहिए।',
 
   // --- Salons list ---
@@ -704,7 +704,7 @@ const HI = {
   'done.paymentId': 'पेमेंट ID',
   'done.dueAtSalon': 'सैलून पर देय',
   'done.bookAnother': 'दूसरी बुकिंग करें',
-  'done.fine': 'स्लॉट से 2 घंटे पहले तक मुफ़्त कैंसिलेशन। रिफंड तुरंत आपके वॉलेट में या 2–3 कार्यदिवस में UPI पर वापस।',
+  'done.fine': 'स्लॉट से 2 घंटे पहले तक मुफ़्त कैंसिलेशन। रिफंड तुरंत आपके वॉलेट में या 5–7 कार्यदिवस में UPI पर वापस।',
 
   // --- Appointments (My bookings) ---
   'appt.title': 'मेरी बुकिंग',

@@ -131,7 +131,7 @@ export function refundFor(booking, method, now = Date.now()) {
 /**
  * Refund when the SALON marks a no-show (customer didn't turn up). Online: a
  * flat 15% penalty, 85% back to Wallet (instant) or the original UPI/bank
- * (2–3 days). The customer isn't present when the owner marks the no-show, so
+ * (5–7 working days). The customer isn't present when the owner marks the no-show, so
  * the refund starts `pending` (no method) and the customer picks the
  * destination later from My Bookings. Cash: nothing to refund.
  */

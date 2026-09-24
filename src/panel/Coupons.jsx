@@ -170,7 +170,7 @@ export default function Coupons() {
                 <th>Discount</th>
                 <th>Min order</th>
                 <th>Usage</th>
-                {isFounder && <th>Scope</th>}
+                {isFounder && <th>Applies to</th>}
                 <th>Status</th>
                 <th aria-label="Actions" />
               </tr>
@@ -204,7 +204,7 @@ export default function Coupons() {
                         <span className="cpn-usage__num">{c.usedCount} used</span>
                       )}
                     </td>
-                    {isFounder && <td>{c.salonId ? 'Salon' : 'Platform'}</td>}
+                    {isFounder && <td>{c.salonId ? 'One salon' : 'All salons'}</td>}
                     <td>
                       <span className={`badge ${st.cls}`}>{st.label}</span>
                     </td>

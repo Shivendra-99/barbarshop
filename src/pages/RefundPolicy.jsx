@@ -4,6 +4,7 @@ export default function RefundPolicy() {
   return (
     <div className="shell shell--narrow simple legal">
       <h1 className="display simple__title">Cancellation &amp; Refund Policy</h1>
+      <p className="legal__meta">Last Updated: 24 September 2026</p>
       <p className="legal__p">At SalonSaathi, we aim for customer satisfaction.</p>
 
       <h2 className="simple__heading">A. For Salon Owner — Listing Fee</h2>
@@ -21,8 +22,8 @@ export default function RefundPolicy() {
           the next booking.
         </li>
         <li>
-          <strong>Option 2:</strong> Refund to original payment method (UPI / Bank Account). UPI
-          refunds are instant and bank refunds take 2–3 working days.
+          <strong>Option 2:</strong> Refund to original payment method (UPI / Bank Account). The
+          refund is processed within 5–7 working days.
         </li>
         <li>Cash bookings have nothing to refund.</li>
       </ol>
@@ -52,19 +53,19 @@ export default function RefundPolicy() {
       <ul className="legal__list">
         <li>
           <strong>More than 2 hours before:</strong> full refund to SalonSaathi Wallet (0% fee). For
-          an instant Bank/UPI refund, a 2% fee applies.
+          a Bank/UPI refund, a 2% fee applies.
         </li>
         <li>
           <strong>Within 2 hours of booking time:</strong> 10% cancellation fee (both Wallet and
-          instant refund).
+          Bank/UPI refund).
         </li>
         <li>
-          <strong>After 15 minutes of booking time:</strong> 15% cancellation fee (both Wallet and
-          instant refund).
+          <strong>After the booking time:</strong> 15% cancellation fee (both Wallet and Bank/UPI
+          refund).
         </li>
         <li>
-          <strong>Note:</strong> instant Bank/UPI refund amounts are credited within 5–7 working
-          days.
+          <strong>Note:</strong> Bank/UPI refund amounts are credited within 5–7 working days.
+          Wallet refunds are credited instantly.
         </li>
       </ul>
 
