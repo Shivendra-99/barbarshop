@@ -39,6 +39,38 @@ function friendlyOtpError(raw) {
   return raw || 'Something went wrong. Please try again.'
 }
 
+/*
+ * Wrong-code lockout for the MSG91 widget flow: the widget checks codes in the
+ * browser, so our server never sees a wrong guess there. Mirror the server rule
+ * (3 wrong codes → 15-minute lock) per phone in localStorage. The dev/server
+ * flow is enforced by the API itself; MSG91 also rate-limits on its side.
+ */
+const LOCK_MAX_FAILS = 3
+const LOCK_MINUTES = 15
+const lockKey = (p) => `salonsathi:otpLock:${p}`
+function readLock(p) {
+  try {
+    return JSON.parse(localStorage.getItem(lockKey(p))) || { fails: 0, until: 0 }
+  } catch {
+    return { fails: 0, until: 0 }
+  }
+}
+function writeLock(p, v) {
+  try {
+    if (v) localStorage.setItem(lockKey(p), JSON.stringify(v))
+    else localStorage.removeItem(lockKey(p))
+  } catch {
+    /* storage unavailable — the lock just won't persist */
+  }
+}
+/** Minutes left on this phone's lock, or 0 when unlocked. */
+function lockMinutesLeft(p) {
+  const ms = readLock(p).until - Date.now()
+  return ms > 0 ? Math.ceil(ms / 60000) : 0
+}
+const lockedText = (mins) =>
+  `Login locked after ${LOCK_MAX_FAILS} wrong codes. Try again in ${mins} min.`
+
 export default function Login() {
   const navigate = useNavigate()
   const [params] = useSearchParams()
@@ -80,6 +112,10 @@ export default function Login() {
 
   const resend = async () => {
     if (cooldown > 0 || busy || resends >= MAX_RESENDS) return
+    if (WIDGET && lockMinutesLeft(phone)) {
+      setError(lockedText(lockMinutesLeft(phone)))
+      return
+    }
     setBusy(true)
     try {
       if (WIDGET) await widgetRetryOtp()
@@ -123,6 +159,10 @@ export default function Login() {
 
   const doSend = async () => {
     if (!phoneValid || busy) return
+    if (WIDGET && lockMinutesLeft(phone)) {
+      setError(lockedText(lockMinutesLeft(phone)))
+      return
+    }
     setBusy(true)
     try {
       if (WIDGET) {
@@ -221,9 +261,30 @@ export default function Login() {
     if (!otpComplete || busy) return
     setBusy(true)
     try {
+      if (WIDGET && lockMinutesLeft(phone)) throw new Error(lockedText(lockMinutesLeft(phone)))
+      let accessToken = null
+      if (WIDGET) {
+        try {
+          accessToken = await widgetVerifyOtp(entered)
+        } catch (err) {
+          // A wrong code in the widget flow: count it, lock on the 3rd.
+          const fails = readLock(phone).fails + 1
+          if (fails >= LOCK_MAX_FAILS) {
+            writeLock(phone, { fails: 0, until: Date.now() + LOCK_MINUTES * 60000 })
+            setStep('phone')
+            throw new Error(lockedText(LOCK_MINUTES))
+          }
+          writeLock(phone, { fails, until: 0 })
+          const left = LOCK_MAX_FAILS - fails
+          throw new Error(
+            `${err.message || 'That code is incorrect.'} ${left} attempt${left === 1 ? '' : 's'} left.`,
+          )
+        }
+      }
       const { user, isNew } = WIDGET
-        ? await widgetVerifyOtp(entered).then((accessToken) => widgetLogin(accessToken, phone))
+        ? await widgetLogin(accessToken, phone)
         : await verifyOtp(phone, entered)
+      writeLock(phone, null) // success clears any wrong-code count
 
       // Only a brand-new customer is asked for a name — everyone else goes straight in.
       if (isNew && user.role === 'customer') {

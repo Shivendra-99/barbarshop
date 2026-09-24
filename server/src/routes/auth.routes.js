@@ -2,6 +2,8 @@ import { Router } from 'express'
 import { z } from 'zod'
 import { User } from '../models/User.js'
 import { sendCode, checkCode } from '../lib/otp.js'
+import { assertNotLocked, recordFailure, clearFailures, lockedMessage } from '../lib/loginLock.js'
+import { env } from '../config/env.js'
 import { msg91 } from '../lib/sms/msg91.js'
 import { signToken } from '../lib/jwt.js'
 import { identityForPhone } from '../config/roles.js'
@@ -66,6 +68,8 @@ router.post(
   validate(requestSchema),
   asyncHandler(async (req, res) => {
     const { phone } = req.body
+    // A locked phone can't dodge the lock by asking for a fresh code.
+    await assertNotLocked(phone)
     const result = await sendCode(phone)
     res.json({
       sent: true,
@@ -81,18 +85,27 @@ router.post(
   validate(verifySchema),
   asyncHandler(async (req, res) => {
     const { phone, code, name } = req.body
+    await assertNotLocked(phone)
 
     const result = await checkCode(phone, code)
     if (!result.ok) {
+      // Only a wrong guess counts toward the lock — not an expired/missing code.
+      if (result.reason === 'mismatch' || result.reason === 'too_many_attempts') {
+        const { locked, left } = await recordFailure(phone)
+        if (locked) throw new ApiError(429, lockedMessage(env.loginLockMinutes))
+        throw new ApiError(
+          400,
+          `That code is incorrect. ${left} attempt${left === 1 ? '' : 's'} left.`,
+        )
+      }
       const messages = {
         no_code: 'Request a code first.',
         expired: 'That code has expired. Request a new one.',
-        too_many_attempts: 'Too many attempts. Request a new code.',
-        mismatch: 'That code is incorrect.',
       }
       throw new ApiError(400, messages[result.reason] ?? 'Verification failed.')
     }
 
+    await clearFailures(phone)
     res.json(await issueSession(phone, name))
   }),
 )

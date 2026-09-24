@@ -28,6 +28,9 @@ export const env = {
   otpTtlMinutes: int(process.env.OTP_TTL_MINUTES, 15),
   otpMaxAttempts: int(process.env.OTP_MAX_ATTEMPTS, 5),
   otpDevReturn: bool(process.env.OTP_DEV_RETURN, true),
+  // Wrong-OTP lockout: this many wrong codes locks the phone for this long.
+  loginMaxFails: int(process.env.LOGIN_MAX_FAILS, 3),
+  loginLockMinutes: int(process.env.LOGIN_LOCK_MINUTES, 15),
 
   // MSG91 server OTP API. When authkey + templateId are set, real SMS is used;
   // otherwise the local dev OTP flow runs (code returned in the response).
