@@ -8,6 +8,17 @@
       "source": "/sitemap.xml",
       "destination": "https://server-eta-eight-74.vercel.app/api/sitemap.xml"
     },
+    {
+      "source": "/salon/:id",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(WhatsApp|facebookexternalhit|Facebot|Twitterbot|LinkedInBot|TelegramBot|Slackbot|Discordbot|Pinterestbot|SkypeUriPreview|redditbot|Embedly|vkShare|Iframely).*"
+        }
+      ],
+      "destination": "https://server-eta-eight-74.vercel.app/api/og/salon/:id"
+    },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
