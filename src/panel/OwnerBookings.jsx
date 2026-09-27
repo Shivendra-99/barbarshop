@@ -356,7 +356,7 @@ export default function OwnerBookings() {
             <p className="pmodal__text">
               Pick a reason for {noShowFor.serviceName} (#{noShowFor.ref}).
               {noShowFor.paymentMode === 'online'
-                ? ' A 15% penalty applies; 85% is refunded to the customer’s wallet.'
+                ? ' A 15% penalty applies; the customer gets 85% back to their wallet or original UPI/bank (their choice).'
                 : ' This counts as a strike against the customer’s cash bookings.'}
             </p>
             <div className="reason-list">
