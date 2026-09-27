@@ -104,6 +104,19 @@ try {
   )
   assert.equal(await balance(cust._id), 100)
 
+  // A booking the salon already completed can't be cancelled for a refund.
+  await User.updateOne({ _id: cust._id }, { walletBalance: 2000 })
+  const served = await createBookingRecord(
+    await User.findById(cust._id),
+    draft({ useWallet: true, slot: '14:00' }),
+    { paid: true },
+  )
+  const o = signToken(owner)
+  assert.equal((await call(o, 'PATCH', `/bookings/${served._id}/complete`, { otp: served.completionOtp })).status, 200)
+  const before = await balance(cust._id)
+  assert.equal((await call(c, 'POST', `/bookings/${served._id}/cancel`, { method: 'wallet' })).status, 400)
+  assert.equal(await balance(cust._id), before)
+
   console.log('wallet checkout: all checks passed')
 } finally {
   server.close()

@@ -812,12 +812,17 @@ router.post(
     if (booking.status === 'cancelled') {
       throw new ApiError(400, 'This booking is already cancelled.')
     }
-    // Atomic claim so a double-tap can't refund twice.
+    // A served booking can't be cancelled: the salon has already been paid.
+    if (booking.status !== 'confirmed') {
+      throw new ApiError(400, 'This booking is already completed and can’t be cancelled.')
+    }
+    // Atomic claim (confirmed → cancelled) so a double-tap, or a cancel racing
+    // the owner's "complete", can't refund twice or refund a served booking.
     const claimed = await Booking.updateOne(
-      { _id: booking._id, status: { $ne: 'cancelled' } },
+      { _id: booking._id, status: 'confirmed' },
       { status: 'cancelled', cancelledAt: new Date() },
     )
-    if (!claimed.modifiedCount) throw new ApiError(400, 'This booking is already cancelled.')
+    if (!claimed.modifiedCount) throw new ApiError(400, 'This booking can no longer be cancelled.')
 
     const refund = refundFor(booking, refundMethodFor(booking, req.body.method))
     // Wallet → instant; UPI/bank → Razorpay back to the source (wallet share → wallet).

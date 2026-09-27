@@ -289,7 +289,7 @@ export default function Appointments() {
     const old = []
     myBookings.forEach((b) => {
       const isPast = fromISO(b.date) < today
-      if (b.status === 'cancelled' || isPast) old.push(b)
+      if (b.status !== 'confirmed' || isPast) old.push(b)
       else up.push(b)
     })
     up.sort((a, b) => a.date.localeCompare(b.date) || toMins(a.slot) - toMins(b.slot))
@@ -527,13 +527,17 @@ export default function Appointments() {
 
                 <div className="appt__right">
                   <span
-                    className={`badge ${cancelled ? 'badge--red' : 'badge--green'}`}
+                    className={`badge ${cancelled ? 'badge--red' : b.status === 'completed' ? 'badge--neutral' : 'badge--green'}`}
                   >
-                    {cancelled ? t('appt.cancelled') : t('appt.confirmed')}
+                    {cancelled
+                      ? t('appt.cancelled')
+                      : b.status === 'completed'
+                        ? t('appt.completed')
+                        : t('appt.confirmed')}
                   </span>
                   <div className="appt__price money">{formatINR(b.total)}</div>
                   <div className="appt__ref">#{b.ref}</div>
-                  {!cancelled && tab === 'Upcoming' && (
+                  {b.status === 'confirmed' && tab === 'Upcoming' && (
                     <div className="appt__actions">
                       {slotStartMs(b) - Date.now() >= 2 * 60 * 60 * 1000 && (
                         <button
