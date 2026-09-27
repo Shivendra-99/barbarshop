@@ -4,7 +4,7 @@ import { env, razorpayEnabled } from '../config/env.js'
 import { PaymentIntent } from '../models/PaymentIntent.js'
 import { User } from '../models/User.js'
 import { Booking } from '../models/Booking.js'
-import { createOrder, verifySignature, verifyWebhookSignature } from '../lib/razorpay.js'
+import { createOrder, verifySignature, verifyWebhookSignature, refundPayment } from '../lib/razorpay.js'
 import {
   createSchema,
   priceBookingDraft,
@@ -43,6 +43,16 @@ async function materializeBooking(intent, paymentId) {
       paymentId,
     })
   } catch (err) {
+    if (err.walletShort) {
+      // The wallet was spent elsewhere between order and payment, so the
+      // booking can't be fully paid: refund what the gateway took and stop.
+      claimed.status = 'failed'
+      await claimed.save().catch(() => {})
+      await refundPayment({ paymentId, amount: claimed.amount / 100, notes: { reason: 'wallet_short' } }).catch(() => {})
+      throw Object.assign(err, {
+        message: 'Your wallet balance changed before payment finished. The amount you paid is being refunded.',
+      })
+    }
     claimed.status = 'created' // release the claim so a retry can succeed
     await claimed.save().catch(() => {})
     throw err
@@ -75,15 +85,18 @@ router.post(
     const draft = { ...req.body, paymentMode: 'online' }
     const { salon, primary, priced } = await priceBookingDraft(req.user, draft)
 
-    if (!priced.total || priced.total <= 0) {
-      throw new ApiError(400, 'Nothing to pay for this booking.')
+    if (!priced.payNow || priced.payNow <= 0) {
+      throw new ApiError(400, 'Nothing to pay online for this booking.')
     }
+    // Pin the wallet share now: the booking later debits exactly this much, so
+    // gateway charge + wallet always equals the total.
+    draft.walletAmount = priced.walletUsed
 
     // Don't take payment for a slot that's already full.
     await assertSlotAvailable(salon, draft.date, draft.slot)
 
     const order = await createOrder({
-      amount: priced.total,
+      amount: priced.payNow,
       currency: 'INR',
       receipt: `bk_${Date.now()}`,
       notes: { salon: salon.name, service: primary.name, user: req.user._id.toString() },

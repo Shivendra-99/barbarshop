@@ -534,6 +534,43 @@
   margin: 4px 0;
 }
 
+/* "Use wallet balance" toggle inside the booking summary. */
+.walletPay {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 11px 13px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  cursor: pointer;
+}
+.walletPay input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--gold);
+  flex: none;
+}
+.walletPay__text {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.walletPay__name {
+  font-size: 14px;
+  color: var(--heading);
+}
+.walletPay__avail {
+  font-size: 12.5px;
+  color: var(--muted-3);
+}
+.walletPay__amt {
+  font-size: 14px;
+  color: var(--green);
+}
+
 /* Coupon field inside the booking summary. */
 .coupon {
   margin-top: 12px;

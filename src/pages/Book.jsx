@@ -25,8 +25,15 @@ export default function Book() {
   const { salonId } = useParams()
   const [params] = useSearchParams()
   const navigate = useNavigate()
-  const { publicSalons, salonsReady, createBooking, createBookingOnline, isFirstBooking, session } =
-    useApp()
+  const {
+    publicSalons,
+    salonsReady,
+    createBooking,
+    createBookingOnline,
+    isFirstBooking,
+    session,
+    walletBalance,
+  } = useApp()
   const { push } = useToast()
   const t = useT()
 
@@ -108,6 +115,9 @@ export default function Book() {
   const [coupon, setCoupon] = useState(null)
   const [couponBusy, setCouponBusy] = useState(false)
   const [couponMsg, setCouponMsg] = useState(null) // { tone, text }
+  // Spend the SalonSaathi Wallet first (online only). On by default when there's
+  // money in it; the server re-checks the balance and debits it atomically.
+  const [useWallet, setUseWallet] = useState(true)
   // Codes this customer can use at this salon right now, shown as tappable offers.
   const [offers, setOffers] = useState([])
   useEffect(() => {
@@ -183,6 +193,11 @@ export default function Book() {
         ? coupon
         : null,
   })
+
+  // Wallet share (mirrors the server): capped at the total; the rest goes via Razorpay.
+  const walletUsed =
+    paymentMode === 'online' && useWallet ? Math.max(0, Math.min(walletBalance || 0, priced.total)) : 0
+  const payNow = priced.total - walletUsed
 
   // Cash-blocked customer AND no online gateway → they can't pay at all.
   const noPayMethod = payChecked && !payEnabled && Boolean(session?.cashBlocked)
@@ -278,13 +293,14 @@ export default function Book() {
       paymentMode,
       // Only online bookings honour a coupon; the server re-validates it.
       couponCode: paymentMode === 'online' && coupon ? coupon.code : undefined,
+      useWallet: walletUsed > 0 || undefined,
     }
 
     setSubmitting(true)
     try {
-      // Real online payment → Razorpay Checkout. Cash (or online demo when
-      // Razorpay isn't configured) → the direct create path.
-      const useGateway = paymentMode === 'online' && payEnabled
+      // Real online payment → Razorpay Checkout. Cash, a fully wallet-paid booking
+      // (or online demo when Razorpay isn't configured) → the direct create path.
+      const useGateway = paymentMode === 'online' && payEnabled && payNow > 0
       const booking = useGateway ? await createBookingOnline(draft) : await createBooking(draft)
 
       push({
@@ -652,6 +668,23 @@ export default function Book() {
               </div>
             )}
 
+            {paymentMode === 'online' && walletBalance > 0 && (
+              <label className="walletPay">
+                <input
+                  type="checkbox"
+                  checked={useWallet}
+                  onChange={(e) => setUseWallet(e.target.checked)}
+                />
+                <span className="walletPay__text">
+                  <span className="walletPay__name">{t('book.useWallet')}</span>
+                  <span className="walletPay__avail">
+                    {t('book.walletAvail', { amount: formatINR(walletBalance) })}
+                  </span>
+                </span>
+                {walletUsed > 0 && <span className="walletPay__amt money">−{formatINR(walletUsed)}</span>}
+              </label>
+            )}
+
             {paymentMode === 'online' && (
               <div className="coupon">
                 {priced.couponDiscount > 0 ? (
@@ -750,7 +783,9 @@ export default function Book() {
               <span className="summary__totalLabel">
                 {paymentMode === 'online' ? t('book.payNow') : t('book.payAtSalon')}
               </span>
-              <span className="summary__totalVal money">{formatINR(priced.total)}</span>
+              <span className="summary__totalVal money">
+                {formatINR(paymentMode === 'online' ? payNow : priced.total)}
+              </span>
             </div>
           </div>
 
@@ -774,7 +809,9 @@ export default function Book() {
             {submitting
               ? t('book.confirming')
               : paymentMode === 'online'
-                ? t('book.pay', { amt: formatINR(priced.total) })
+                ? payNow > 0
+                  ? t('book.pay', { amt: formatINR(payNow) })
+                  : t('book.confirmWallet')
                 : t('book.confirm')}
           </button>
 

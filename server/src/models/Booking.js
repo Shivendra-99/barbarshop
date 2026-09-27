@@ -60,6 +60,9 @@ const bookingSchema = new mongoose.Schema(
     couponCode: { type: String, default: null },
     couponDiscount: { type: Number, default: 0 },
     total: Number,
+    // Part of `total` paid from the customer's SalonSaathi Wallet; the rest
+    // (total - walletUsed) was charged through Razorpay.
+    walletUsed: { type: Number, default: 0 },
     commission: Number,
     salonPayout: Number,
     payee: String,
@@ -91,6 +94,9 @@ const bookingSchema = new mongoose.Schema(
       feePct: Number,
       method: String,
       status: String,
+      // Share of a UPI/bank refund credited to the wallet instead, because that
+      // part of the booking was paid from the wallet (Razorpay can't refund it).
+      walletAmount: { type: Number, default: 0 },
       // Razorpay refund id (rfnd_…) when the refund was issued to the original
       // source; null for wallet/cash refunds or a manual/pending settlement.
       id: { type: String, default: null },
@@ -156,6 +162,7 @@ bookingSchema.methods.toPublic = function toPublic({
     couponCode: this.couponCode ?? null,
     couponDiscount: this.couponDiscount ?? 0,
     total: this.total,
+    walletUsed: this.walletUsed ?? 0,
     commission: this.commission,
     salonPayout: this.salonPayout,
     payee: this.payee,

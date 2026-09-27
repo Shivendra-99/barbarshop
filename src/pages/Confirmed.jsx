@@ -28,7 +28,9 @@ export default function Confirmed() {
   const rzpId = booking.razorpay?.paymentId ?? null
   const paidOnline = booking.paymentMode === 'online' && booking.paymentStatus === 'paid'
   const payMethod = paidOnline
-    ? rzpId
+    ? booking.walletUsed >= booking.total && booking.walletUsed > 0
+      ? t('book.walletRow')
+      : rzpId
       ? t('done.paidOnlineRzp')
       : t('done.paidOnline')
     : t('done.cashAtSalon')
@@ -151,6 +153,12 @@ export default function Confirmed() {
               <dt>{booking.paymentMode === 'online' ? t('done.paid') : t('done.dueAtSalon')}</dt>
               <dd className="money">{formatINR(booking.total)}</dd>
             </div>
+            {booking.walletUsed > 0 && (
+              <div className="done__row">
+                <dt>{t('book.walletRow')}</dt>
+                <dd className="money">{formatINR(booking.walletUsed)}</dd>
+              </div>
+            )}
           </dl>
         </div>
 

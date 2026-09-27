@@ -14,6 +14,15 @@ import './Appointments.css'
 
 const TABS = ['Upcoming', 'Past']
 
+// A fully wallet-paid booking can only be refunded to the wallet.
+const refundMethods = (b) =>
+  Object.values(REFUND_METHODS).filter((m) => m.id === 'wallet' || !(b.walletUsed >= b.total && b.walletUsed > 0))
+
+// Part of a UPI/bank refund that returns to the wallet instead: Razorpay can
+// only refund what it collected (mirrors settleRefund on the server).
+const walletShare = (b, r) =>
+  r.method === 'upi' ? Math.max(0, r.amount - (b.total - (b.walletUsed || 0))) : 0
+
 /* ------------------------------------------------------------------
    Cancel dialog — rule 6: refund goes to Wallet (instant) or UPI (5–7 working days)
    ------------------------------------------------------------------ */
@@ -26,6 +35,7 @@ function CancelDialog({ booking, onClose, onConfirm }) {
   const cashBooking = booking.paymentMode === 'offline'
   // Itemised refund for the chosen method, shown as a small invoice below.
   const bill = cashBooking ? null : refundFor(booking, method)
+  const toWallet = bill ? walletShare(booking, bill) : 0
 
   // Guard against double-submits: once tapped, disable and show a loader until
   // onConfirm settles (the parent then closes the dialog).
@@ -69,7 +79,7 @@ function CancelDialog({ booking, onClose, onConfirm }) {
         ) : (
           <fieldset className="modal__methods">
             <legend className="modal__legend">{t('appt.chooseRefund')}</legend>
-            {Object.values(REFUND_METHODS).map((m) => {
+            {refundMethods(booking).map((m) => {
               const r = refundFor(booking, m.id)
               return (
                 <label key={m.id} className={`refund${method === m.id ? ' is-active' : ''}`}>
@@ -113,7 +123,13 @@ function CancelDialog({ booking, onClose, onConfirm }) {
                 <span className="money">{formatINR(bill.amount)}</span>
               </div>
               <p className="refundBill__dest">
-                {t('appt.billTo', { dest: t(`refund.${method}`), eta: t(`refund.${method}Eta`) })}
+                {toWallet > 0
+                  ? t('appt.billSplit', {
+                      bank: formatINR(bill.amount - toWallet),
+                      eta: t(`refund.${method}Eta`),
+                      wallet: formatINR(toWallet),
+                    })
+                  : t('appt.billTo', { dest: t(`refund.${method}`), eta: t(`refund.${method}Eta`) })}
               </p>
             </div>
 
@@ -182,7 +198,7 @@ function NoShowRefundDialog({ booking, onClose, onConfirm }) {
         </p>
         <fieldset className="modal__methods">
           <legend className="modal__legend">{t('appt.chooseRefund')}</legend>
-          {Object.values(REFUND_METHODS).map((m) => (
+          {refundMethods(booking).map((m) => (
             <label key={m.id} className={`refund${method === m.id ? ' is-active' : ''}`}>
               <input
                 type="radio"
@@ -310,7 +326,9 @@ export default function Appointments() {
             ? 'Nothing to refund — this was a pay-at-salon booking.'
             : refund.method === 'wallet'
               ? `${formatINR(refund.amount)} credited to your SalonSaathi Wallet instantly.`
-              : `Your refund of ${formatINR(refund.amount)} will be processed to your original UPI/bank within 5–7 working days.`,
+              : `Your refund of ${formatINR(refund.amount - (refund.walletAmount || 0))} will be processed to your original UPI/bank within 5–7 working days.${
+                  refund.walletAmount ? ` ${formatINR(refund.walletAmount)} is back in your wallet.` : ''
+                }`,
       })
     } catch (err) {
       push({ tone: 'warn', title: 'Could not cancel', body: err.message })

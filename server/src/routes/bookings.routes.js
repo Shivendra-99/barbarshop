@@ -36,14 +36,14 @@ export const shouldSourceRefund = (booking, refund) =>
   booking?.paymentMode === 'online' &&
   Boolean(booking?.razorpay?.paymentId)
 
-async function issueSourceRefund(booking, refund, reason) {
-  if (!shouldSourceRefund(booking, refund) || !razorpayEnabled()) {
+async function issueSourceRefund(booking, refund, reason, amount = refund.amount) {
+  if (!(amount > 0) || !shouldSourceRefund(booking, refund) || !razorpayEnabled()) {
     return refund
   }
   try {
     const rf = await refundPayment({
       paymentId: booking.razorpay.paymentId,
-      amount: refund.amount,
+      amount,
       notes: { ref: booking.ref, reason },
     })
     refund.id = rf.id
@@ -54,6 +54,40 @@ async function issueSourceRefund(booking, refund, reason) {
     console.log(`[refund] source refund failed for ${booking.ref}:`, err.message)
   }
   return refund
+}
+
+/** A fully wallet-paid booking has nothing for Razorpay to refund, so its
+ * refund always goes back to the wallet (at the wallet's fee). */
+const refundMethodFor = (booking, method) =>
+  booking.walletUsed > 0 && booking.walletUsed >= booking.total ? 'wallet' : method
+
+/**
+ * Pay out a customer refund and return the new wallet balance (or null when
+ * the wallet didn't change). Wallet refunds land instantly. A UPI/bank refund
+ * goes back to the original payment via Razorpay, but only up to what Razorpay
+ * collected; anything above that was paid from the wallet and returns there
+ * (recorded as refund.walletAmount). Mutates `refund`.
+ */
+async function settleRefund(booking, refund, userId, note, reason) {
+  let toWallet = 0
+  if (refund.method === 'wallet' && refund.status === 'completed') toWallet = refund.amount
+  if (refund.method === 'upi') {
+    const gatewayPaid = booking.total - (booking.walletUsed || 0)
+    toWallet = Math.max(0, refund.amount - gatewayPaid)
+    refund.walletAmount = toWallet
+    await issueSourceRefund(booking, refund, reason, refund.amount - toWallet)
+  }
+  if (!(toWallet > 0)) return null
+  const u = await User.findByIdAndUpdate(userId, { $inc: { walletBalance: toWallet } }, { new: true })
+  await WalletTxn.create({
+    user: userId,
+    type: 'credit',
+    amount: toWallet,
+    note,
+    bookingRef: booking.ref,
+    balanceAfter: u?.walletBalance ?? 0,
+  })
+  return u?.walletBalance ?? null
 }
 
 export const createSchema = z
@@ -75,6 +109,8 @@ export const createSchema = z
     paymentMode: z.enum(['online', 'offline']),
     // Optional discount code — only honoured for online bookings.
     couponCode: z.string().trim().max(24).optional(),
+    // Pay what the wallet covers first (online only); Razorpay collects the rest.
+    useWallet: z.boolean().optional(),
   })
   .refine((b) => b.serviceId || (b.serviceIds && b.serviceIds.length), {
     message: 'Choose at least one service.',
@@ -256,6 +292,15 @@ export async function priceBookingDraft(user, body) {
     priced.salonPayout += priced.couponDiscount
   }
 
+  // Wallet (online only) pays first, capped at the total. `walletAmount` is the
+  // server-fixed figure stored on a PaymentIntent at order time (never from the
+  // client — the schema strips it), so a balance change between order and
+  // payment can't alter what the gateway was asked to charge.
+  const walletAvail = body.walletAmount ?? user.walletBalance ?? 0
+  priced.walletUsed =
+    body.paymentMode === 'online' && body.useWallet ? Math.max(0, Math.min(walletAvail, priced.total)) : 0
+  priced.payNow = priced.total - priced.walletUsed
+
   return { salon, services, primary: services[0], items, serviceName, priced, homeServiceFee, coupon }
 }
 
@@ -272,6 +317,25 @@ export async function createBookingRecord(user, body, payment = {}) {
   }
 
   const paidOnline = body.paymentMode === 'online' && payment.paid === true
+  if (payment.requireCovered && priced.payNow > 0) {
+    throw new ApiError(400, 'Please complete the online payment to book.')
+  }
+
+  // Take the wallet share first. Atomic: the balance check and the debit are one
+  // operation, so the same money can't pay for two bookings.
+  if (priced.walletUsed > 0) {
+    const debited = await User.findOneAndUpdate(
+      { _id: user._id, walletBalance: { $gte: priced.walletUsed } },
+      { $inc: { walletBalance: -priced.walletUsed } },
+      { new: true },
+    )
+    if (!debited) {
+      throw Object.assign(new ApiError(400, 'Your wallet balance changed. Please try again.'), {
+        walletShort: true,
+      })
+    }
+    user.walletBalance = debited.walletBalance
+  }
 
   // Assigns a free seat and creates atomically (race-proof — see createInFreeSeat).
   const booking = await createInFreeSeat(
@@ -307,7 +371,25 @@ export async function createBookingRecord(user, body, payment = {}) {
       status: 'confirmed',
     },
     salon,
-  )
+  ).catch(async (err) => {
+    // Slot filled up after the wallet was debited → give the money back.
+    if (priced.walletUsed > 0) {
+      await User.updateOne({ _id: user._id }, { $inc: { walletBalance: priced.walletUsed } })
+      user.walletBalance += priced.walletUsed
+    }
+    throw err
+  })
+
+  if (priced.walletUsed > 0) {
+    await WalletTxn.create({
+      user: user._id,
+      type: 'debit',
+      amount: priced.walletUsed,
+      note: `Paid for ${serviceName}`,
+      bookingRef: booking.ref,
+      balanceAfter: user.walletBalance,
+    })
+  }
 
   // Consume the coupon (once per booking) only when it actually applied.
   if (priced.couponDiscount > 0) {
@@ -398,11 +480,15 @@ router.post(
         'Cash bookings are disabled on your account after repeated cancellations. Please pay online.',
       )
     }
-    // Online here means the demo flow (no Razorpay configured): mark it paid.
-    // With Razorpay on, the client routes online bookings through /api/payments
-    // instead, so this path is cash — or the keyless demo — only.
+    // Online here means fully wallet-paid, or the demo flow (no Razorpay
+    // configured). Anything the gateway must collect goes via /api/payments.
+    // With Razorpay on, an online booking must be paid through /api/payments —
+    // unless the wallet covers the whole amount (requireCovered enforces it).
     const paid = req.body.paymentMode === 'online'
-    const booking = await createBookingRecord(req.user, req.body, { paid })
+    const booking = await createBookingRecord(req.user, req.body, {
+      paid,
+      requireCovered: paid && razorpayEnabled(),
+    })
     res.status(201).json({ booking: booking.toPublic({ includeOtp: true }) })
   }),
 )
@@ -726,29 +812,27 @@ router.post(
     if (booking.status === 'cancelled') {
       throw new ApiError(400, 'This booking is already cancelled.')
     }
+    // Atomic claim so a double-tap can't refund twice.
+    const claimed = await Booking.updateOne(
+      { _id: booking._id, status: { $ne: 'cancelled' } },
+      { status: 'cancelled', cancelledAt: new Date() },
+    )
+    if (!claimed.modifiedCount) throw new ApiError(400, 'This booking is already cancelled.')
 
-    const refund = refundFor(booking, req.body.method)
-    // UPI/bank refund → issue it to the original source via Razorpay now.
-    await issueSourceRefund(booking, refund, 'customer_cancel')
+    const refund = refundFor(booking, refundMethodFor(booking, req.body.method))
+    // Wallet → instant; UPI/bank → Razorpay back to the source (wallet share → wallet).
+    const newBalance = await settleRefund(
+      booking,
+      refund,
+      req.user._id,
+      `Refund for ${booking.serviceName}`,
+      'customer_cancel',
+    )
     booking.status = 'cancelled'
     booking.refund = refund
     booking.cancelledAt = new Date()
     await booking.save()
-
-    // A wallet refund lands immediately; UPI is marked processing and settles offline.
-    let walletBalance = req.user.walletBalance
-    if (refund.status === 'completed' && refund.method === 'wallet' && refund.amount > 0) {
-      walletBalance += refund.amount
-      await User.updateOne({ _id: req.user._id }, { walletBalance })
-      await WalletTxn.create({
-        user: req.user._id,
-        type: 'credit',
-        amount: refund.amount,
-        note: `Refund for ${booking.serviceName}`,
-        bookingRef: booking.ref,
-        balanceAfter: walletBalance,
-      })
-    }
+    const walletBalance = newBalance ?? req.user.walletBalance
 
     // Cash-booking abuse guard: a cash cancel counts as a strike; 3 → blocked.
     let cashBlocked = req.user.cashBlocked
@@ -760,11 +844,14 @@ router.post(
 
     const salon = await Salon.findById(booking.salon).catch(() => null)
     const feeLine = refund.fee > 0 ? ` (${refund.feePct}% fee ${formatINR(refund.fee)})` : ''
+    const toWallet = refund.walletAmount || 0
     const refundLine =
-      refund.status === 'completed'
+      refund.method === 'wallet'
         ? `${formatINR(refund.amount)} credited to your wallet${feeLine}`
-        : refund.status === 'processing'
-          ? `${formatINR(refund.amount)} refunded to UPI/bank in 5–7 working days${feeLine}`
+        : refund.method === 'upi'
+          ? `${formatINR(refund.amount - toWallet)} refunded to UPI/bank in 5–7 working days${
+              toWallet ? ` and ${formatINR(toWallet)} to your wallet` : ''
+            }${feeLine}`
           : 'No payment was taken, so nothing to refund'
     await notify([
       {
@@ -928,26 +1015,24 @@ router.post(
       throw new ApiError(400, 'No refund is pending for this booking.')
     }
 
-    const refund = noShowRefund(booking, req.body.method)
-    // UPI/bank refund → issue it to the original source via Razorpay now.
-    await issueSourceRefund(booking, refund, 'no_show')
+    // Atomic claim on the pending refund so a double-tap can't pay it twice.
+    const claimed = await Booking.updateOne(
+      { _id: booking._id, 'refund.status': 'pending' },
+      { 'refund.status': 'settling' },
+    )
+    if (!claimed.modifiedCount) throw new ApiError(400, 'No refund is pending for this booking.')
+
+    const refund = noShowRefund(booking, refundMethodFor(booking, req.body.method))
+    const newBalance = await settleRefund(
+      booking,
+      refund,
+      req.user._id,
+      `No-show refund (15% penalty) for ${booking.serviceName}`,
+      'no_show',
+    )
     booking.refund = refund
     await booking.save()
-
-    // Wallet is instant; UPI/bank is marked processing and settled offline.
-    let walletBalance = req.user.walletBalance
-    if (refund.status === 'completed' && refund.method === 'wallet' && refund.amount > 0) {
-      walletBalance = (req.user.walletBalance || 0) + refund.amount
-      await User.updateOne({ _id: req.user._id }, { walletBalance })
-      await WalletTxn.create({
-        user: req.user._id,
-        type: 'credit',
-        amount: refund.amount,
-        note: `No-show refund (15% penalty) for ${booking.serviceName}`,
-        bookingRef: booking.ref,
-        balanceAfter: walletBalance,
-      })
-    }
+    const walletBalance = newBalance ?? req.user.walletBalance
 
     res.json({ booking: booking.toPublic(), walletBalance })
   }),

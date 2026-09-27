@@ -78,6 +78,16 @@ export function AppProvider({ children }) {
     setMyLedger(wallet.ledger)
   }, [])
 
+  const refreshWallet = useCallback(() => {
+    api
+      .wallet()
+      .then((w) => {
+        setWalletBalance(w.balance)
+        setMyLedger(w.ledger)
+      })
+      .catch(() => {})
+  }, [])
+
   const loadOwner = useCallback(async () => {
     const [{ salons }, { bookings }] = await Promise.all([api.mySalons(), api.ownerBookings()])
     setMySalons(enrichList(salons))
@@ -184,9 +194,10 @@ export function AppProvider({ children }) {
       const { booking } = await api.createBooking(draft)
       setMyBookings((prev) => [booking, ...prev])
       loadNotifications().catch(() => {})
+      if (booking.walletUsed > 0) refreshWallet()
       return booking
     },
-    [loadNotifications],
+    [loadNotifications, refreshWallet],
   )
 
   // Online booking via Razorpay: create the order, open Checkout, then verify.
@@ -198,9 +209,10 @@ export function AppProvider({ children }) {
       const { booking } = await api.verifyPayment(result)
       setMyBookings((prev) => [booking, ...prev])
       loadNotifications().catch(() => {})
+      if (booking.walletUsed > 0) refreshWallet()
       return booking
     },
-    [loadNotifications],
+    [loadNotifications, refreshWallet],
   )
 
   const cancelBooking = useCallback(
