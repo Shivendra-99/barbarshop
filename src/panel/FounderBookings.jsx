@@ -6,6 +6,12 @@ import './panel-ui.css'
 
 const FILTERS = ['All', 'Online', 'Cash', 'Cancelled']
 
+const STATUS = {
+  confirmed: ['Confirmed', 'badge--green'],
+  completed: ['Completed', 'badge--neutral'],
+  cancelled: ['Cancelled', 'badge--red'],
+}
+
 export default function FounderBookings() {
   const { bookings } = useApp()
   const [filter, setFilter] = useState('All')
@@ -101,8 +107,8 @@ export default function FounderBookings() {
                   </td>
                   <td className="ptable__money">{formatINR(b.total)}</td>
                   <td>
-                    <span className={`badge ${b.status === 'cancelled' ? 'badge--red' : 'badge--green'}`}>
-                      {b.status === 'cancelled' ? 'Cancelled' : 'Confirmed'}
+                    <span className={`badge ${STATUS[b.status]?.[1] ?? 'badge--green'}`}>
+                      {STATUS[b.status]?.[0] ?? 'Confirmed'}
                     </span>
                   </td>
                 </tr>

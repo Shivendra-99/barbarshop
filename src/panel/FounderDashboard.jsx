@@ -13,6 +13,12 @@ const KPI_ICONS = {
   pending: 'M12 7v5l3 2M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18Z',
 }
 
+const STATUS = {
+  confirmed: ['Confirmed', 'badge--green'],
+  completed: ['Completed', 'badge--neutral'],
+  cancelled: ['Cancelled', 'badge--red'],
+}
+
 function Kpi({ icon, label, value, delta, deltaUp }) {
   return (
     <div className="kpi">
@@ -192,12 +198,8 @@ export default function FounderDashboard() {
                       </td>
                       <td className="ptable__money">{formatINR(b.total)}</td>
                       <td>
-                        <span
-                          className={`badge ${
-                            b.status === 'cancelled' ? 'badge--red' : 'badge--green'
-                          }`}
-                        >
-                          {b.status === 'cancelled' ? 'Cancelled' : 'Confirmed'}
+                        <span className={`badge ${STATUS[b.status]?.[1] ?? 'badge--green'}`}>
+                          {STATUS[b.status]?.[0] ?? 'Confirmed'}
                         </span>
                       </td>
                     </tr>
