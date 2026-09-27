@@ -3,9 +3,10 @@ import mongoose from 'mongoose'
 /**
  * A salon owner's request to withdraw wallet earnings.
  *   • instant → 7% fee, processed on request.
- *   • weekly  → 0% fee, settled by the SalonSaathi team every Sunday.
- * The wallet is debited (gross) when the request is made; the team marks it
- * completed once the bank transfer of `net` is done.
+ *   • weekly  → 4% fee, settled by the SalonSaathi team every Sunday.
+ * The wallet is debited (gross) when the request is made; the founder marks it
+ * completed once `net` is transferred to `destination`, or rejects it (which
+ * credits the gross back to the wallet).
  */
 const withdrawalSchema = new mongoose.Schema(
   {
@@ -20,6 +21,17 @@ const withdrawalSchema = new mongoose.Schema(
       default: 'pending',
       index: true,
     },
+    // Snapshot of the owner's payout details at request time, so editing them
+    // later can't change where an already-requested withdrawal goes.
+    destination: {
+      upi: { type: String, default: null },
+      accountName: { type: String, default: null },
+      accountNumber: { type: String, default: null },
+      ifsc: { type: String, default: null },
+    },
+    utr: { type: String, default: null }, // bank/UPI reference, set when paid
+    note: { type: String, default: null }, // reason, set when rejected
+    processedAt: { type: Date, default: null },
   },
   { timestamps: true },
 )
@@ -32,6 +44,10 @@ withdrawalSchema.methods.toPublic = function toPublic() {
     net: this.net,
     method: this.method,
     status: this.status,
+    destination: this.destination,
+    utr: this.utr,
+    note: this.note,
+    processedAt: this.processedAt,
     ts: this.createdAt,
   }
 }

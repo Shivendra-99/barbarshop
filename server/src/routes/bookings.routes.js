@@ -249,6 +249,13 @@ export async function priceBookingDraft(user, body) {
     coupon: couponForQuote(coupon),
   })
 
+  // A founder-made coupon is a platform promotion: the platform absorbs the
+  // discount, so the salon is paid as if no coupon was used. Salon-made coupons
+  // and offers still come out of the salon's own payout.
+  if (priced.couponDiscount > 0 && (await User.exists({ _id: coupon.createdBy, role: 'founder' }))) {
+    priced.salonPayout += priced.couponDiscount
+  }
+
   return { salon, services, primary: services[0], items, serviceName, priced, homeServiceFee, coupon }
 }
 

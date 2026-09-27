@@ -839,6 +839,19 @@ a.ptable__mono {
   color: var(--heading);
 }
 
+/* Owner wallet — saved UPI / bank row. */
+.payout-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-md, 10px);
+  background: var(--surface);
+}
+
 /* Salon edit — owner's map pin row. */
 .sed-pin {
   display: flex;

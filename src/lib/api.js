@@ -161,6 +161,10 @@ export const api = {
   withdrawals: () => request('/withdrawals'),
   requestWithdrawal: (amount, method) =>
     request('/withdrawals', { method: 'POST', body: { amount, method } }),
+  savePayoutDetails: (details) => request('/withdrawals/payout-details', { method: 'PUT', body: details }),
+  // Founder payouts
+  allWithdrawals: () => request('/withdrawals/all'),
+  decideWithdrawal: (id, body) => request(`/withdrawals/${id}`, { method: 'PATCH', body }),
   notifications: () => request('/notifications'),
   readNotifications: () => request('/notifications/read', { method: 'POST' }),
 }

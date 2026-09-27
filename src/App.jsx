@@ -30,6 +30,7 @@ import OwnerBookings from './panel/OwnerBookings'
 import OwnerWallet from './panel/OwnerWallet'
 import OwnerProfile from './panel/OwnerProfile'
 import Coupons from './panel/Coupons'
+import FounderPayouts from './panel/FounderPayouts'
 
 export default function App() {
   return (
@@ -108,6 +109,7 @@ export default function App() {
           <Route path="owners" element={<FounderOwners />} />
           <Route path="bookings" element={<FounderBookings />} />
           <Route path="coupons" element={<Coupons />} />
+          <Route path="payouts" element={<FounderPayouts />} />
         </Route>
 
         {/* ---------------- Owner dashboard ---------------- */}

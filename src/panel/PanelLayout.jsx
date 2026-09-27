@@ -16,6 +16,7 @@ const NAV = {
       { to: '/admin/owners', label: 'Owners', icon: 'users' },
       { to: '/admin/bookings', label: 'Bookings', icon: 'calendar' },
       { to: '/admin/coupons', label: 'Coupons', icon: 'tag' },
+      { to: '/admin/payouts', label: 'Payouts', icon: 'wallet' },
     ],
   },
   owner: {

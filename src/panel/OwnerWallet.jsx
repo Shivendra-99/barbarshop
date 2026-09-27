@@ -7,7 +7,12 @@ import { formatINR } from '../lib/money'
 import './panel-ui.css'
 
 const MIN = 500
-const INSTANT_FEE = 0.07
+const DEFAULT_RATES = { instant: 0.07, weekly: 0.04 }
+const pct = (r) => `${Math.round(r * 100)}%`
+const EMPTY_PAYOUT = { upi: '', accountName: '', accountNumber: '', ifsc: '' }
+const hasPayout = (p) => Boolean(p?.upi || (p?.accountName && p?.accountNumber && p?.ifsc))
+// Show only the last 4 digits of an account number.
+const maskAcct = (n) => (n ? `•••• ${String(n).slice(-4)}` : '')
 
 const STATUS_BADGE = {
   completed: 'badge--green',
@@ -23,25 +28,56 @@ const STATUS_BADGE = {
 export default function OwnerWallet() {
   const { mySalons } = useApp()
   const { push } = useToast()
-  const [data, setData] = useState(null) // { balance, min, instantFeeRate, withdrawals }
+  const [data, setData] = useState(null) // { balance, min, feeRates, payout, withdrawals }
   const [ledger, setLedger] = useState([])
   const [open, setOpen] = useState(false)
   const [amount, setAmount] = useState('')
   const [method, setMethod] = useState('weekly')
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
+  const [editPayout, setEditPayout] = useState(null) // form values while the dialog is open
+  const [payoutErr, setPayoutErr] = useState('')
 
   const load = () => {
     api.withdrawals().then(setData).catch(() => setData(null))
     api.wallet().then((w) => setLedger(w.ledger)).catch(() => {})
   }
-  useEffect(load, [])
+  useEffect(() => {
+    load()
+  }, [])
 
   const balance = data?.balance ?? 0
+  const rates = data?.feeRates ?? DEFAULT_RATES
+  const payout = data?.payout
+  const payoutReady = hasPayout(payout)
   const amt = Number(amount) || 0
-  const fee = method === 'instant' ? Math.round(amt * INSTANT_FEE) : 0
+  const fee = Math.round(amt * rates[method])
   const net = amt - fee
   const valid = amt >= MIN && amt <= balance
+
+  const openPayout = () => {
+    setPayoutErr('')
+    setEditPayout({
+      ...EMPTY_PAYOUT,
+      ...Object.fromEntries(Object.entries(payout ?? {}).map(([k, v]) => [k, v ?? ''])),
+    })
+  }
+
+  const savePayout = async () => {
+    if (busy) return
+    setBusy(true)
+    setPayoutErr('')
+    try {
+      const { payout: saved } = await api.savePayoutDetails(editPayout)
+      setData((d) => ({ ...d, payout: saved }))
+      setEditPayout(null)
+      push({ tone: 'success', title: 'Payout details saved' })
+    } catch (e) {
+      setPayoutErr(e.details?.[0]?.message || e.message || 'Could not save.')
+    } finally {
+      setBusy(false)
+    }
+  }
 
   const submit = async () => {
     if (!valid || busy) return
@@ -52,7 +88,10 @@ export default function OwnerWallet() {
       push({
         tone: 'success',
         title: 'Withdrawal requested',
-        body: method === 'instant' ? `${formatINR(net)} (7% fee)` : `${formatINR(net)} · this Sunday`,
+        body:
+          method === 'instant'
+            ? `${formatINR(net)} (${pct(rates.instant)} fee)`
+            : `${formatINR(net)} · this Sunday (${pct(rates.weekly)} fee)`,
       })
       setOpen(false)
       setAmount('')
@@ -91,13 +130,18 @@ export default function OwnerWallet() {
               type="button"
               className="wallet-hero__btn"
               onClick={() => {
+                if (!payoutReady) return openPayout()
                 setErr('')
                 setAmount('')
                 setOpen(true)
               }}
               disabled={balance < MIN}
             >
-              {balance < MIN ? `Minimum ${formatINR(MIN)} to withdraw` : 'Withdraw'}
+              {balance < MIN
+                ? `Minimum ${formatINR(MIN)} to withdraw`
+                : payoutReady
+                  ? 'Withdraw'
+                  : 'Add UPI / bank to withdraw'}
             </button>
           </div>
 
@@ -110,13 +154,33 @@ export default function OwnerWallet() {
             </div>
             <div className="kpi">
               <div className="kpi__label">Instant</div>
-              <div className="kpi__value">7%</div>
+              <div className="kpi__value">{pct(rates.instant)}</div>
               <div className="kpi__delta">Any time · fee</div>
             </div>
             <div className="kpi">
               <div className="kpi__label">Weekly</div>
-              <div className="kpi__value">0%</div>
-              <div className="kpi__delta">Every Sunday</div>
+              <div className="kpi__value">{pct(rates.weekly)}</div>
+              <div className="kpi__delta">Every Sunday · fee</div>
+            </div>
+          </div>
+
+          {/* Where withdrawals are paid */}
+          <div className="p-section">
+            <h3 className="p-section__title">Payout details</h3>
+            <div className="payout-card">
+              <div>
+                {!payoutReady && <div className="ptable__strong">No UPI ID or bank account added yet</div>}
+                {payout?.upi && <div className="ptable__strong">UPI · {payout.upi}</div>}
+                {payout?.accountNumber && (
+                  <div className={payout.upi ? 'ptable__sub' : 'ptable__strong'}>
+                    {payout.accountName} · A/c {maskAcct(payout.accountNumber)} · {payout.ifsc}
+                  </div>
+                )}
+                <div className="ptable__sub">Withdrawals are sent here.</div>
+              </div>
+              <button type="button" className="btn btn--outline btn--sm" onClick={openPayout}>
+                {payoutReady ? 'Edit' : 'Add details'}
+              </button>
             </div>
           </div>
 
@@ -151,6 +215,8 @@ export default function OwnerWallet() {
                           <span className={`badge ${STATUS_BADGE[w.status] ?? 'badge--neutral'}`}>
                             {w.status}
                           </span>
+                          {w.utr && <div className="ptable__sub">Ref {w.utr}</div>}
+                          {w.note && <div className="ptable__sub">{w.note}</div>}
                         </td>
                       </tr>
                     ))}
@@ -208,6 +274,51 @@ export default function OwnerWallet() {
         </>
       )}
 
+      {editPayout && (
+        <div className="pmodal" role="presentation" onMouseDown={() => setEditPayout(null)}>
+          <div
+            className="pmodal__box pmodal__box--sm"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="payout-title"
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            <h3 className="pmodal__title" id="payout-title">Payout details</h3>
+            <p className="pmodal__text">Add a UPI ID, or your bank account. One is enough.</p>
+            {[
+              { k: 'upi', label: 'UPI ID', ph: 'name@okaxis', mode: 'email' },
+              { k: 'accountName', label: 'Account holder name', ph: 'As on bank passbook' },
+              { k: 'accountNumber', label: 'Account number', ph: '9–18 digits', mode: 'numeric' },
+              { k: 'ifsc', label: 'IFSC', ph: 'SBIN0001234' },
+            ].map((f) => (
+              <label className="field" key={f.k}>
+                <span className="field__label">{f.label}</span>
+                <input
+                  className="field__input"
+                  inputMode={f.mode}
+                  autoComplete="off"
+                  value={editPayout[f.k]}
+                  placeholder={f.ph}
+                  onChange={(e) => {
+                    setEditPayout((p) => ({ ...p, [f.k]: e.target.value }))
+                    setPayoutErr('')
+                  }}
+                />
+              </label>
+            ))}
+            {payoutErr && <p className="field__error">{payoutErr}</p>}
+            <div className="pmodal__actions">
+              <button type="button" className="btn btn--outline" onClick={() => setEditPayout(null)}>
+                Cancel
+              </button>
+              <button type="button" className="btn btn--gold" onClick={savePayout} disabled={busy}>
+                {busy ? 'Saving…' : 'Save'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {open && (
         <div className="pmodal" role="presentation" onMouseDown={() => setOpen(false)}>
           <div
@@ -218,7 +329,8 @@ export default function OwnerWallet() {
           >
             <h3 className="pmodal__title">Withdraw earnings</h3>
             <p className="pmodal__text">
-              Available {formatINR(balance)} · minimum {formatINR(MIN)}.
+              Available {formatINR(balance)} · minimum {formatINR(MIN)}. Paid to{' '}
+              {payout?.upi || `A/c ${maskAcct(payout?.accountNumber)}`}.
             </p>
             <label className="field">
               <span className="field__label">Amount</span>
@@ -238,8 +350,8 @@ export default function OwnerWallet() {
             </label>
             <div className="wd-methods">
               {[
-                { id: 'weekly', label: 'Weekly (Sunday)', note: '0% fee' },
-                { id: 'instant', label: 'Instant', note: '7% fee' },
+                { id: 'weekly', label: 'Weekly (Sunday)', note: `${pct(rates.weekly)} fee` },
+                { id: 'instant', label: 'Instant', note: `${pct(rates.instant)} fee` },
               ].map((m) => (
                 <button
                   key={m.id}

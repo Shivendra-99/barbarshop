@@ -6,7 +6,7 @@ export default function RefundPolicy() {
   return (
     <div className="shell shell--narrow simple legal">
       <h1 className="display simple__title">Cancellation &amp; Refund Policy</h1>
-      <p className="legal__meta">Last Updated: 24 September 2026</p>
+      <p className="legal__meta">Last Updated: 27 September 2026</p>
       <p className="legal__p">At SalonSaathi, we aim for customer satisfaction.</p>
 
       <h2 className="simple__heading">A. For Salon Owner — Listing Fee</h2>
@@ -39,7 +39,7 @@ export default function RefundPolicy() {
           <strong>Instant withdrawal:</strong> available anytime with a 7% charge.
         </li>
         <li>
-          <strong>Weekly withdrawal:</strong> free (0% fee) — processed every Sunday by the
+          <strong>Weekly withdrawal:</strong> 4% charge — processed every Sunday by the
           SalonSaathi team.
         </li>
       </ul>

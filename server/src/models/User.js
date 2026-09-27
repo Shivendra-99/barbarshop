@@ -24,6 +24,14 @@ const userSchema = new mongoose.Schema(
     // Owner-only: phone numbers this owner has blocked from booking at THEIR
     // salons. A per-owner list, not a platform ban.
     blockedCustomers: { type: [String], default: [] },
+    // Owner-only: where withdrawals are paid. UPI, or a bank account (all three
+    // bank fields); either one is enough.
+    payout: {
+      upi: { type: String, default: null },
+      accountName: { type: String, default: null },
+      accountNumber: { type: String, default: null },
+      ifsc: { type: String, default: null },
+    },
   },
   { timestamps: true },
 )
