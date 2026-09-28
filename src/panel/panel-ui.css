@@ -867,3 +867,30 @@ a.ptable__mono {
   font-size: 13.5px;
   color: var(--heading);
 }
+
+/* Founder payouts — inline copy button next to UPI / account / amount. */
+.copybtn {
+  margin-left: 6px;
+  padding: 1px 8px;
+  border: 1px solid var(--gold-line);
+  border-radius: 999px;
+  background: var(--gold-wash);
+  color: var(--gold-deep);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  vertical-align: middle;
+}
+.copybtn:hover { border-color: var(--gold); }
+
+/* Founder: owner payout details inside the salon edit dialog. */
+.ope__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 12px;
+  margin-top: 8px;
+}
+@media (max-width: 560px) {
+  .ope__grid { grid-template-columns: minmax(0, 1fr); }
+}

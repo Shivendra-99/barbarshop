@@ -6,7 +6,7 @@ import { api } from '../lib/api'
 import { formatINR } from '../lib/money'
 import './panel-ui.css'
 
-const MIN = 500
+const MIN_DEFAULT = 100
 const DEFAULT_RATES = { instant: 0.07, weekly: 0.04 }
 const pct = (r) => `${Math.round(r * 100)}%`
 const EMPTY_PAYOUT = { upi: '', accountName: '', accountNumber: '', ifsc: '' }
@@ -47,6 +47,7 @@ export default function OwnerWallet() {
   }, [])
 
   const balance = data?.balance ?? 0
+  const MIN = data?.min ?? MIN_DEFAULT
   const rates = data?.feeRates ?? DEFAULT_RATES
   const payout = data?.payout
   const payoutReady = hasPayout(payout)
@@ -347,6 +348,12 @@ export default function OwnerWallet() {
                 placeholder={String(MIN)}
                 autoFocus
               />
+              {amt > balance && (
+                <span className="field__error">More than your wallet balance ({formatINR(balance)}).</span>
+              )}
+              {amt > 0 && amt < MIN && (
+                <span className="field__error">Minimum withdrawal is {formatINR(MIN)}.</span>
+              )}
             </label>
             <div className="wd-methods">
               {[

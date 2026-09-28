@@ -8,10 +8,12 @@ import { requireAuth, requireRole } from '../middleware/auth.js'
 import { asyncHandler, ApiError } from '../middleware/error.js'
 import { notify } from '../lib/notify.js'
 import { formatINR } from '../lib/money.js'
+import { env } from '../config/env.js'
+import { sendFlowSms } from '../lib/sms/flow.js'
 
 const router = Router()
 
-export const MIN_WITHDRAWAL = 500
+export const MIN_WITHDRAWAL = 100
 export const FEE_RATES = { instant: 0.07, weekly: 0.04 }
 const pct = (method) => `${Math.round(FEE_RATES[method] * 100)}%`
 
@@ -40,6 +42,10 @@ const detailsSchema = z
   .refine((d) => !(d.accountName || d.accountNumber || d.ifsc) || (d.accountName && d.accountNumber && d.ifsc), {
     message: 'Fill in name, account number and IFSC together.',
   })
+
+/** "UPI xyz@okhdfc" or "A/c ••••7812 (HDFC0001234)", for messages. */
+const destLabel = (d) =>
+  d?.upi ? `UPI ${d.upi}` : d?.accountNumber ? `A/c ••••${String(d.accountNumber).slice(-4)} (${d.ifsc})` : 'your account'
 
 const hasPayout = (p) => Boolean(p?.upi || (p?.accountName && p?.accountNumber && p?.ifsc))
 const payoutOf = (u) => ({
@@ -150,6 +156,55 @@ router.post(
 
 /* ------------------------------ Founder ------------------------------ */
 
+const ownerFor = async (id) => {
+  const owner = /^[a-f0-9]{24}$/i.test(id) ? await User.findById(id).catch(() => null) : null
+  if (!owner || owner.role !== 'owner') throw new ApiError(404, 'Owner not found.')
+  return owner
+}
+
+/** Founder: an owner's payout details (to check or correct them). */
+router.get(
+  '/owner/:ownerId/payout-details',
+  requireAuth,
+  requireRole('founder'),
+  asyncHandler(async (req, res) => {
+    const owner = await ownerFor(req.params.ownerId)
+    res.json({ owner: { id: owner._id.toString(), name: owner.name, phone: owner.phone }, payout: payoutOf(owner) })
+  }),
+)
+
+/**
+ * Founder: correct an owner's payout details. Also re-points the owner's OPEN
+ * withdrawals (pending/processing) at the new details, since fixing a wrong UPI
+ * is exactly why the founder edits them. (An owner's own edit deliberately does
+ * NOT touch open requests: their snapshot stops a hijacked account redirecting
+ * money that was already requested.)
+ */
+router.put(
+  '/owner/:ownerId/payout-details',
+  requireAuth,
+  requireRole('founder'),
+  validate(detailsSchema),
+  asyncHandler(async (req, res) => {
+    const owner = await ownerFor(req.params.ownerId)
+    const payout = { ...req.body }
+    await User.updateOne({ _id: owner._id }, { payout })
+    const { modifiedCount } = await Withdrawal.updateMany(
+      { owner: owner._id, status: { $in: ['pending', 'processing'] } },
+      { destination: payout },
+    )
+    await notify([
+      {
+        audience: `owner:${owner._id.toString()}`,
+        tone: 'info',
+        title: 'Payout details updated',
+        body: `SalonSaathi updated where your withdrawals are paid: ${destLabel(payout)}.`,
+      },
+    ])
+    res.json({ payout, openWithdrawalsUpdated: modifiedCount })
+  }),
+)
+
 /** Founder: every withdrawal, open ones first, with the owner's name and phone. */
 router.get(
   '/all',
@@ -211,10 +266,22 @@ router.patch(
         title: status === 'completed' ? 'Withdrawal paid' : 'Withdrawal returned to wallet',
         body:
           status === 'completed'
-            ? `${formatINR(w.net)} has been sent${utr ? ` (ref ${utr})` : ''}.`
+            ? `${formatINR(w.net)} has been sent to ${destLabel(w.destination)}${utr ? ` (ref ${utr})` : ''}.`
             : `${formatINR(w.amount)} is back in your wallet${note ? `: ${note}` : '.'}`,
       },
     ])
+
+    // SMS to the owner once a DLT-approved "payout sent" template is set up
+    // (MSG91_PAYOUT_FLOW_ID). Awaited so it fires on serverless; never throws.
+    if (status === 'completed') {
+      const owner = await User.findById(w.owner, { name: 1, phone: 1 }).catch(() => null)
+      await sendFlowSms({
+        flowId: env.msg91.payoutFlowId,
+        phone: owner?.phone,
+        vars: { NAME: owner?.name || 'Owner', AMOUNT: String(w.net), DEST: destLabel(w.destination), REF: utr || '-' },
+        label: 'payout-paid',
+      })
+    }
 
     res.json({ withdrawal: w.toPublic() })
   }),

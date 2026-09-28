@@ -4,6 +4,7 @@
  */
 import assert from 'node:assert/strict'
 process.env.MONGODB_URI = '' // never touch a real database
+process.env.MSG91_AUTHKEY = '' // never send real SMS
 const { env } = await import('../config/env.js')
 assert.equal(env.mongoUri, '', 'refusing to run against a real database')
 const { createApp } = await import('../app.js')
@@ -75,6 +76,31 @@ try {
   assert.equal(r.body.withdrawal.utr, 'UTR123')
   assert.equal((await call(f, 'PATCH', `/withdrawals/${instant.id}`, { status: 'rejected' })).status, 404)
   assert.equal((await User.findById(owner._id)).walletBalance, 1000)
+
+  // Minimum is ₹100; more than the balance is refused (wallet has ₹1000 here).
+  assert.equal((await call(o, 'POST', '/withdrawals', { amount: 99, method: 'weekly' })).status, 400)
+  r = await call(o, 'POST', '/withdrawals', { amount: 1001, method: 'weekly' })
+  assert.equal(r.status, 400)
+  assert.match(r.body.error, /more than your wallet balance/)
+  r = await call(o, 'POST', '/withdrawals', { amount: 100, method: 'weekly' })
+  assert.equal(r.status, 201)
+  const smallId = r.body.withdrawal.id
+
+  // Founder corrects the owner's UPI → the open request now pays the new UPI;
+  // owners can't use this route.
+  assert.equal((await call(o, 'PUT', `/withdrawals/owner/${owner._id}/payout-details`, { upi: 'x@okaxis' })).status, 403)
+  r = await call(f, 'GET', `/withdrawals/owner/${owner._id}/payout-details`)
+  assert.equal(r.body.payout.upi, 'ravi.k@okaxis')
+  r = await call(f, 'PUT', `/withdrawals/owner/${owner._id}/payout-details`, { upi: 'ravi.new@okhdfcbank' })
+  assert.deepEqual([r.status, r.body.openWithdrawalsUpdated], [200, 1])
+  r = await call(f, 'GET', '/withdrawals/all')
+  assert.equal(r.body.withdrawals.find((w) => w.id === smallId).destination.upi, 'ravi.new@okhdfcbank')
+
+  // Paying it tells the owner how much went where.
+  await call(f, 'PATCH', `/withdrawals/${smallId}`, { status: 'completed', utr: 'UTR777' })
+  const { Notification } = await import('../models/Notification.js')
+  const paidNote = await Notification.findOne({ title: 'Withdrawal paid' }).sort({ _id: -1 })
+  assert.match(paidNote.body, /₹96 has been sent to UPI ravi\.new@okhdfcbank \(ref UTR777\)/)
 
   console.log('withdrawals: all checks passed')
 } finally {

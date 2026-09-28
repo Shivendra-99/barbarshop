@@ -44,6 +44,8 @@ export const env = {
     ownerFlowId: process.env.MSG91_OWNER_FLOW_ID || process.env.MSG91_OWNER_BOOKING_FLOW_ID || '',
     ownerCancelAlertFlowId: process.env.MSG91_OWNER_CANCEL_ALERT_FLOW_ID || '',
     salonCancelFlowId: process.env.MSG91_SALON_CANCEL_FLOW_ID || '',
+    // Withdrawal paid → owner. Vars: NAME, AMOUNT, DEST, REF.
+    payoutFlowId: process.env.MSG91_PAYOUT_FLOW_ID || '',
   },
 
   // Mappls (MapmyIndia) address autosuggest. Server-side OAuth credentials —

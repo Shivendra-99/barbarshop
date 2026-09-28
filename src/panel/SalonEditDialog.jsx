@@ -3,6 +3,7 @@ import { CATEGORIES } from '../data/seed'
 import { fileToCompressedDataUrl } from '../lib/image'
 import TimeField12 from '../components/TimeField12'
 import ServiceEditor from './ServiceEditor'
+import OwnerPayoutEditor from './OwnerPayoutEditor'
 import './panel-ui.css'
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
@@ -382,6 +383,14 @@ export default function SalonEditDialog({ salon, role = 'founder', onClose, onSa
           <span className="se-hint">Changes to the menu are saved instantly.</span>
           <ServiceEditor salonId={salon.id} />
         </div>
+
+        {role === 'founder' && salon.ownerId && (
+          <div className="se-block">
+            <span className="field__label">Owner payout details</span>
+            <span className="se-hint">Where this owner’s withdrawals are paid. Saved instantly.</span>
+            <OwnerPayoutEditor ownerId={salon.ownerId} />
+          </div>
+        )}
 
         <div className="pmodal__actions">
           <button type="button" className="btn btn--outline" onClick={onClose}>

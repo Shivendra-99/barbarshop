@@ -11,6 +11,46 @@ const STATUS_BADGE = {
   rejected: 'badge--red',
 }
 
+const isOpen = (w) => w.status === 'pending' || w.status === 'processing'
+
+/** Small "Copy" button so UPI IDs / account numbers are pasted, never retyped. */
+function Copy({ value, label }) {
+  const { push } = useToast()
+  const copy = async () => {
+    const text = String(value)
+    let ok = false
+    try {
+      await navigator.clipboard.writeText(text)
+      ok = true
+    } catch {
+      // Clipboard API blocked (some phone browsers / embedded views): fall back
+      // to a hidden textarea + execCommand, which works almost everywhere.
+      const ta = document.createElement('textarea')
+      ta.value = text
+      ta.setAttribute('readonly', '')
+      ta.style.cssText = 'position:fixed;opacity:0;top:0;left:0'
+      document.body.appendChild(ta)
+      ta.select()
+      try {
+        ok = document.execCommand('copy')
+      } catch {
+        ok = false
+      }
+      ta.remove()
+    }
+    push(
+      ok
+        ? { tone: 'success', title: `${label} copied`, body: text }
+        : { tone: 'warn', title: 'Could not copy', body: 'Select the text and copy it manually.' },
+    )
+  }
+  return (
+    <button type="button" className="copybtn" onClick={copy} aria-label={`Copy ${label}`}>
+      Copy
+    </button>
+  )
+}
+
 const when = (iso) =>
   iso ? new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'
 
@@ -25,6 +65,7 @@ export default function FounderPayouts() {
   const [act, setAct] = useState(null) // { w, status } while the dialog is open
   const [text, setText] = useState('')
   const [busy, setBusy] = useState(false)
+  const [tab, setTab] = useState('open') // 'open' | 'history'
 
   const load = () =>
     api
@@ -39,8 +80,14 @@ export default function FounderPayouts() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const open = rows?.filter((w) => w.status === 'pending' || w.status === 'processing') ?? []
+  const open = rows?.filter(isOpen) ?? []
   const owed = open.reduce((sum, w) => sum + w.net, 0)
+  // History: settled requests, most recently settled first.
+  const history = (rows?.filter((w) => !isOpen(w)) ?? []).sort(
+    (a, b) => new Date(b.processedAt || b.ts) - new Date(a.processedAt || a.ts),
+  )
+  const paidTotal = history.filter((w) => w.status === 'completed').reduce((sum, w) => sum + w.net, 0)
+  const shown = tab === 'open' ? open : history
 
   const submit = async () => {
     if (busy) return
@@ -76,14 +123,44 @@ export default function FounderPayouts() {
           <div className="kpi__label">To pay</div>
           <div className="kpi__value">{formatINR(owed)}</div>
         </div>
+        <div className="kpi">
+          <div className="kpi__label">Paid so far</div>
+          <div className="kpi__value">{formatINR(paidTotal)}</div>
+        </div>
+      </div>
+
+      <div className="fs-filters" role="tablist" aria-label="Payout lists">
+        {[
+          ['open', `Pending requests (${open.length})`],
+          ['history', `Paid history (${history.length})`],
+        ].map(([id, label]) => (
+          <button
+            key={id}
+            type="button"
+            role="tab"
+            className="chip"
+            aria-selected={tab === id}
+            aria-pressed={tab === id}
+            onClick={() => setTab(id)}
+          >
+            {label}
+          </button>
+        ))}
       </div>
 
       <div className="p-section">
         {rows === null ? (
           <p className="p-empty__text">Loading…</p>
-        ) : rows.length === 0 ? (
+        ) : shown.length === 0 ? (
           <div className="p-empty">
-            <h4 className="p-empty__title">No withdrawal requests yet</h4>
+            <h4 className="p-empty__title">
+              {tab === 'open' ? 'No pending requests' : 'Nothing paid yet'}
+            </h4>
+            <p className="p-empty__text">
+              {tab === 'open'
+                ? 'All caught up. New owner withdrawal requests appear here.'
+                : 'Requests you mark as paid or reject are listed here.'}
+            </p>
           </div>
         ) : (
           <div className="ptable-wrap">
@@ -95,13 +172,12 @@ export default function FounderPayouts() {
                   <th>To</th>
                   <th>Method</th>
                   <th>Status</th>
-                  <th />
+                  {tab === 'open' && <th />}
                 </tr>
               </thead>
               <tbody>
-                {rows.map((w) => {
+                {shown.map((w) => {
                   const d = w.destination ?? {}
-                  const isOpen = w.status === 'pending' || w.status === 'processing'
                   return (
                     <tr key={w.id}>
                       <td>
@@ -111,16 +187,28 @@ export default function FounderPayouts() {
                         </div>
                       </td>
                       <td className="ptable__money">
-                        <div className="ptable__strong">{formatINR(w.net)}</div>
+                        <div className="ptable__strong">
+                          {formatINR(w.net)} {isOpen(w) && <Copy value={w.net} label="Amount" />}
+                        </div>
                         <div className="ptable__sub">
                           of {formatINR(w.amount)} · fee {formatINR(w.fee)}
                         </div>
                       </td>
                       <td>
-                        {d.upi && <div className="ptable__strong">UPI {d.upi}</div>}
+                        {d.upi && (
+                          <div className="ptable__strong">
+                            UPI {d.upi} <Copy value={d.upi} label="UPI ID" />
+                          </div>
+                        )}
                         {d.accountNumber && (
                           <div className={d.upi ? 'ptable__sub' : 'ptable__strong'}>
-                            {d.accountName} · {d.accountNumber} · {d.ifsc}
+                            <div>{d.accountName}</div>
+                            <div>
+                              A/c {d.accountNumber} <Copy value={d.accountNumber} label="Account number" />
+                            </div>
+                            <div>
+                              IFSC {d.ifsc} <Copy value={d.ifsc} label="IFSC" />
+                            </div>
                           </div>
                         )}
                         {!d.upi && !d.accountNumber && <span className="ptable__sub">Not provided</span>}
@@ -128,11 +216,17 @@ export default function FounderPayouts() {
                       <td style={{ textTransform: 'capitalize' }}>{w.method}</td>
                       <td>
                         <span className={`badge ${STATUS_BADGE[w.status] ?? 'badge--neutral'}`}>{w.status}</span>
+                        {w.processedAt && (
+                          <div className="ptable__sub">
+                            {w.status === 'completed' ? 'Paid' : 'Settled'} {when(w.processedAt)}
+                          </div>
+                        )}
                         {w.utr && <div className="ptable__sub">Ref {w.utr}</div>}
                         {w.note && <div className="ptable__sub">{w.note}</div>}
                       </td>
+                      {tab === 'open' && (
                       <td>
-                        {isOpen && (
+                        {isOpen(w) && (
                           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                             <button
                               type="button"
@@ -157,6 +251,7 @@ export default function FounderPayouts() {
                           </div>
                         )}
                       </td>
+                      )}
                     </tr>
                   )
                 })}
