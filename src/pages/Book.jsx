@@ -7,7 +7,7 @@ import AddressAutocomplete from '../components/AddressAutocomplete'
 import { api } from '../lib/api'
 import { formatINR } from '../lib/money'
 import { PAYMENT_MODES, quote } from '../lib/pricing'
-import { cityById } from '../data/seed'
+import { cityById, initials, staffMeta } from '../data/seed'
 import {
   buildCalendar,
   formatDateLabel,
@@ -150,11 +150,15 @@ export default function Book() {
     }
   }, [salonId, date, availTick])
 
-  // Slots depend on the salon's own opening hours + real availability.
-  const slots = useMemo(
-    () => (salon ? slotsFor(salon, date, toISO(today), availability) : []),
-    [salon, date, today, availability],
-  )
+  // Slots depend on the salon's own opening hours + real availability; with a
+  // professional chosen, also on whether that person is already booked.
+  const staffName = salon?.staff.find((p) => p.id === staffId)?.name ?? null
+  const slots = useMemo(() => {
+    const base = salon ? slotsFor(salon, date, toISO(today), availability) : []
+    if (!staffName) return base
+    const staffTaken = availability?.staffTaken ?? {}
+    return base.map((s) => ({ ...s, busy: s.busy || (staffTaken[s.label] ?? []).includes(staffName) }))
+  }, [salon, date, today, availability, staffName])
 
   // Drop a slot that stops being valid when the date changes.
   useEffect(() => {
@@ -324,7 +328,9 @@ export default function Book() {
         push({
           tone: 'warn',
           title: 'That time just got booked',
-          body: 'Please pick another slot — availability has been refreshed.',
+          body: /already booked/.test(err.message || '')
+            ? err.message
+            : 'Please pick another slot — availability has been refreshed.',
         })
       } else {
         push({
@@ -456,15 +462,15 @@ export default function Book() {
                     type="button"
                     className={`staffPick${active ? ' is-active' : ''}`}
                     aria-pressed={active}
-                    aria-label={`${p.name}, ${p.role}`}
+                    aria-label={[p.name, staffMeta(p)].filter(Boolean).join(', ')}
                     onClick={() => setStaffId(p.id)}
                   >
-                    <img src={p.img} alt="" aria-hidden="true" />
+                    <span className="staffPick__any staffPick__initials" aria-hidden="true">
+                      {initials(p.name)}
+                    </span>
                     <span>
                       <span className="staffPick__name">{p.name}</span>
-                      <span className="staffPick__meta">
-                        ★ {p.rating.toFixed(1)} · {p.role}
-                      </span>
+                      {staffMeta(p) && <span className="staffPick__meta">{staffMeta(p)}</span>}
                     </span>
                   </button>
                 )

@@ -118,6 +118,14 @@ bookingSchema.index(
   { unique: true, partialFilterExpression: { status: 'confirmed' } },
 )
 
+// One confirmed booking per staff member per slot, so two customers can't both
+// book the same professional for the same time (bookings with no chosen
+// professional are unaffected).
+bookingSchema.index(
+  { salon: 1, date: 1, slot: 1, staffName: 1 },
+  { unique: true, partialFilterExpression: { status: 'confirmed', staffName: { $type: 'string' } } },
+)
+
 // `includeOtp` is set only for the customer's own views — never owner/founder,
 // so the completion OTP stays secret from the salon until the customer shares it.
 // `includeCustomer` adds the customer's name+phone for the owner's booking list

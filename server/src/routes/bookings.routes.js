@@ -167,6 +167,26 @@ export async function assertSlotAvailable(salon, date, slot, excludeId) {
 }
 
 const SLOT_FULL = 'That time slot was just taken. Please choose another time.'
+const staffBusy = (name) => `${name} is already booked at this time. Please pick another time or professional.`
+
+/** A duplicate-key error on the (salon, date, slot, staffName) index. */
+const isDuplicateStaff = (err) =>
+  err?.code === 11000 && (Boolean(err.keyPattern?.staffName) || /staffName/.test(err.message || ''))
+
+/**
+ * The professional a customer chose, if any: must be on this salon's team
+ * (else 400) and free at that date and slot (else 409). Returns the name.
+ */
+export async function resolveStaff(salon, name, date, slot, excludeId) {
+  if (!name) return null
+  const member = (salon.staff ?? []).find((s) => s.name === name)
+  if (!member) throw new ApiError(400, 'That professional is not available at this salon. Please choose again.')
+  const eq = equivalentSlots(slot)
+  const q = { salon: salon._id, date, slot: { $in: eq }, status: 'confirmed', staffName: member.name }
+  if (excludeId) q._id = { $ne: excludeId }
+  if (await Booking.exists(q)) throw new ApiError(409, staffBusy(member.name))
+  return member.name
+}
 
 /**
  * Find the first free seat (0 … capacity-1) for a salon/date/slot and create the
@@ -195,6 +215,8 @@ async function createInFreeSeat(fields, salon) {
         fields.ref = makeRef()
         continue
       }
+      // Same professional booked concurrently for this slot.
+      if (isDuplicateStaff(err)) throw new ApiError(409, staffBusy(fields.staffName))
       if (err && err.code === 11000) continue
       throw err
     }
@@ -317,6 +339,8 @@ export async function createBookingRecord(user, body, payment = {}) {
   }
 
   const paidOnline = body.paymentMode === 'online' && payment.paid === true
+  // Checked before any money moves (wallet debit below).
+  const staffName = await resolveStaff(salon, body.staffName, body.date, body.slot)
   if (payment.requireCovered && priced.payNow > 0) {
     throw new ApiError(400, 'Please complete the online payment to book.')
   }
@@ -350,7 +374,7 @@ export async function createBookingRecord(user, body, payment = {}) {
       salonName: salon.name,
       salonPhone: salon.phone || null,
       serviceName,
-      staffName: body.staffName ?? null,
+      staffName,
       mode: body.mode,
       modeLabel: body.mode === 'home' ? 'Home service' : 'At salon',
       address: body.mode === 'home' ? body.address : null,
@@ -516,7 +540,17 @@ router.get(
       taken[r._id] = r.count
     })
 
-    res.json({ capacity: salonDoc.capacity || 1, taken })
+    // Which professionals are already booked at each slot.
+    const staffRows = await Booking.find(
+      { salon: salonDoc._id, date, status: 'confirmed', staffName: { $type: 'string' } },
+      { slot: 1, staffName: 1 },
+    ).lean()
+    const staffTaken = {}
+    staffRows.forEach((b) => {
+      ;(staffTaken[b.slot] ||= []).push(b.staffName)
+    })
+
+    res.json({ capacity: salonDoc.capacity || 1, taken, staffTaken })
   }),
 )
 
@@ -557,6 +591,13 @@ router.patch(
     const newDate = req.body.date
     const newSlot = req.body.slot
     const newLabel = req.body.dateLabel ?? req.body.date
+    // The chosen professional must also be free at the new time.
+    if (booking.staffName && salon) {
+      await resolveStaff(salon, booking.staffName, newDate, newSlot, booking._id).catch((err) => {
+        // Staff since removed from the team: keep the booking, drop the check.
+        if (err.status !== 400) throw err
+      })
+    }
 
     // Move onto a free seat in the new slot (race-proof via the unique index).
     let saved = false
@@ -578,6 +619,7 @@ router.patch(
         await booking.save()
         saved = true
       } catch (err) {
+        if (isDuplicateStaff(err)) throw new ApiError(409, staffBusy(booking.staffName))
         if (err && err.code === 11000) continue // seat taken concurrently — retry
         throw err
       }

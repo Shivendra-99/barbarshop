@@ -54,6 +54,18 @@ const salonSchema = new mongoose.Schema(
     // the service subtotal at checkout. Applied before the first-booking offer.
     offerActive: { type: Boolean, default: false },
     offerPercent: { type: Number, default: 0, min: 0, max: 50 },
+    // The salon's real team, entered by the owner. Customers may pick one at
+    // booking; the same person can't be booked twice for one slot.
+    staff: {
+      type: [
+        {
+          name: { type: String, required: true, trim: true },
+          role: { type: String, default: '' },
+          years: { type: Number, default: null },
+        },
+      ],
+      default: [],
+    },
     rating: { type: Number, default: 0 },
     reviews: { type: Number, default: 0 },
     badge: { type: String, default: 'New' },
@@ -88,6 +100,12 @@ salonSchema.methods.toPublic = function toPublic() {
     capacity: this.capacity ?? 1,
     offerActive: this.offerActive ?? false,
     offerPercent: this.offerPercent ?? 0,
+    staff: (this.staff ?? []).map((s) => ({
+      id: s._id.toString(),
+      name: s.name,
+      role: s.role || '',
+      years: s.years ?? null,
+    })),
     rating: this.rating,
     reviews: this.reviews,
     badge: this.badge,

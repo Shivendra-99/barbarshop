@@ -197,6 +197,7 @@ export default function OwnerBookings() {
                         <td>
                           <div className="ptable__strong">#{b.ref}</div>
                           <div className="ptable__sub">{b.serviceName}</div>
+                          {b.staffName && <div className="ptable__sub">with {b.staffName}</div>}
                         </td>
                         <td>
                           <div className="ptable__strong">{b.customerName ?? '—'}</div>

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { useApp } from '../store/AppStore'
 import { useT } from '../lib/i18n'
-import { categoryById, cityById } from '../data/seed'
+import { categoryById, cityById, initials, staffMeta } from '../data/seed'
 import { useSeo, SITE } from '../lib/seo'
 import { api } from '../lib/api'
 import { formatINR } from '../lib/money'
@@ -149,7 +149,7 @@ export default function Salon() {
       <div className="shell salon__grid">
         <div className="salon__main">
           <div className="tabs salon__tabs" role="tablist">
-            {TABS.map((tb) => (
+            {TABS.filter((tb) => tb.key !== 'team' || salon.staff.length > 0).map((tb) => (
               <button
                 key={tb.key}
                 type="button"
@@ -198,13 +198,12 @@ export default function Salon() {
             <div className="grid3 team">
               {salon.staff.map((p) => (
                 <div key={p.id} className="card team__card">
-                  <img src={p.img} alt="" aria-hidden="true" loading="lazy" />
+                  <div className="team__avatar" aria-hidden="true">
+                    {initials(p.name)}
+                  </div>
                   <div className="team__body">
                     <div className="team__name">{p.name}</div>
-                    <div className="team__role">
-                      {p.role} · {p.years}
-                    </div>
-                    <div className="team__rating">★ {p.rating.toFixed(1)}</div>
+                    {staffMeta(p) && <div className="team__role">{staffMeta(p)}</div>}
                   </div>
                 </div>
               ))}

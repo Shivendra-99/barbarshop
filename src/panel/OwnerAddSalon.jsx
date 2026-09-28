@@ -15,6 +15,8 @@ import {
   PhotoField,
   MapPinField,
   SlotSettings,
+  StaffFields,
+  staffProblem,
   PAYOUT_EMPTY,
   PayoutFields,
   payoutToForm,
@@ -145,6 +147,7 @@ export default function OwnerAddSalon({ asFounder = false }) {
     modes: !form.atSalon && !form.home ? 'Choose at least one service option.' : '',
     services: cleanServices.length === 0 ? 'Add at least one service with a price.' : '',
     payout: payoutProblem(payout),
+    staff: staffProblem(form.staff),
   }
   const valid = Object.values(errors).every((x) => !x)
 
@@ -450,6 +453,20 @@ export default function OwnerAddSalon({ asFounder = false }) {
           )}
 
           {err('modes') && <span className="field__error">{errors.modes}</span>}
+        </fieldset>
+
+        <fieldset className="addForm__modes">
+          <legend className="field__label">Your team (staff)</legend>
+          <p className="addForm__modesHint">
+            Add the people who work at the salon. Customers can pick their favourite when booking,
+            and the same person can’t be booked twice for the same time.
+          </p>
+          <StaffFields
+            staff={form.staff}
+            chairs={form.capacity}
+            onChange={(staff) => setForm((f) => ({ ...f, staff }))}
+          />
+          {err('staff') && <span className="field__error">{errors.staff}</span>}
         </fieldset>
 
         <fieldset className="addForm__modes">

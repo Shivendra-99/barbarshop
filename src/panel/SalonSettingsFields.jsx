@@ -21,6 +21,7 @@ export const SETTINGS_DEFAULTS = {
   closedDates: [],
   offerActive: false,
   offerPercent: 0,
+  staff: [], // [{ id?, name, role, years }]
 }
 
 /** The settings fields as the API expects them. */
@@ -32,8 +33,29 @@ export const settingsPayload = (form) => ({
   closedDates: form.closedDates,
   offerActive: Boolean(form.offerActive),
   offerPercent: form.offerActive ? Math.max(0, Math.min(50, Number(form.offerPercent) || 0)) : 0,
+  staff: (form.staff ?? [])
+    .map((p) => ({
+      ...(p.id ? { id: p.id } : {}),
+      name: p.name.trim(),
+      role: (p.role || '').trim(),
+      years: p.years === '' || p.years == null ? null : Math.max(0, Math.min(60, Math.round(Number(p.years)) || 0)),
+    }))
+    .filter((p) => p.name),
   ...(form.mapPin ? { mapPin: { lat: form.mapPin.lat, lng: form.mapPin.lng } } : {}),
 })
+
+/** Salon staff from the API → editable rows. */
+export const staffToForm = (list) =>
+  (list ?? []).map((p) => ({ id: p.id, name: p.name, role: p.role || '', years: p.years ?? '' }))
+
+/** '' when fine, else a message (names needed and unique). */
+export function staffProblem(list) {
+  const named = (list ?? []).filter((p) => p.name.trim() || p.role.trim() || String(p.years).trim())
+  if (named.some((p) => p.name.trim().length < 2)) return 'Enter a name for each staff member (or remove the row).'
+  const names = named.map((p) => p.name.trim().toLowerCase())
+  if (new Set(names).size !== names.length) return 'Two staff members have the same name. Add a surname or initial.'
+  return ''
+}
 
 /** Cover photo picker. */
 export function PhotoField({ photo, onChange }) {
@@ -240,6 +262,80 @@ export function SlotSettings({ form, setForm }) {
         )}
       </div>
     </>
+  )
+}
+
+/** The salon's team: customers can choose one of them when booking. */
+export function StaffFields({ staff, onChange, chairs }) {
+  const setRow = (i, k, v) => onChange(staff.map((p, j) => (j === i ? { ...p, [k]: v } : p)))
+  const named = staff.filter((p) => p.name.trim()).length
+  return (
+    <div className="stf">
+      {staff.length === 0 && (
+        <p className="se-hint">
+          No staff added yet. Customers will see “Any professional”. Add your team so customers can
+          choose who serves them.
+        </p>
+      )}
+      {staff.map((p, i) => (
+        <div className="stf__row" key={p.id ?? `new-${i}`}>
+          <label className="field">
+            <span className="field__label">Name</span>
+            <input
+              className="field__input"
+              value={p.name}
+              maxLength={60}
+              placeholder="e.g. Ramesh Kumar"
+              onChange={(e) => setRow(i, 'name', e.target.value)}
+            />
+          </label>
+          <label className="field">
+            <span className="field__label">Speciality (optional)</span>
+            <input
+              className="field__input"
+              value={p.role}
+              maxLength={60}
+              placeholder="e.g. Senior barber"
+              onChange={(e) => setRow(i, 'role', e.target.value)}
+            />
+          </label>
+          <label className="field stf__years">
+            <span className="field__label">Experience (yrs)</span>
+            <input
+              className="field__input"
+              type="number"
+              min="0"
+              max="60"
+              value={p.years}
+              placeholder="5"
+              onChange={(e) => setRow(i, 'years', e.target.value.replace(/\D/g, '').slice(0, 2))}
+            />
+          </label>
+          <button
+            type="button"
+            className="stf__remove"
+            aria-label={`Remove ${p.name || 'this staff member'}`}
+            onClick={() => onChange(staff.filter((_, j) => j !== i))}
+          >
+            ×
+          </button>
+        </div>
+      ))}
+      <button
+        type="button"
+        className="btn btn--outline btn--sm"
+        onClick={() => onChange([...staff, { name: '', role: '', years: '' }])}
+        disabled={staff.length >= 30}
+      >
+        + Add staff member
+      </button>
+      {chairs != null && named > 0 && Number(chairs) < named && (
+        <p className="se-hint">
+          Tip: you have {named} staff but {chairs} chair{Number(chairs) === 1 ? '' : 's'} per slot. Set
+          “Chairs (per slot)” to how many customers can be served at the same time.
+        </p>
+      )}
+    </div>
   )
 }
 

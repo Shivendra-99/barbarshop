@@ -302,26 +302,35 @@ export function enrichOwnerSalon(draft) {
 }
 
 /**
- * Enriches a bare salon record from the API with the derived, presentation-only
- * fields the UI expects — image, starting price, and staff. These are inferred
- * from the category (the API stores only the salon's own data), so the same
- * salon always renders with the same photo and team.
+ * Enriches a bare salon record from the API with the presentation fields the
+ * UI expects — image and starting price. Staff is the salon's real team as the
+ * owner entered it (empty until they add people; never invented).
  */
 export function enrichSalon(salon, index = 0) {
   const services = servicesFor(salon.category)
-  const staffSeed = STAFF_NAMES[salon.category] ?? STAFF_NAMES.unisex
   return {
     ...salon,
     // An owner-uploaded photo wins; otherwise fall back to the stock category image.
     img: salon.photo || imageFor(salon.category, index),
     from: salon.from ?? Math.min(...services.map((x) => x.amount)),
-    staff: staffSeed.map((p, k) => ({
-      ...p,
-      id: `${salon.id}-staff-${k}`,
-      img: STAFF_IMAGES[(index + k) % STAFF_IMAGES.length],
-    })),
+    staff: salon.staff ?? [],
   }
 }
+
+/** "Arjun Salgaonkar" → "AS", for staff avatars. */
+export const initials = (name) =>
+  String(name || '')
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase() ?? '')
+    .join('')
+
+/** "Senior stylist · 8 yrs" (skips whatever the owner left blank). */
+export const staffMeta = (p) =>
+  [p.role, p.years != null && p.years !== '' ? `${p.years} yr${Number(p.years) === 1 ? '' : 's'}` : null]
+    .filter(Boolean)
+    .join(' · ')
 
 /* ------------------------------------------------------------------
    Marketing copy

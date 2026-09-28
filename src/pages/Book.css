@@ -811,3 +811,10 @@
     width: 100%;
   }
 }
+
+/* Staff without photos: initials avatar. */
+.staffPick__initials {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}

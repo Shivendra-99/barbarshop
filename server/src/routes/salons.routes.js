@@ -36,7 +36,25 @@ const settingsFields = {
   // Cover photo as a compressed data URL, or null/'' to clear it. Bounded so a
   // huge upload can't be stored (client resizes to well under this).
   photo: z.string().max(1500000).nullable().optional(),
+  // The salon's team. `id` keeps an existing member's identity on edit.
+  staff: z
+    .array(
+      z.object({
+        id: z.string().regex(/^[a-f0-9]{24}$/i).optional(),
+        name: z.string().trim().min(2, 'Enter each staff member’s name.').max(60),
+        role: z.string().trim().max(60).optional().default(''),
+        years: z.number().int().min(0).max(60).nullable().optional(),
+      }),
+    )
+    .max(30)
+    .refine((list) => new Set(list.map((s) => s.name.toLowerCase())).size === list.length, {
+      message: 'Two staff members have the same name. Add a surname or initial.',
+    })
+    .optional(),
 }
+
+/** API staff list → Mongo subdocuments (reusing ids so members stay stable). */
+const toStaffDocs = (list) => list.map(({ id, ...rest }) => (id ? { _id: id, ...rest } : rest))
 
 const createSchema = z.object({
   name: z.string().trim().min(3).max(80),
@@ -100,7 +118,7 @@ function assertHoursValid(opens, closes) {
 const OWNER_EDITABLE = new Set([
   'name', 'area', 'address', 'phone', 'opens', 'closes', 'serviceModes',
   'homeServiceFee', 'slotMinutes', 'daysOff', 'closedDates', 'photo', 'capacity',
-  'offerActive', 'offerPercent', 'mapPin',
+  'offerActive', 'offerPercent', 'mapPin', 'staff',
 ])
 
 /**
@@ -219,6 +237,7 @@ router.post(
   validate(createSchema),
   asyncHandler(async (req, res) => {
     const { services, addressELoc, ownerId, mapPin, ...salonBody } = req.body
+    if (salonBody.staff) salonBody.staff = toStaffDocs(salonBody.staff)
 
     assertHoursValid(salonBody.opens, salonBody.closes)
 
@@ -322,6 +341,7 @@ router.patch(
     assertHoursValid(changes.opens ?? salon.opens, changes.closes ?? salon.closes)
 
     const { mapPin, ...fields } = changes
+    if (fields.staff) fields.staff = toStaffDocs(fields.staff)
     const addressChanged = ['address', 'area'].some((k) => k in fields && fields[k] !== salon[k])
     Object.assign(salon, fields)
 

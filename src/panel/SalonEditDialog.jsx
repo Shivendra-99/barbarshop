@@ -3,7 +3,15 @@ import { CATEGORIES } from '../data/seed'
 import TimeField12 from '../components/TimeField12'
 import ServiceEditor from './ServiceEditor'
 import OwnerPayoutEditor from './OwnerPayoutEditor'
-import { PhotoField, MapPinField, SlotSettings, settingsPayload } from './SalonSettingsFields'
+import {
+  PhotoField,
+  MapPinField,
+  SlotSettings,
+  StaffFields,
+  settingsPayload,
+  staffToForm,
+  staffProblem,
+} from './SalonSettingsFields'
 import './panel-ui.css'
 
 /**
@@ -32,6 +40,7 @@ export default function SalonEditDialog({ salon, role = 'founder', onClose, onSa
     mapPin: null,
     offerActive: salon.offerActive ?? false,
     offerPercent: salon.offerPercent ?? 0,
+    staff: staffToForm(salon.staff),
   })
   const [busy, setBusy] = useState(false)
 
@@ -48,9 +57,11 @@ export default function SalonEditDialog({ salon, role = 'founder', onClose, onSa
     return o == null || c == null || c > o
   })()
 
+  const staffErr = staffProblem(form.staff)
+
   const save = async () => {
     const serviceModes = [form.atSalon && 'salon', form.home && 'home'].filter(Boolean)
-    if (!serviceModes.length || !hoursValid || busy) return
+    if (!serviceModes.length || !hoursValid || staffErr || busy) return
     setBusy(true)
     try {
       const changes = {
@@ -168,6 +179,17 @@ export default function SalonEditDialog({ salon, role = 'founder', onClose, onSa
           </label>
         </div>
 
+        <div className="se-block">
+          <span className="field__label">Your team (staff)</span>
+          <span className="se-hint">Customers can choose one of them when booking. Saved with “Save changes”.</span>
+          <StaffFields
+            staff={form.staff}
+            chairs={form.capacity}
+            onChange={(staff) => setForm((f) => ({ ...f, staff }))}
+          />
+          {staffErr && <span className="field__error">{staffErr}</span>}
+        </div>
+
         {/* Menu — add, edit or remove services right here. Saves immediately,
             independent of the salon-details "Save changes" button below. */}
         <div className="se-block">
@@ -188,7 +210,7 @@ export default function SalonEditDialog({ salon, role = 'founder', onClose, onSa
           <button type="button" className="btn btn--outline" onClick={onClose}>
             Cancel
           </button>
-          <button type="button" className="btn btn--gold" onClick={save} disabled={busy || !hoursValid}>
+          <button type="button" className="btn btn--gold" onClick={save} disabled={busy || !hoursValid || Boolean(staffErr)}>
             {busy ? 'Saving…' : 'Save changes'}
           </button>
         </div>

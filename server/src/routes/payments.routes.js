@@ -10,6 +10,7 @@ import {
   priceBookingDraft,
   createBookingRecord,
   assertSlotAvailable,
+  resolveStaff,
 } from './bookings.routes.js'
 import { validate } from '../middleware/validate.js'
 import { requireAuth, requireRole } from '../middleware/auth.js'
@@ -94,6 +95,8 @@ router.post(
 
     // Don't take payment for a slot that's already full.
     await assertSlotAvailable(salon, draft.date, draft.slot)
+    // …nor for a professional who is already booked then.
+    await resolveStaff(salon, draft.staffName, draft.date, draft.slot)
 
     const order = await createOrder({
       amount: priced.payNow,
