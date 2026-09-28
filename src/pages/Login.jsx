@@ -13,6 +13,7 @@ import {
   widgetRetryWhatsapp,
 } from '../lib/msg91Widget'
 import LogoMark from '../components/LogoMark'
+import { api } from '../lib/api'
 import './Login.css'
 import { useNoIndex } from '../lib/seo'
 
@@ -35,7 +36,7 @@ function friendlyOtpError(raw) {
     return 'Too many attempts from your network. Please wait ~15 minutes, then try again — or get the code on WhatsApp.'
   }
   if (m.includes('limit') || m.includes('too many') || m.includes('exceed') || m.includes('maximum')) {
-    return 'You’ve reached the resend limit (2 codes per 15 minutes). Please wait a bit, then try again — or get the code on WhatsApp.'
+    return 'You’ve reached the OTP limit (3 codes per 15 minutes). Please wait a bit, then try again.'
   }
   return raw || 'Something went wrong. Please try again.'
 }
@@ -120,8 +121,10 @@ export default function Login() {
     }
     setBusy(true)
     try {
-      if (WIDGET) await widgetRetryOtp()
-      else {
+      if (WIDGET) {
+        await api.otpAttempt(phone)
+        await widgetRetryOtp()
+      } else {
         const res = await requestOtp(phone)
         setCode(res.devCode || '')
       }
@@ -143,6 +146,7 @@ export default function Login() {
     if (busy) return
     setBusy(true)
     try {
+      await api.otpAttempt(phone)
       await widgetRetryWhatsapp()
       setDigits(Array(OTP_LENGTH).fill(''))
       setError('')
@@ -168,6 +172,7 @@ export default function Login() {
     setBusy(true)
     try {
       if (WIDGET) {
+        await api.otpAttempt(phone) // server limit: 3 OTPs per 15 minutes
         await initWidget() // ensure the widget is ready (also needed for auto-send)
         await widgetSendOtp(phone)
         setCode('') // real SMS — no code to echo

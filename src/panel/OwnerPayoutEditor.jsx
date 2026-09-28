@@ -1,15 +1,8 @@
 import { useEffect, useState } from 'react'
 import { api } from '../lib/api'
 import { useToast } from '../components/Toast'
+import { PayoutFields, payoutToForm } from './SalonSettingsFields'
 import './panel-ui.css'
-
-const EMPTY = { upi: '', accountName: '', accountNumber: '', ifsc: '' }
-const FIELDS = [
-  { k: 'upi', label: 'UPI ID', ph: 'name@okaxis', mode: 'email' },
-  { k: 'accountName', label: 'Account holder name', ph: 'As on bank passbook' },
-  { k: 'accountNumber', label: 'Account number', ph: '9–18 digits', mode: 'numeric' },
-  { k: 'ifsc', label: 'IFSC', ph: 'SBIN0001234' },
-]
 
 /**
  * Founder-only: view and correct a salon owner's UPI / bank details. Saving also
@@ -26,10 +19,7 @@ export default function OwnerPayoutEditor({ ownerId }) {
     let alive = true
     api
       .ownerPayoutDetails(ownerId)
-      .then(({ payout }) => {
-        if (!alive) return
-        setForm({ ...EMPTY, ...Object.fromEntries(Object.entries(payout).map(([k, v]) => [k, v ?? ''])) })
-      })
+      .then(({ payout }) => alive && setForm(payoutToForm(payout)))
       .catch((e) => alive && setErr(e.message || 'Could not load payout details.'))
     return () => {
       alive = false
@@ -42,7 +32,7 @@ export default function OwnerPayoutEditor({ ownerId }) {
     setErr('')
     try {
       const { payout, openWithdrawalsUpdated } = await api.saveOwnerPayoutDetails(ownerId, form)
-      setForm({ ...EMPTY, ...Object.fromEntries(Object.entries(payout).map(([k, v]) => [k, v ?? ''])) })
+      setForm(payoutToForm(payout))
       push({
         tone: 'success',
         title: 'Payout details saved',
@@ -61,24 +51,13 @@ export default function OwnerPayoutEditor({ ownerId }) {
 
   return (
     <div className="ope">
-      <div className="ope__grid">
-        {FIELDS.map((f) => (
-          <label className="field" key={f.k}>
-            <span className="field__label">{f.label}</span>
-            <input
-              className="field__input"
-              inputMode={f.mode}
-              autoComplete="off"
-              value={form[f.k]}
-              placeholder={f.ph}
-              onChange={(e) => {
-                setForm((p) => ({ ...p, [f.k]: e.target.value }))
-                setErr('')
-              }}
-            />
-          </label>
-        ))}
-      </div>
+      <PayoutFields
+        value={form}
+        onChange={(v) => {
+          setForm(v)
+          setErr('')
+        }}
+      />
       {err && <p className="field__error">{err}</p>}
       <button type="button" className="btn btn--outline btn--sm" onClick={save} disabled={busy}>
         {busy ? 'Saving…' : 'Save payout details'}

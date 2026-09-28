@@ -35,5 +35,29 @@ export async function recordFailure(phone) {
   return { locked: false, left: env.loginMaxFails - row.fails }
 }
 
+/**
+ * Count one OTP send (SMS, resend or WhatsApp). The first send opens a
+ * LOGIN_LOCK_MINUTES window; more than LOGIN_MAX_FAILS sends inside it → 429.
+ * ponytail: read-then-write, so two sends in the same millisecond could both
+ * pass; harmless for a spam limit, use one atomic pipeline update if it matters.
+ */
+export async function recordSend(phone) {
+  const now = Date.now()
+  const row = await LoginLock.findOne({ phone })
+  if (!row?.sendWindowEnds || row.sendWindowEnds.getTime() <= now) {
+    const ends = new Date(now + lockMs())
+    const expiresAt = row?.expiresAt && row.expiresAt > ends ? row.expiresAt : ends
+    await LoginLock.updateOne({ phone }, { $set: { sends: 1, sendWindowEnds: ends, expiresAt } }, { upsert: true })
+    return
+  }
+  const updated = await LoginLock.findOneAndUpdate({ phone }, { $inc: { sends: 1 } }, { new: true })
+  if (updated.sends > env.loginMaxFails) {
+    throw new ApiError(
+      429,
+      `You can request only ${env.loginMaxFails} OTPs in ${env.loginLockMinutes} minutes. Try again in ${minsLeft(updated.sendWindowEnds)} min.`,
+    )
+  }
+}
+
 /** A successful login wipes the counter. */
 export const clearFailures = (phone) => LoginLock.deleteOne({ phone }).catch(() => {})

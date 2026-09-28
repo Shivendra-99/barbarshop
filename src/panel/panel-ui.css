@@ -894,3 +894,35 @@ a.ptable__mono {
 @media (max-width: 560px) {
   .ope__grid { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* Shared salon settings (Add + Edit): slot length / chairs row. */
+.ssf__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 12px;
+  margin-top: 14px;
+}
+@media (max-width: 560px) {
+  .ssf__grid { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* Founder dashboard: website QR popup. */
+.qrcard {
+  display: grid;
+  place-items: center;
+  min-height: 240px;
+  margin: 8px 0 4px;
+  padding: 12px;
+  border-radius: var(--r-md, 10px);
+  background: #fff;
+}
+.qrcard img {
+  display: block;
+  width: 100%;
+  max-width: 320px;
+  height: auto;
+}
+.btn.is-disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}

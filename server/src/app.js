@@ -30,7 +30,9 @@ export function createApp() {
   // path must stay unparsed. express.raw sets req._body, so express.json below
   // skips it and every other route still gets parsed JSON.
   app.use('/api/payments/webhook', express.raw({ type: '*/*' }))
-  app.use(express.json())
+  // 2 MB: salon photos travel inline as compressed data URLs (~150–400 KB),
+  // which the 100 KB default silently rejected.
+  app.use(express.json({ limit: '2mb' }))
   if (!env.isProd) app.use(morgan('dev'))
 
   // Health endpoints — kept above the DB gate so they answer even if Mongo is

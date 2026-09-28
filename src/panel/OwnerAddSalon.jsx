@@ -9,6 +9,18 @@ import { CATEGORIES, CITIES, normalizeCityId } from '../data/seed'
 import { api } from '../lib/api'
 import { formatINR } from '../lib/money'
 import ServiceRows from './ServiceRows'
+import {
+  SETTINGS_DEFAULTS,
+  settingsPayload,
+  PhotoField,
+  MapPinField,
+  SlotSettings,
+  PAYOUT_EMPTY,
+  PayoutFields,
+  payoutToForm,
+  payoutFilled,
+  payoutProblem,
+} from './SalonSettingsFields'
 import './panel-ui.css'
 import './OwnerAddSalon.css'
 
@@ -30,6 +42,7 @@ const EMPTY = {
   atSalon: true,
   home: false,
   homeServiceFee: 200,
+  ...SETTINGS_DEFAULTS,
 }
 
 /** A single blank service row — the owner decides what to add. */
@@ -55,6 +68,30 @@ export default function OwnerAddSalon({ asFounder = false }) {
   }, [asFounder])
 
   const homeBase = asFounder ? '/admin/salons' : '/owner'
+
+  // Payout (UPI / bank) details of the salon's owner: the signed-in owner, or
+  // the owner the founder picked. Prefilled with what's already saved.
+  const [payout, setPayout] = useState(PAYOUT_EMPTY)
+  const [savedPayout, setSavedPayout] = useState(PAYOUT_EMPTY)
+  useEffect(() => {
+    let alive = true
+    const load = asFounder
+      ? form.ownerId
+        ? api.ownerPayoutDetails(form.ownerId)
+        : Promise.resolve({ payout: null })
+      : api.withdrawals()
+    load
+      .then((r) => {
+        if (!alive) return
+        const p = payoutToForm(r.payout)
+        setPayout(p)
+        setSavedPayout(p)
+      })
+      .catch(() => {})
+    return () => {
+      alive = false
+    }
+  }, [asFounder, form.ownerId])
 
   // PIN → city/state/district/area (India Post), so salons work in any city.
   const [pinBusy, setPinBusy] = useState(false)
@@ -107,6 +144,7 @@ export default function OwnerAddSalon({ asFounder = false }) {
     address: form.address.trim().length < 8 ? 'Enter the full address.' : '',
     modes: !form.atSalon && !form.home ? 'Choose at least one service option.' : '',
     services: cleanServices.length === 0 ? 'Add at least one service with a price.' : '',
+    payout: payoutProblem(payout),
   }
   const valid = Object.values(errors).every((x) => !x)
 
@@ -148,8 +186,24 @@ export default function OwnerAddSalon({ asFounder = false }) {
         closes: form.closes,
         serviceModes,
         homeServiceFee: form.home ? Number(form.homeServiceFee) || 0 : 0,
+        ...settingsPayload(form),
         services: cleanServices,
       })
+
+      // Save the owner's payout details if they were entered or changed.
+      const payoutChanged = JSON.stringify(payout) !== JSON.stringify(savedPayout)
+      if (payoutFilled(payout) && payoutChanged) {
+        try {
+          if (asFounder) await api.saveOwnerPayoutDetails(form.ownerId, payout)
+          else await api.savePayoutDetails(payout)
+        } catch (e) {
+          push({
+            tone: 'warn',
+            title: 'Payout details not saved',
+            body: `${e.details?.[0]?.message || e.message} Add them later from ${asFounder ? 'Salons → Edit' : 'Wallet'}.`,
+          })
+        }
+      }
 
       push({
         tone: 'success',
@@ -180,6 +234,11 @@ export default function OwnerAddSalon({ asFounder = false }) {
       </div>
 
       <form className="addForm" onSubmit={submit} noValidate>
+        <fieldset className="addForm__modes">
+          <legend className="field__label">Salon photo</legend>
+          <PhotoField photo={form.photo} onChange={(photo) => setForm((f) => ({ ...f, photo }))} />
+        </fieldset>
+
         <div className="addForm__grid">
           {asFounder && (
             <label className="field addForm__full" htmlFor="s-owner">
@@ -338,6 +397,20 @@ export default function OwnerAddSalon({ asFounder = false }) {
         </div>
 
         <fieldset className="addForm__modes">
+          <legend className="field__label">Location &amp; booking settings</legend>
+          <MapPinField
+            mapPin={form.mapPin}
+            onPin={(mapPin) => setForm((f) => ({ ...f, mapPin }))}
+            status={
+              asFounder
+                ? 'Optional: if you are at the salon, pin it for an exact map location. Otherwise the address is used.'
+                : 'Optional: pin it for an exact map location. Otherwise your address is used.'
+            }
+          />
+          <SlotSettings form={form} setForm={setForm} />
+        </fieldset>
+
+        <fieldset className="addForm__modes">
           <legend className="field__label">Service options</legend>
           <p className="addForm__modesHint">You decide how customers can book — at your salon, at their home, or both.</p>
 
@@ -377,6 +450,21 @@ export default function OwnerAddSalon({ asFounder = false }) {
           )}
 
           {err('modes') && <span className="field__error">{errors.modes}</span>}
+        </fieldset>
+
+        <fieldset className="addForm__modes">
+          <legend className="field__label">Payout details (UPI / bank)</legend>
+          <p className="addForm__modesHint">
+            {asFounder
+              ? 'Where this owner’s earnings are paid. Add a UPI ID, or a bank account. Optional — it can be added later.'
+              : 'Where your earnings are paid. Add a UPI ID, or your bank account. Optional — you can add it later in Wallet.'}
+          </p>
+          {asFounder && !form.ownerId ? (
+            <p className="field__hint">Choose the owner first.</p>
+          ) : (
+            <PayoutFields value={payout} onChange={setPayout} />
+          )}
+          {err('payout') && <span className="field__error">{errors.payout}</span>}
         </fieldset>
 
         <fieldset className="addForm__modes">

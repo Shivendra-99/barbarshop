@@ -18,6 +18,26 @@ const serviceItem = z.object({
   desc: z.string().trim().max(300).optional().default(''),
 })
 
+/** Salon settings accepted both when adding and when editing a salon. */
+const settingsFields = {
+  // Owner slot controls.
+  slotMinutes: z.number().int().refine((v) => [15, 20, 30, 45, 60].includes(v), 'Invalid slot length.').optional(),
+  daysOff: z.array(z.number().int().min(0).max(6)).max(7).optional(),
+  closedDates: z.array(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)).max(120).optional(),
+  capacity: z.number().int().min(1).max(50).optional(),
+  // Owner promotional discount.
+  offerActive: z.boolean().optional(),
+  offerPercent: z.number().int().min(0).max(50).optional(),
+  // Owner's exact GPS pin, taken at the salon. Bounded to India so a stray
+  // reading can't send customers to the ocean.
+  mapPin: z
+    .object({ lat: z.number().min(6).max(38), lng: z.number().min(68).max(98) })
+    .optional(),
+  // Cover photo as a compressed data URL, or null/'' to clear it. Bounded so a
+  // huge upload can't be stored (client resizes to well under this).
+  photo: z.string().max(1500000).nullable().optional(),
+}
+
 const createSchema = z.object({
   name: z.string().trim().min(3).max(80),
   category: z.enum(['mens', 'unisex', 'parlour']),
@@ -39,6 +59,7 @@ const createSchema = z.object({
   ownerId: z.string().trim().optional(),
   // The owner's initial menu, reviewed together with the salon.
   services: z.array(serviceItem).min(1, 'Add at least one service.'),
+  ...settingsFields,
 })
 
 const statusSchema = z.object({ status: z.enum(['approved', 'rejected']) })
@@ -53,22 +74,7 @@ const editSchema = z.object({
   closes: z.string().optional(),
   serviceModes: z.array(z.enum(['salon', 'home'])).min(1).optional(),
   homeServiceFee: z.number().int().min(0).max(5000).optional(),
-  // Owner slot controls.
-  slotMinutes: z.number().int().refine((v) => [15, 20, 30, 45, 60].includes(v), 'Invalid slot length.').optional(),
-  daysOff: z.array(z.number().int().min(0).max(6)).max(7).optional(),
-  closedDates: z.array(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)).max(120).optional(),
-  capacity: z.number().int().min(1).max(50).optional(),
-  // Owner promotional discount.
-  offerActive: z.boolean().optional(),
-  offerPercent: z.number().int().min(0).max(50).optional(),
-  // Owner's exact GPS pin, taken at the salon. Bounded to India so a stray
-  // reading can't send customers to the ocean.
-  mapPin: z
-    .object({ lat: z.number().min(6).max(38), lng: z.number().min(68).max(98) })
-    .optional(),
-  // Cover photo as a compressed data URL, or null/'' to clear it. Bounded so a
-  // huge upload can't be stored (client resizes to well under this).
-  photo: z.string().max(1500000).nullable().optional(),
+  ...settingsFields,
 })
 
 /** "HH:MM" → minutes since midnight, or null if unparseable. */
@@ -212,7 +218,7 @@ router.post(
   requireRole('owner', 'founder'),
   validate(createSchema),
   asyncHandler(async (req, res) => {
-    const { services, addressELoc, ownerId, ...salonBody } = req.body
+    const { services, addressELoc, ownerId, mapPin, ...salonBody } = req.body
 
     assertHoursValid(salonBody.opens, salonBody.closes)
 
@@ -229,7 +235,10 @@ router.post(
 
     // Resolve the address to a geo reference: eLoc from the pick, lat/lng from
     // the geocoder (null if unavailable — never blocks salon submission).
-    const coords = await geocodeFirst(salonQueries(salonBody), { eLoc: addressELoc })
+    // An exact GPS pin taken at the salon wins over the address lookup.
+    const coords = mapPin
+      ? { ...mapPin, source: 'pin' }
+      : await geocodeFirst(salonQueries(salonBody), { eLoc: addressELoc })
     const location = {
       eLoc: addressELoc ?? null,
       lat: coords?.lat ?? null,

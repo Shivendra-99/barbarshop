@@ -4,6 +4,7 @@ import { useConfirm } from '../components/Confirm'
 import { cityById } from '../data/seed'
 import { formatINR, formatCompactINR } from '../lib/money'
 import { formatTime12 } from '../lib/datetime'
+import WebsiteQr from './WebsiteQr'
 import './panel-ui.css'
 
 const KPI_ICONS = {
@@ -65,9 +66,12 @@ export default function FounderDashboard() {
 
   return (
     <>
-      <div className="p-head">
-        <h2 className="p-head__title">Dashboard Overview</h2>
-        <p className="p-head__sub">Welcome back — here&rsquo;s the platform performance overview.</p>
+      <div className="p-head p-head--row">
+        <div>
+          <h2 className="p-head__title">Dashboard Overview</h2>
+          <p className="p-head__sub">Welcome back — here&rsquo;s the platform performance overview.</p>
+        </div>
+        <WebsiteQr />
       </div>
 
       <div className="kpis kpis--sm">

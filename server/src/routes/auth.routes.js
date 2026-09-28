@@ -2,7 +2,7 @@ import { Router } from 'express'
 import { z } from 'zod'
 import { User } from '../models/User.js'
 import { sendCode, checkCode } from '../lib/otp.js'
-import { assertNotLocked, recordFailure, clearFailures, lockedMessage } from '../lib/loginLock.js'
+import { assertNotLocked, recordFailure, recordSend, clearFailures, lockedMessage } from '../lib/loginLock.js'
 import { env } from '../config/env.js'
 import { msg91 } from '../lib/sms/msg91.js'
 import { signToken } from '../lib/jwt.js'
@@ -70,12 +70,28 @@ router.post(
     const { phone } = req.body
     // A locked phone can't dodge the lock by asking for a fresh code.
     await assertNotLocked(phone)
+    await recordSend(phone) // at most 3 OTPs per 15 minutes
     const result = await sendCode(phone)
     res.json({
       sent: true,
       // Present only in the dev flow (no SMS carrier configured).
       ...(result.devCode ? { devCode: result.devCode } : {}),
     })
+  }),
+)
+
+/**
+ * Widget flow: the browser sends OTPs through the MSG91 widget directly, so it
+ * asks here first. Counts the send and refuses a locked phone or a 4th send
+ * within 15 minutes.
+ */
+router.post(
+  '/otp-attempt',
+  validate(requestSchema),
+  asyncHandler(async (req, res) => {
+    await assertNotLocked(req.body.phone)
+    await recordSend(req.body.phone)
+    res.json({ ok: true })
   }),
 )
 

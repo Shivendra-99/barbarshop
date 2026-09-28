@@ -1,18 +1,16 @@
 import { useState } from 'react'
 import { CATEGORIES } from '../data/seed'
-import { fileToCompressedDataUrl } from '../lib/image'
 import TimeField12 from '../components/TimeField12'
 import ServiceEditor from './ServiceEditor'
 import OwnerPayoutEditor from './OwnerPayoutEditor'
+import { PhotoField, MapPinField, SlotSettings, settingsPayload } from './SalonSettingsFields'
 import './panel-ui.css'
-
-const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-const SLOT_LENGTHS = [15, 20, 30, 45, 60]
 
 /**
  * Edit a salon's live details, including the owner's slot controls (interval,
  * weekly days off, one-off blocked dates). Used by both the founder (any salon)
- * and an owner (their own). `role` gates the founder-only field (category).
+ * and an owner (their own). `role` gates the founder-only fields (category,
+ * owner payout details) and the owner-only map pin.
  */
 export default function SalonEditDialog({ salon, role = 'founder', onClose, onSave }) {
   const [form, setForm] = useState({
@@ -31,74 +29,14 @@ export default function SalonEditDialog({ salon, role = 'founder', onClose, onSa
     daysOff: salon.daysOff ?? [],
     closedDates: salon.closedDates ?? [],
     photo: salon.photo ?? null,
+    mapPin: null,
     offerActive: salon.offerActive ?? false,
     offerPercent: salon.offerPercent ?? 0,
   })
-  const [newDate, setNewDate] = useState('')
   const [busy, setBusy] = useState(false)
-  const [photoErr, setPhotoErr] = useState('')
-  const [photoBusy, setPhotoBusy] = useState(false)
-
-  const onPhoto = async (e) => {
-    const file = e.target.files?.[0]
-    e.target.value = '' // allow re-selecting the same file
-    if (!file) return
-    setPhotoErr('')
-    setPhotoBusy(true)
-    try {
-      const dataUrl = await fileToCompressedDataUrl(file)
-      setForm((f) => ({ ...f, photo: dataUrl }))
-    } catch (err) {
-      setPhotoErr(err.message)
-    } finally {
-      setPhotoBusy(false)
-    }
-  }
-
-  // Owner's exact GPS pin, captured on demand and saved with the form.
-  const [mapPin, setMapPin] = useState(null) // { lat, lng, accuracy }
-  const [pinning, setPinning] = useState(false)
-  const [pinErr, setPinErr] = useState('')
-
-  const pinHere = () => {
-    if (!navigator.geolocation) return setPinErr('This device can’t share its location.')
-    setPinning(true)
-    setPinErr('')
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setPinning(false)
-        const accuracy = Math.round(pos.coords.accuracy)
-        // A laptop's Wi-Fi guess can be kilometres off; don't save that as "exact".
-        if (accuracy > 500) {
-          setPinErr(`Location is only accurate to ±${accuracy} m. Try again on your phone, inside the salon.`)
-          return
-        }
-        setMapPin({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy })
-      },
-      () => {
-        setPinning(false)
-        setPinErr('Location permission was denied. Allow location access and try again.')
-      },
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
-    )
-  }
 
   const set = (k) => (e) =>
     setForm((f) => ({ ...f, [k]: e.target.type === 'checkbox' ? e.target.checked : e.target.value }))
-
-  const toggleDay = (d) =>
-    setForm((f) => ({
-      ...f,
-      daysOff: f.daysOff.includes(d) ? f.daysOff.filter((x) => x !== d) : [...f.daysOff, d].sort(),
-    }))
-
-  const addClosedDate = () => {
-    if (!newDate || form.closedDates.includes(newDate)) return
-    setForm((f) => ({ ...f, closedDates: [...f.closedDates, newDate].sort() }))
-    setNewDate('')
-  }
-  const removeClosedDate = (d) =>
-    setForm((f) => ({ ...f, closedDates: f.closedDates.filter((x) => x !== d) }))
 
   const toMins = (t) => {
     const m = /^(\d{1,2}):(\d{2})$/.exec(String(t || '').trim())
@@ -124,17 +62,10 @@ export default function SalonEditDialog({ salon, role = 'founder', onClose, onSa
         closes: form.closes,
         homeServiceFee: Number(form.homeServiceFee) || 0,
         serviceModes,
-        slotMinutes: Number(form.slotMinutes),
-        capacity: Math.max(1, Number(form.capacity) || 1),
-        daysOff: form.daysOff,
-        closedDates: form.closedDates,
-        photo: form.photo ?? null,
-        offerActive: Boolean(form.offerActive),
-        offerPercent: form.offerActive ? Math.max(0, Math.min(50, Number(form.offerPercent) || 0)) : 0,
+        ...settingsPayload(form),
       }
       // Category is founder-only.
       if (role === 'founder') changes.category = form.category
-      if (mapPin) changes.mapPin = { lat: mapPin.lat, lng: mapPin.lng }
       await onSave(changes)
     } finally {
       setBusy(false)
@@ -146,33 +77,7 @@ export default function SalonEditDialog({ salon, role = 'founder', onClose, onSa
       <div className="pmodal__box" role="dialog" aria-modal="true" onMouseDown={(e) => e.stopPropagation()}>
         <h3 className="pmodal__title">Edit {salon.name}</h3>
 
-        {/* Cover photo */}
-        <div className="se-photo">
-          <div className="se-photo__preview">
-            {form.photo ? (
-              <img src={form.photo} alt="Salon cover preview" />
-            ) : (
-              <span className="se-photo__empty">No photo — stock image is used</span>
-            )}
-          </div>
-          <div className="se-photo__controls">
-            <label className="btn btn--outline btn--sm se-photo__btn">
-              {photoBusy ? 'Processing…' : form.photo ? 'Change photo' : 'Upload photo'}
-              <input type="file" accept="image/*" onChange={onPhoto} hidden disabled={photoBusy} />
-            </label>
-            {form.photo && (
-              <button
-                type="button"
-                className="btn btn--ghost-gold btn--sm"
-                onClick={() => setForm((f) => ({ ...f, photo: null }))}
-              >
-                Remove
-              </button>
-            )}
-            <span className="se-hint">JPG/PNG · auto-resized. Shown as the salon banner.</span>
-            {photoErr && <span className="field__error">{photoErr}</span>}
-          </div>
-        </div>
+        <PhotoField photo={form.photo} onChange={(photo) => setForm((f) => ({ ...f, photo }))} />
 
         <div className="pmodal__grid">
           <label className="field pmodal__full">
@@ -200,24 +105,18 @@ export default function SalonEditDialog({ salon, role = 'founder', onClose, onSa
             <input className="field__input" value={form.address} onChange={set('address')} />
           </label>
           {role === 'owner' && (
-            <div className="field pmodal__full">
-              <span className="field__label">Map location</span>
-              <div className="sed-pin">
-                <span className="sed-pin__status">
-                  {mapPin
-                    ? `Exact pin captured (±${mapPin.accuracy} m). Click Save to keep it.`
-                    : salon.location?.source === 'pin'
-                      ? 'Exact pin set. Customers see your true distance.'
-                      : salon.location?.lat != null
-                        ? 'Approximate (from your address). Pin it for exact distance.'
-                        : 'Not on the map yet. Pin it so nearby customers find you.'}
-                </span>
-                <button type="button" className="btn btn--outline btn--sm" onClick={pinHere} disabled={pinning}>
-                  {pinning ? 'Locating…' : 'Pin my salon here'}
-                </button>
-              </div>
-              <span className="field__hint">Do this while standing inside your salon, on your phone.</span>
-              {pinErr && <span className="field__error">{pinErr}</span>}
+            <div className="pmodal__full">
+              <MapPinField
+                mapPin={form.mapPin}
+                onPin={(mapPin) => setForm((f) => ({ ...f, mapPin }))}
+                status={
+                  salon.location?.source === 'pin'
+                    ? 'Exact pin set. Customers see your true distance.'
+                    : salon.location?.lat != null
+                      ? 'Approximate (from your address). Pin it for exact distance.'
+                      : 'Not on the map yet. Pin it so nearby customers find you.'
+                }
+              />
             </div>
           )}
           <label className="field pmodal__full">
@@ -234,45 +133,17 @@ export default function SalonEditDialog({ salon, role = 'founder', onClose, onSa
           </label>
           <label className="field">
             <span className="field__label">Opens</span>
-            <TimeField12
-              value={form.opens}
-              onChange={(v) => setForm((f) => ({ ...f, opens: v }))}
-            />
+            <TimeField12 value={form.opens} onChange={(v) => setForm((f) => ({ ...f, opens: v }))} />
           </label>
           <label className="field">
             <span className="field__label">Closes</span>
-            <TimeField12
-              value={form.closes}
-              onChange={(v) => setForm((f) => ({ ...f, closes: v }))}
-            />
+            <TimeField12 value={form.closes} onChange={(v) => setForm((f) => ({ ...f, closes: v }))} />
           </label>
           {!hoursValid && (
             <span className="field__error pmodal__full">
               Closing time must be after the opening time (e.g. 10:00 AM – 8:00 PM).
             </span>
           )}
-          <label className="field">
-            <span className="field__label">Slot length</span>
-            <select className="field__input" value={form.slotMinutes} onChange={set('slotMinutes')}>
-              {SLOT_LENGTHS.map((m) => (
-                <option key={m} value={m}>
-                  {m} min
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="field">
-            <span className="field__label">Chairs (per slot)</span>
-            <input
-              type="number"
-              min="1"
-              max="50"
-              step="1"
-              className="field__input"
-              value={form.capacity}
-              onChange={set('capacity')}
-            />
-          </label>
           <label className="field">
             <span className="field__label">Home service fee</span>
             <input
@@ -286,52 +157,7 @@ export default function SalonEditDialog({ salon, role = 'founder', onClose, onSa
           </label>
         </div>
 
-        {/* Weekly days off */}
-        <div className="se-block">
-          <span className="field__label">Weekly day off</span>
-          <div className="se-days">
-            {WEEKDAYS.map((label, d) => (
-              <button
-                key={label}
-                type="button"
-                className={`se-day${form.daysOff.includes(d) ? ' is-off' : ''}`}
-                aria-pressed={form.daysOff.includes(d)}
-                onClick={() => toggleDay(d)}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-          <span className="se-hint">Highlighted days are closed — no slots offered.</span>
-        </div>
-
-        {/* One-off blocked dates */}
-        <div className="se-block">
-          <span className="field__label">Blocked dates (holidays)</span>
-          <div className="se-dateRow">
-            <input
-              type="date"
-              className="field__input"
-              value={newDate}
-              onChange={(e) => setNewDate(e.target.value)}
-            />
-            <button type="button" className="btn btn--outline btn--sm" onClick={addClosedDate}>
-              Add
-            </button>
-          </div>
-          {form.closedDates.length > 0 && (
-            <div className="se-chips">
-              {form.closedDates.map((d) => (
-                <span key={d} className="se-chip">
-                  {d}
-                  <button type="button" onClick={() => removeClosedDate(d)} aria-label={`Remove ${d}`}>
-                    ×
-                  </button>
-                </span>
-              ))}
-            </div>
-          )}
-        </div>
+        <SlotSettings form={form} setForm={setForm} />
 
         <div className="pmodal__modes">
           <label>
@@ -340,40 +166,6 @@ export default function SalonEditDialog({ salon, role = 'founder', onClose, onSa
           <label>
             <input type="checkbox" checked={form.home} onChange={set('home')} /> Home service
           </label>
-        </div>
-
-        {/* Offer / discount — % off the service total at checkout. */}
-        <div className="se-block">
-          <label className="se-offerToggle">
-            <input type="checkbox" checked={form.offerActive} onChange={set('offerActive')} />
-            <span className="field__label" style={{ margin: 0 }}>
-              Run an offer (discount at checkout)
-            </span>
-          </label>
-          {form.offerActive && (
-            <label className="field" style={{ marginTop: 10, maxWidth: 220 }}>
-              <span className="field__label">Discount %</span>
-              <input
-                type="number"
-                min="1"
-                max="50"
-                step="1"
-                className="field__input"
-                value={form.offerPercent}
-                onChange={(e) =>
-                  setForm((f) => ({
-                    ...f,
-                    offerPercent: Math.max(0, Math.min(50, Number(e.target.value.replace(/\D/g, '')) || 0)),
-                  }))
-                }
-              />
-              <span className="se-hint">
-                {form.offerPercent > 0
-                  ? `Customers get ${form.offerPercent}% off the service total (max 50%).`
-                  : 'Enter a percentage between 1 and 50.'}
-              </span>
-            </label>
-          )}
         </div>
 
         {/* Menu — add, edit or remove services right here. Saves immediately,

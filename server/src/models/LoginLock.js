@@ -1,14 +1,17 @@
 import mongoose from 'mongoose'
 
 /**
- * Wrong-OTP counter per phone. After LOGIN_MAX_FAILS wrong codes the phone is
- * locked until `lockedUntil`. Stored in Mongo (not memory) because serverless
+ * Per-phone login limits. After LOGIN_MAX_FAILS wrong codes the phone is
+ * locked until `lockedUntil`; and at most LOGIN_MAX_FAILS OTP sends are allowed
+ * per LOGIN_LOCK_MINUTES window (`sends` counted until `sendWindowEnds`). Stored in Mongo (not memory) because serverless
  * instances don't share memory. Rows expire on their own via the TTL index.
  */
 const loginLockSchema = new mongoose.Schema({
   phone: { type: String, required: true, unique: true },
   fails: { type: Number, default: 0 },
   lockedUntil: { type: Date, default: null },
+  sends: { type: Number, default: 0 },
+  sendWindowEnds: { type: Date, default: null },
   expiresAt: { type: Date, required: true },
 })
 

@@ -60,6 +60,8 @@ async function request(path, { method = 'GET', body, auth = true } = {}) {
 export const api = {
   // --- Auth ---
   requestOtp: (phone) => request('/auth/request-otp', { method: 'POST', body: { phone }, auth: false }),
+  // Widget flow: ask before each OTP send (max 3 per 15 minutes per number).
+  otpAttempt: (phone) => request('/auth/otp-attempt', { method: 'POST', body: { phone }, auth: false }),
   verifyOtp: (phone, code, name) =>
     request('/auth/verify-otp', { method: 'POST', body: { phone, code, name }, auth: false }),
   widgetLogin: (accessToken, phone, name) =>
