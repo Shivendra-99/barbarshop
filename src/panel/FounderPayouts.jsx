@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { api } from '../lib/api'
 import { formatINR } from '../lib/money'
 import { useToast } from '../components/Toast'
+import Copy from '../components/CopyButton'
 import './panel-ui.css'
 
 const STATUS_BADGE = {
@@ -13,51 +14,19 @@ const STATUS_BADGE = {
 
 const isOpen = (w) => w.status === 'pending' || w.status === 'processing'
 
-/** Small "Copy" button so UPI IDs / account numbers are pasted, never retyped. */
-function Copy({ value, label }) {
-  const { push } = useToast()
-  const copy = async () => {
-    const text = String(value)
-    let ok = false
-    try {
-      await navigator.clipboard.writeText(text)
-      ok = true
-    } catch {
-      // Clipboard API blocked (some phone browsers / embedded views): fall back
-      // to a hidden textarea + execCommand, which works almost everywhere.
-      const ta = document.createElement('textarea')
-      ta.value = text
-      ta.setAttribute('readonly', '')
-      ta.style.cssText = 'position:fixed;opacity:0;top:0;left:0'
-      document.body.appendChild(ta)
-      ta.select()
-      try {
-        ok = document.execCommand('copy')
-      } catch {
-        ok = false
-      }
-      ta.remove()
-    }
-    push(
-      ok
-        ? { tone: 'success', title: `${label} copied`, body: text }
-        : { tone: 'warn', title: 'Could not copy', body: 'Select the text and copy it manually.' },
-    )
-  }
-  return (
-    <button type="button" className="copybtn" onClick={copy} aria-label={`Copy ${label}`}>
-      Copy
-    </button>
-  )
-}
-
 const when = (iso) =>
   iso ? new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'
+const dueLabel = (iso) =>
+  new Date(iso).toLocaleString('en-IN', {
+    timeZone: 'Asia/Kolkata', weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit',
+  })
+const sumNet = (list) => list.reduce((sum, w) => sum + w.net, 0)
 
 /**
- * Founder — owner withdrawal requests. Pay `net` to the shown UPI / bank
- * outside the app, then mark it paid (with the UTR). Rejecting returns the
- * full amount to the owner's wallet.
+ * Founder — owner payouts. Weekly ones are created automatically every Sunday
+ * 9 PM (pay by Monday 9 AM); instant ones are owner requests. Pay `net` to the
+ * shown UPI / bank outside the app, then mark it paid (with the UTR). Rejecting
+ * returns the full amount to the owner's wallet.
  */
 export default function FounderPayouts() {
   const { push } = useToast()
@@ -65,7 +34,8 @@ export default function FounderPayouts() {
   const [act, setAct] = useState(null) // { w, status } while the dialog is open
   const [text, setText] = useState('')
   const [busy, setBusy] = useState(false)
-  const [tab, setTab] = useState('open') // 'open' | 'history'
+  const [tab, setTab] = useState('weekly') // 'weekly' | 'instant' | 'history'
+  const [running, setRunning] = useState(false)
 
   const load = () =>
     api
@@ -81,13 +51,35 @@ export default function FounderPayouts() {
   }, [])
 
   const open = rows?.filter(isOpen) ?? []
-  const owed = open.reduce((sum, w) => sum + w.net, 0)
+  const weekly = open.filter((w) => w.method === 'weekly')
+  const instant = open.filter((w) => w.method !== 'weekly')
   // History: settled requests, most recently settled first.
   const history = (rows?.filter((w) => !isOpen(w)) ?? []).sort(
     (a, b) => new Date(b.processedAt || b.ts) - new Date(a.processedAt || a.ts),
   )
-  const paidTotal = history.filter((w) => w.status === 'completed').reduce((sum, w) => sum + w.net, 0)
-  const shown = tab === 'open' ? open : history
+  const paidTotal = sumNet(history.filter((w) => w.status === 'completed'))
+  const shown = { weekly, instant, history }[tab]
+  const isOpenTab = tab !== 'history'
+
+  const runNow = async () => {
+    if (running) return
+    setRunning(true)
+    try {
+      const r = await api.runWeeklyPayouts()
+      push({
+        tone: 'success',
+        title: r.created ? `${r.created} weekly payout${r.created > 1 ? 's' : ''} created` : 'Nothing new to pay',
+        body: r.created
+          ? `${formatINR(r.total)} to pay by ${dueLabel(r.dueBy)}.`
+          : 'No owner has ₹100 or more waiting, or this already ran today.',
+      })
+      load()
+    } catch (e) {
+      push({ tone: 'warn', title: 'Could not run weekly payout', body: e.message })
+    } finally {
+      setRunning(false)
+    }
+  }
 
   const submit = async () => {
     if (busy) return
@@ -110,18 +102,21 @@ export default function FounderPayouts() {
       <div className="p-head">
         <h2 className="p-head__title">Payouts</h2>
         <p className="p-head__sub">
-          Owner withdrawal requests. Send the “Pay” amount to their UPI / bank, then mark it paid.
+          Every Sunday 9 PM each owner’s balance becomes a weekly payout (4% fee): pay it by Monday 9 AM.
+          Instant requests (7% fee) come in any time. Send the “Pay” amount, then mark it paid.
         </p>
       </div>
 
       <div className="kpis kpis--sm" style={{ marginBottom: 8 }}>
         <div className="kpi">
-          <div className="kpi__label">Open requests</div>
-          <div className="kpi__value">{open.length}</div>
+          <div className="kpi__label">To pay · weekly</div>
+          <div className="kpi__value">{formatINR(sumNet(weekly))}</div>
+          <div className="kpi__delta">{weekly.length} owner{weekly.length === 1 ? '' : 's'}</div>
         </div>
         <div className="kpi">
-          <div className="kpi__label">To pay</div>
-          <div className="kpi__value">{formatINR(owed)}</div>
+          <div className="kpi__label">Open requests · instant</div>
+          <div className="kpi__value">{formatINR(sumNet(instant))}</div>
+          <div className="kpi__delta">{instant.length} request{instant.length === 1 ? '' : 's'}</div>
         </div>
         <div className="kpi">
           <div className="kpi__label">Paid so far</div>
@@ -131,7 +126,8 @@ export default function FounderPayouts() {
 
       <div className="fs-filters" role="tablist" aria-label="Payout lists">
         {[
-          ['open', `Pending requests (${open.length})`],
+          ['weekly', `To pay · weekly (${weekly.length})`],
+          ['instant', `Open requests · instant (${instant.length})`],
           ['history', `Paid history (${history.length})`],
         ].map(([id, label]) => (
           <button
@@ -148,18 +144,34 @@ export default function FounderPayouts() {
         ))}
       </div>
 
+      {tab === 'weekly' && (
+        <div className="payout-card" style={{ marginTop: 12 }}>
+          <div>
+            <div className="ptable__strong">Runs automatically every Sunday 9 PM</div>
+            <div className="ptable__sub">
+              Didn’t run, or need it early? Run it now. Owners with ₹100+ and payout details are included, once a day.
+            </div>
+          </div>
+          <button type="button" className="btn btn--outline btn--sm" onClick={runNow} disabled={running}>
+            {running ? 'Running…' : 'Run weekly payout now'}
+          </button>
+        </div>
+      )}
+
       <div className="p-section">
         {rows === null ? (
           <p className="p-empty__text">Loading…</p>
         ) : shown.length === 0 ? (
           <div className="p-empty">
             <h4 className="p-empty__title">
-              {tab === 'open' ? 'No pending requests' : 'Nothing paid yet'}
+              {{ weekly: 'No weekly payouts to pay', instant: 'No instant requests', history: 'Nothing paid yet' }[tab]}
             </h4>
             <p className="p-empty__text">
-              {tab === 'open'
-                ? 'All caught up. New owner withdrawal requests appear here.'
-                : 'Requests you mark as paid or reject are listed here.'}
+              {{
+                weekly: 'All caught up. Sunday 9 PM’s payouts appear here.',
+                instant: 'All caught up. Owners’ instant withdrawal requests appear here.',
+                history: 'Payouts you mark as paid or reject are listed here.',
+              }[tab]}
             </p>
           </div>
         ) : (
@@ -172,7 +184,7 @@ export default function FounderPayouts() {
                   <th>To</th>
                   <th>Method</th>
                   <th>Status</th>
-                  {tab === 'open' && <th />}
+                  {isOpenTab && <th />}
                 </tr>
               </thead>
               <tbody>
@@ -213,9 +225,15 @@ export default function FounderPayouts() {
                         )}
                         {!d.upi && !d.accountNumber && <span className="ptable__sub">Not provided</span>}
                       </td>
-                      <td style={{ textTransform: 'capitalize' }}>{w.method}</td>
+                      <td style={{ textTransform: 'capitalize' }}>{w.method === 'weekly' ? 'Weekly (auto)' : w.method}</td>
                       <td>
                         <span className={`badge ${STATUS_BADGE[w.status] ?? 'badge--neutral'}`}>{w.status}</span>
+                        {isOpen(w) && w.dueBy && (
+                          <div className="ptable__sub">
+                            {new Date(w.dueBy) < new Date() && <span className="badge badge--red">Overdue</span>} Pay by{' '}
+                            {dueLabel(w.dueBy)}
+                          </div>
+                        )}
                         {w.processedAt && (
                           <div className="ptable__sub">
                             {w.status === 'completed' ? 'Paid' : 'Settled'} {when(w.processedAt)}
@@ -224,7 +242,7 @@ export default function FounderPayouts() {
                         {w.utr && <div className="ptable__sub">Ref {w.utr}</div>}
                         {w.note && <div className="ptable__sub">{w.note}</div>}
                       </td>
-                      {tab === 'open' && (
+                      {isOpenTab && (
                       <td>
                         {isOpen(w) && (
                           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>

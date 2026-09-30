@@ -69,6 +69,10 @@ export const env = {
     webhookSecret: process.env.RAZORPAY_WEBHOOK_SECRET || '',
   },
 
+  // Vercel Cron sends "Authorization: Bearer <CRON_SECRET>" when this is set;
+  // the Sunday payout endpoint refuses to run without it.
+  cronSecret: process.env.CRON_SECRET || '',
+
   isProd: process.env.NODE_ENV === 'production',
 }
 

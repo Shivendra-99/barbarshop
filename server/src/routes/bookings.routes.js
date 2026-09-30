@@ -6,6 +6,7 @@ import { Salon } from '../models/Salon.js'
 import { Service } from '../models/Service.js'
 import { User } from '../models/User.js'
 import { WalletTxn } from '../models/WalletTxn.js'
+import { Setting } from '../models/Setting.js'
 import { quote, refundFor, noShowRefund, ownerCancelRefund } from '../lib/pricing.js'
 import { resolveCoupon, couponForQuote, redeemCoupon } from '../lib/coupons.js'
 import { validate } from '../middleware/validate.js'
@@ -304,6 +305,7 @@ export async function priceBookingDraft(user, body) {
     isFirstBooking,
     homeServiceFee,
     offerPercent,
+    firstBookingPercent: (await Setting.global()).firstBookingPercent,
     coupon: couponForQuote(coupon),
   })
 
@@ -778,6 +780,12 @@ router.patch(
       booking.paymentStatus = 'paid'
       booking.paidAt = new Date()
     }
+    // Atomic claim: two taps on "Complete" can't both credit the owner.
+    const claimed = await Booking.updateOne(
+      { _id: booking._id, status: { $nin: ['completed', 'cancelled'] } },
+      { status: 'completed' },
+    )
+    if (!claimed.modifiedCount) throw new ApiError(400, 'This booking is already completed.')
     booking.status = 'completed'
     await booking.save()
 
@@ -793,9 +801,14 @@ router.patch(
     // becomes the owner's withdrawable balance (their payout). Cash the owner
     // already has in hand, so no wallet movement there.
     if (!cash && booking.salonPayout > 0) {
-      const owner = await User.findById(req.user._id)
-      const balanceAfter = (owner.walletBalance || 0) + booking.salonPayout
-      await User.updateOne({ _id: owner._id }, { walletBalance: balanceAfter })
+      // $inc, not read-then-set: the Sunday payout sweep may debit this wallet
+      // at the same moment, and a plain set would undo that debit.
+      const owner = await User.findByIdAndUpdate(
+        req.user._id,
+        { $inc: { walletBalance: booking.salonPayout } },
+        { new: true },
+      )
+      const balanceAfter = owner.walletBalance
       await WalletTxn.create({
         user: owner._id,
         type: 'credit',
@@ -1126,8 +1139,11 @@ router.post(
 
     const customer = await User.findById(booking.customer).catch(() => null)
     if (refund.status === 'completed' && refund.method === 'wallet' && refund.amount > 0 && customer) {
-      const walletBalance = (customer.walletBalance || 0) + refund.amount
-      await User.updateOne({ _id: customer._id }, { walletBalance })
+      const { walletBalance } = await User.findByIdAndUpdate(
+        customer._id,
+        { $inc: { walletBalance: refund.amount } },
+        { new: true },
+      )
       await WalletTxn.create({
         user: customer._id,
         type: 'credit',

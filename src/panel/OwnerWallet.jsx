@@ -14,6 +14,11 @@ const hasPayout = (p) => Boolean(p?.upi || (p?.accountName && p?.accountNumber &
 // Show only the last 4 digits of an account number.
 const maskAcct = (n) => (n ? `•••• ${String(n).slice(-4)}` : '')
 
+const dueLabel = (iso) =>
+  new Date(iso).toLocaleString('en-IN', {
+    timeZone: 'Asia/Kolkata', weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit',
+  })
+
 const STATUS_BADGE = {
   completed: 'badge--green',
   processing: 'badge--gold',
@@ -23,7 +28,8 @@ const STATUS_BADGE = {
 
 /**
  * Owner Wallet — real withdrawable balance (credited when online bookings are
- * completed) plus withdrawal requests and history.
+ * completed). The whole balance is paid out automatically every Sunday 9 PM
+ * (weekly, 4% fee); "Withdraw now" is the instant option (7% fee).
  */
 export default function OwnerWallet() {
   const { mySalons } = useApp()
@@ -32,7 +38,6 @@ export default function OwnerWallet() {
   const [ledger, setLedger] = useState([])
   const [open, setOpen] = useState(false)
   const [amount, setAmount] = useState('')
-  const [method, setMethod] = useState('weekly')
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
   const [editPayout, setEditPayout] = useState(null) // form values while the dialog is open
@@ -52,7 +57,7 @@ export default function OwnerWallet() {
   const payout = data?.payout
   const payoutReady = hasPayout(payout)
   const amt = Number(amount) || 0
-  const fee = Math.round(amt * rates[method])
+  const fee = Math.round(amt * rates.instant)
   const net = amt - fee
   const valid = amt >= MIN && amt <= balance
 
@@ -85,15 +90,8 @@ export default function OwnerWallet() {
     setBusy(true)
     setErr('')
     try {
-      await api.requestWithdrawal(amt, method)
-      push({
-        tone: 'success',
-        title: 'Withdrawal requested',
-        body:
-          method === 'instant'
-            ? `${formatINR(net)} (${pct(rates.instant)} fee)`
-            : `${formatINR(net)} · this Sunday (${pct(rates.weekly)} fee)`,
-      })
+      await api.requestWithdrawal(amt)
+      push({ tone: 'success', title: 'Withdrawal requested', body: `${formatINR(net)} (${pct(rates.instant)} fee)` })
       setOpen(false)
       setAmount('')
       load()
@@ -141,9 +139,20 @@ export default function OwnerWallet() {
               {balance < MIN
                 ? `Minimum ${formatINR(MIN)} to withdraw`
                 : payoutReady
-                  ? 'Withdraw'
+                  ? `Withdraw now (${pct(rates.instant)} fee)`
                   : 'Add UPI / bank to withdraw'}
             </button>
+          </div>
+
+          <div className="payout-card" style={{ marginBottom: 16 }}>
+            <div>
+              <div className="ptable__strong">Weekly auto payout: nothing to press</div>
+              <div className="ptable__sub">
+                Every Sunday 9 PM your whole balance (if {formatINR(MIN)} or more) is sent to your UPI / bank with a{' '}
+                {pct(rates.weekly)} fee. It reaches you by Monday 9 AM. Need money sooner? Use Withdraw now (
+                {pct(rates.instant)} fee).
+              </div>
+            </div>
           </div>
 
           {/* Rules */}
@@ -154,14 +163,14 @@ export default function OwnerWallet() {
               <div className="kpi__delta">Per withdrawal</div>
             </div>
             <div className="kpi">
-              <div className="kpi__label">Instant</div>
-              <div className="kpi__value">{pct(rates.instant)}</div>
-              <div className="kpi__delta">Any time · fee</div>
+              <div className="kpi__label">Weekly (auto)</div>
+              <div className="kpi__value">{pct(rates.weekly)}</div>
+              <div className="kpi__delta">Sunday 9 PM · fee</div>
             </div>
             <div className="kpi">
-              <div className="kpi__label">Weekly</div>
-              <div className="kpi__value">{pct(rates.weekly)}</div>
-              <div className="kpi__delta">Every Sunday · fee</div>
+              <div className="kpi__label">Instant</div>
+              <div className="kpi__value">{pct(rates.instant)}</div>
+              <div className="kpi__delta">Withdraw now · fee</div>
             </div>
           </div>
 
@@ -191,7 +200,9 @@ export default function OwnerWallet() {
             {!data?.withdrawals?.length ? (
               <div className="p-empty">
                 <h4 className="p-empty__title">No withdrawals yet</h4>
-                <p className="p-empty__text">Request a withdrawal once your balance reaches {formatINR(MIN)}.</p>
+                <p className="p-empty__text">
+                  Your balance is paid out automatically every Sunday 9 PM once it reaches {formatINR(MIN)}.
+                </p>
               </div>
             ) : (
               <div className="ptable-wrap">
@@ -211,11 +222,16 @@ export default function OwnerWallet() {
                         <td className="ptable__money">{formatINR(w.amount)}</td>
                         <td className="ptable__money">{w.fee ? `−${formatINR(w.fee)}` : '—'}</td>
                         <td className="ptable__money">{formatINR(w.net)}</td>
-                        <td style={{ textTransform: 'capitalize' }}>{w.method}</td>
+                        <td style={{ textTransform: 'capitalize' }}>
+                          {w.method === 'weekly' ? 'Weekly (auto)' : w.method}
+                        </td>
                         <td>
                           <span className={`badge ${STATUS_BADGE[w.status] ?? 'badge--neutral'}`}>
                             {w.status}
                           </span>
+                          {w.status === 'pending' && w.dueBy && (
+                            <div className="ptable__sub">Arrives by {dueLabel(w.dueBy)}</div>
+                          )}
                           {w.utr && <div className="ptable__sub">Ref {w.utr}</div>}
                           {w.note && <div className="ptable__sub">{w.note}</div>}
                         </td>
@@ -328,7 +344,7 @@ export default function OwnerWallet() {
             aria-modal="true"
             onMouseDown={(e) => e.stopPropagation()}
           >
-            <h3 className="pmodal__title">Withdraw earnings</h3>
+            <h3 className="pmodal__title">Withdraw now (instant)</h3>
             <p className="pmodal__text">
               Available {formatINR(balance)} · minimum {formatINR(MIN)}. Paid to{' '}
               {payout?.upi || `A/c ${maskAcct(payout?.accountNumber)}`}.
@@ -355,24 +371,12 @@ export default function OwnerWallet() {
                 <span className="field__error">Minimum withdrawal is {formatINR(MIN)}.</span>
               )}
             </label>
-            <div className="wd-methods">
-              {[
-                { id: 'weekly', label: 'Weekly (Sunday)', note: `${pct(rates.weekly)} fee` },
-                { id: 'instant', label: 'Instant', note: `${pct(rates.instant)} fee` },
-              ].map((m) => (
-                <button
-                  key={m.id}
-                  type="button"
-                  className={`wd-method${method === m.id ? ' is-active' : ''}`}
-                  onClick={() => setMethod(m.id)}
-                >
-                  <span className="wd-method__name">{m.label}</span>
-                  <span className="wd-method__note">{m.note}</span>
-                </button>
-              ))}
-            </div>
+            <p className="ptable__sub">
+              Instant fee is {pct(rates.instant)}. To pay only {pct(rates.weekly)}, leave it: your balance is sent
+              automatically on Sunday 9 PM.
+            </p>
             <div className="wd-summary">
-              <span>Fee</span>
+              <span>Fee ({pct(rates.instant)})</span>
               <span className="money">{fee ? `−${formatINR(fee)}` : formatINR(0)}</span>
             </div>
             <div className="wd-summary wd-summary--total">

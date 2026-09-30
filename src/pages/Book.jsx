@@ -33,7 +33,9 @@ export default function Book() {
     isFirstBooking,
     session,
     walletBalance,
+    settings,
   } = useApp()
+  const firstPct = settings.firstBookingPercent ?? 10
   const { push } = useToast()
   const t = useT()
 
@@ -192,6 +194,7 @@ export default function Book() {
     isFirstBooking,
     homeServiceFee: homeFee,
     offerPercent: salon?.offerActive ? salon.offerPercent : 0,
+    firstBookingPercent: firstPct,
     coupon:
       paymentMode === 'online' && coupon && servicesTotal >= (coupon.minOrder || 0)
         ? coupon
@@ -566,7 +569,7 @@ export default function Book() {
                 .filter((p) => p.id !== 'online' || payEnabled || !payChecked)
                 .map((p) => {
                 const active = paymentMode === p.id
-                const savesNow = p.id === 'online' && isFirstBooking && selected.length > 0
+                const savesNow = p.id === 'online' && isFirstBooking && firstPct > 0 && selected.length > 0
                 const blocked = p.id === 'offline' && session?.cashBlocked
                 return (
                   <button
@@ -579,11 +582,15 @@ export default function Book() {
                   >
                     <span className="pay__top">
                       <span className="pay__name">{t(`pay.${p.id}`)}</span>
-                      {savesNow && <span className="badge badge--gold">{t('book.tenOff')}</span>}
+                      {savesNow && <span className="badge badge--gold">{t('book.tenOff', { pct: firstPct })}</span>}
                       {blocked && <span className="badge badge--red">{t('book.disabled')}</span>}
                     </span>
                     <span className="pay__note">
-                      {blocked ? t('book.blockedNote') : t(`pay.${p.id}Note`)}
+                      {blocked
+                        ? t('book.blockedNote')
+                        : p.id === 'online'
+                          ? t(firstPct > 0 ? 'pay.onlineNote' : 'pay.onlineNotePlain', { pct: firstPct })
+                          : t(`pay.${p.id}Note`)}
                     </span>
                   </button>
                 )

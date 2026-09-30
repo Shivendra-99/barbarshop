@@ -256,6 +256,13 @@
   margin: 10px 0 18px;
 }
 
+.rail__codes {
+  margin: -8px 0 18px;
+}
+.rail__codes:empty {
+  display: none;
+}
+
 .rail__offer {
   padding: 11px 14px;
   margin-bottom: 18px;

@@ -1,4 +1,6 @@
+import { useEffect, useState } from 'react'
 import { useApp } from '../store/AppStore'
+import { api } from '../lib/api'
 import { useToast } from '../components/Toast'
 import { useConfirm } from '../components/Confirm'
 import { cityById } from '../data/seed'
@@ -31,6 +33,68 @@ function Kpi({ icon, label, value, delta, deltaUp }) {
       <div className="kpi__label">{label}</div>
       <div className="kpi__value">{value}</div>
       {delta && <div className={`kpi__delta${deltaUp ? ' kpi__delta--up' : ''}`}>{delta}</div>}
+    </div>
+  )
+}
+
+/** What customers think of SalonSaathi itself (not a salon): average + latest. */
+function SiteRatings() {
+  const [rows, setRows] = useState(null)
+  useEffect(() => {
+    api
+      .allSiteReviews()
+      .then((d) => setRows(d.reviews))
+      .catch(() => setRows([]))
+  }, [])
+  if (rows === null) return null
+  const avg = rows.length ? rows.reduce((sum, r) => sum + r.rating, 0) / rows.length : 0
+  return (
+    <div className="p-section">
+      <div className="p-section__head">
+        <h3 className="p-section__title">
+          Website ratings{' '}
+          {rows.length > 0 && (
+            <span className="badge badge--gold">
+              {avg.toFixed(1)}★ · {rows.length} rating{rows.length > 1 ? 's' : ''}
+            </span>
+          )}
+        </h3>
+      </div>
+      {rows.length === 0 ? (
+        <div className="p-empty">
+          <h4 className="p-empty__title">No website ratings yet</h4>
+          <p className="p-empty__text">
+            Customers are asked after they rate a salon, and can rate any time from the home page or Account.
+          </p>
+        </div>
+      ) : (
+        <div className="ptable-wrap">
+          <table className="ptable">
+            <thead>
+              <tr>
+                <th>Rating</th>
+                <th>Comment</th>
+                <th>By</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.slice(0, 20).map((r) => (
+                <tr key={r.id}>
+                  <td className="ptable__strong" style={{ whiteSpace: 'nowrap' }}>{'★'.repeat(r.rating)}</td>
+                  <td>{r.comment || <span className="ptable__sub">No comment</span>}</td>
+                  <td>
+                    <div>{r.user?.name || '—'}</div>
+                    <div className="ptable__sub">
+                      {r.user?.phone ? `+91 ${r.user.phone}` : ''} ·{' '}
+                      {new Date(r.ts).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   )
 }
@@ -214,6 +278,8 @@ export default function FounderDashboard() {
           )}
         </div>
       </div>
+
+      <SiteRatings />
     </>
   )
 }

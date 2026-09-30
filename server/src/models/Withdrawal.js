@@ -1,9 +1,10 @@
 import mongoose from 'mongoose'
 
 /**
- * A salon owner's request to withdraw wallet earnings.
- *   • instant → 7% fee, processed on request.
- *   • weekly  → 4% fee, settled by the SalonSaathi team every Sunday.
+ * A payout of an owner's wallet earnings.
+ *   • instant → 7% fee, requested by the owner, processed on request.
+ *   • weekly  → 4% fee, created automatically every Sunday 9 PM for the whole
+ *     balance (see lib/weeklyPayouts.js); the founder pays it by Monday 9 AM.
  * The wallet is debited (gross) when the request is made; the founder marks it
  * completed once `net` is transferred to `destination`, or rejects it (which
  * credits the gross back to the wallet).
@@ -32,8 +33,18 @@ const withdrawalSchema = new mongoose.Schema(
     utr: { type: String, default: null }, // bank/UPI reference, set when paid
     note: { type: String, default: null }, // reason, set when rejected
     processedAt: { type: Date, default: null },
+    // Weekly auto payouts: the IST date of the run (one per owner per run) and
+    // the deadline the founder should pay by (Monday 9 AM IST).
+    week: { type: String, default: null },
+    dueBy: { type: Date, default: null },
   },
   { timestamps: true },
+)
+
+// A retried or double-fired cron can't create two weekly payouts for one owner.
+withdrawalSchema.index(
+  { owner: 1, week: 1 },
+  { unique: true, partialFilterExpression: { week: { $type: 'string' } } },
 )
 
 withdrawalSchema.methods.toPublic = function toPublic() {
@@ -48,6 +59,7 @@ withdrawalSchema.methods.toPublic = function toPublic() {
     utr: this.utr,
     note: this.note,
     processedAt: this.processedAt,
+    dueBy: this.dueBy,
     ts: this.createdAt,
   }
 }

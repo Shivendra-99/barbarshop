@@ -112,7 +112,12 @@ try {
     { paid: true },
   )
   const o = signToken(owner)
-  assert.equal((await call(o, 'PATCH', `/bookings/${served._id}/complete`, { otp: served.completionOtp })).status, 200)
+  // Two taps on Complete at once → one succeeds, the owner is credited once.
+  const ownerBefore = await balance(owner._id)
+  const taps = await Promise.all([1, 2].map(() =>
+    call(o, 'PATCH', `/bookings/${served._id}/complete`, { otp: served.completionOtp })))
+  assert.deepEqual(taps.map((x) => x.status).sort(), [200, 400])
+  assert.equal(await balance(owner._id), ownerBefore + served.salonPayout)
   const before = await balance(cust._id)
   assert.equal((await call(c, 'POST', `/bookings/${served._id}/cancel`, { method: 'wallet' })).status, 400)
   assert.equal(await balance(cust._id), before)

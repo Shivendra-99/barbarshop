@@ -5,6 +5,7 @@ import { useToast } from '../components/Toast'
 import { useT } from '../lib/i18n'
 import RescheduleDialog from '../components/RescheduleDialog'
 import RatingDialog from '../components/RatingDialog'
+import SiteRatingDialog, { shouldPromptSiteRating } from '../components/SiteRating'
 import QueueBadge from '../components/QueueBadge'
 import { formatINR } from '../lib/money'
 import { directionsUrl } from '../lib/maps'
@@ -246,6 +247,7 @@ export default function Appointments() {
   const [refundChoice, setRefundChoice] = useState(null)
   const [rescheduling, setRescheduling] = useState(null)
   const [rating, setRating] = useState(null)
+  const [siteRate, setSiteRate] = useState(false)
   const [otpShown, setOtpShown] = useState(() => new Set()) // booking ids revealing their OTP
 
   const toggleOtp = (id) =>
@@ -277,6 +279,8 @@ export default function Appointments() {
       await rateBooking(booking, { rating: stars, review })
       setRating(null)
       push({ tone: 'success', title: 'Thanks for rating!', body: `${booking.salonName} · ${stars}★` })
+      // Salon rated: now ask how booking with SalonSaathi itself went.
+      if (await shouldPromptSiteRating()) setSiteRate(true)
     } catch (err) {
       push({ tone: 'warn', title: 'Could not submit rating', body: err.message })
     }
@@ -598,6 +602,9 @@ export default function Appointments() {
 
       {rating && (
         <RatingDialog booking={rating} onClose={() => setRating(null)} onSubmit={doRate} />
+      )}
+      {siteRate && (
+        <SiteRatingDialog onClose={() => setSiteRate(false)} />
       )}
     </div>
   )

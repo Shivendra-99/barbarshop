@@ -97,6 +97,24 @@
   font-weight: 600;
 }
 
+.siteRate {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 14px;
+}
+.siteRate__sum {
+  font-size: 15px;
+  color: var(--gold-deep);
+  font-weight: 500;
+}
+
+.choose__head .cc {
+  justify-content: center;
+}
+
 .choose__cards {
   display: grid;
   grid-template-columns: repeat(2, 1fr);

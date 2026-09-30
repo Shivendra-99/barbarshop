@@ -788,41 +788,6 @@ a.ptable__mono {
   cursor: not-allowed;
 }
 
-.wd-methods {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  margin: 14px 0;
-}
-
-.wd-method {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 12px;
-  border: 1px solid var(--line-strong);
-  border-radius: var(--r-md, 10px);
-  background: var(--surface);
-  cursor: pointer;
-  text-align: left;
-}
-
-.wd-method.is-active {
-  border-color: var(--gold);
-  background: var(--gold-wash);
-}
-
-.wd-method__name {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--heading);
-}
-
-.wd-method__note {
-  font-size: 12.5px;
-  color: var(--muted-3);
-}
-
 .wd-summary {
   display: flex;
   justify-content: space-between;

@@ -12,7 +12,7 @@
 export const COMMISSION_RATE = 0
 
 /** First-booking discount — online payments only, once per customer. */
-export const FIRST_BOOKING_DISCOUNT_RATE = 0.1
+export const FIRST_BOOKING_PERCENT = 10 // default; the live value is settings.firstBookingPercent
 
 /** Where online money settles. Offline never routes through the platform. */
 export const ONLINE_PAYEE = 'founder'
@@ -23,7 +23,7 @@ export const PAYMENT_MODES = {
     id: 'online',
     label: 'Pay online',
     payee: ONLINE_PAYEE,
-    note: 'Paid now. 10% off your first booking.',
+    note: 'Paid now. Discount on your first booking.',
   },
   offline: {
     id: 'offline',
@@ -55,7 +55,7 @@ export function couponDiscount(coupon, subtotal) {
 /**
  * Quotes a booking (mirrors the server; the server recomputes authoritatively).
  *
- * Automatic discounts: salon offer (off the subtotal) then first-booking 10%
+ * Automatic discounts: salon offer (off the subtotal) then first-booking %
  * (online + never-booked). A coupon (online only) does NOT stack — it competes
  * with those and the booking takes whichever single path saves the customer more
  * (coupon wins only when strictly greater). `coupon` is a validated object or null.
@@ -66,6 +66,7 @@ export function quote({
   isFirstBooking,
   homeServiceFee = 0,
   offerPercent = 0,
+  firstBookingPercent = FIRST_BOOKING_PERCENT,
   coupon = null,
 }) {
   const online = paymentMode === 'online'
@@ -75,7 +76,7 @@ export function quote({
   const offerDiscount = pct > 0 ? Math.round((amount * pct) / 100) : 0
   const discountEligible = online && Boolean(isFirstBooking)
   const firstBookingDiscount = discountEligible
-    ? Math.round((amount - offerDiscount) * FIRST_BOOKING_DISCOUNT_RATE)
+    ? Math.round(((amount - offerDiscount) * Math.max(0, Math.min(50, firstBookingPercent || 0))) / 100)
     : 0
   const autoDiscount = offerDiscount + firstBookingDiscount
 
@@ -95,7 +96,7 @@ export function quote({
     offerDiscount: appliedOffer,
     discount: appliedFirst,
     discountEligible: discountEligible && !useCoupon,
-    discountRate: FIRST_BOOKING_DISCOUNT_RATE,
+    discountRate: firstBookingPercent / 100,
     couponCode: useCoupon ? coupon?.code ?? null : null,
     couponDiscount: appliedCoupon,
     total,

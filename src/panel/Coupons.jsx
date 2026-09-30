@@ -37,9 +37,35 @@ function statusOf(c) {
 }
 
 export default function Coupons() {
-  const { session, mySalons = [], updateSalon } = useApp()
+  const { session, mySalons = [], updateSalon, settings, updateSettings } = useApp()
   const { push } = useToast()
   const isFounder = session?.role === 'founder'
+
+  // Founder: the first-booking discount % (shown on the home page, salon pages
+  // and checkout; the server prices bookings with it).
+  const [firstPct, setFirstPct] = useState(null) // input text while editing
+  const [firstBusy, setFirstBusy] = useState(false)
+  const firstShown = firstPct ?? String(settings.firstBookingPercent ?? 10)
+  const saveFirstPct = async () => {
+    const n = Number(firstShown)
+    if (!Number.isInteger(n) || n < 0 || n > 50) {
+      return push({ tone: 'warn', title: 'Enter 0 to 50', body: '0 turns the first-booking discount off.' })
+    }
+    setFirstBusy(true)
+    try {
+      await updateSettings({ firstBookingPercent: n })
+      setFirstPct(null)
+      push({
+        tone: 'success',
+        title: n ? `First booking: ${n}% off` : 'First-booking discount off',
+        body: 'Updated everywhere on the website right away.',
+      })
+    } catch (e) {
+      push({ tone: 'warn', title: 'Could not save', body: e.message })
+    } finally {
+      setFirstBusy(false)
+    }
+  }
 
   // Owner: the salon-wide % offer (lives on the salon; edited here so it's findable).
   const [offerFor, setOfferFor] = useState(null)
@@ -177,6 +203,35 @@ export default function Coupons() {
             : 'Run a % offer on your whole salon, or create coupon codes. Customers always get the single best discount, never both.'}
         </p>
       </div>
+
+      {isFounder && (
+        <div className="p-section">
+          <h3 className="p-section__title">First-booking discount</h3>
+          <p className="cpn-note">
+            Automatic % off a customer’s first online booking (no code). Shown on the home page, salon pages and
+            checkout, and updates there as soon as you save. 0 turns it off.
+          </p>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+            <input
+              className="field__input"
+              style={{ width: 90 }}
+              inputMode="numeric"
+              aria-label="First-booking discount percent"
+              value={firstShown}
+              onChange={(e) => setFirstPct(e.target.value.replace(/\D/g, '').slice(0, 2))}
+            />
+            <span>% off</span>
+            <button
+              type="button"
+              className="btn btn--gold btn--sm"
+              onClick={saveFirstPct}
+              disabled={firstBusy || firstPct === null}
+            >
+              {firstBusy ? 'Saving…' : 'Save'}
+            </button>
+          </div>
+        </div>
+      )}
 
       {!isFounder && mySalons.length > 0 && (
         <div className="p-section">

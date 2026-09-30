@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { useApp } from '../store/AppStore'
+import CouponCodes from '../components/CouponCodes'
 import { useT } from '../lib/i18n'
 import { categoryById, cityById, initials, staffMeta } from '../data/seed'
 import { useSeo, SITE } from '../lib/seo'
@@ -53,7 +54,8 @@ const TABS = [
 export default function Salon() {
   const { salonId } = useParams()
   const navigate = useNavigate()
-  const { publicSalons, salonsReady, isFirstBooking, isSignedIn } = useApp()
+  const { publicSalons, salonsReady, isFirstBooking, isSignedIn, settings } = useApp()
+  const firstPct = settings.firstBookingPercent ?? 10
   const t = useT()
   const [tab, setTab] = useState('services')
 
@@ -256,11 +258,19 @@ export default function Salon() {
             {t('salon.fromPrice', { price: formatINR(fromPrice) })}
           </div>
 
-          {isFirstBooking && (
+          {salon.offerActive && salon.offerPercent > 0 && (
             <div className="rail__offer">
-              <strong>{t('home.offerStrong')}</strong> {t('home.offerRest')}.
+              <strong>{t('card.offerBadge', { pct: salon.offerPercent })}</strong> {t('salon.offerAll')}
             </div>
           )}
+          {isFirstBooking && firstPct > 0 && (
+            <div className="rail__offer">
+              <strong>{t('home.offerStrong', { pct: firstPct })}</strong> {t('home.offerRest')}.
+            </div>
+          )}
+          <div className="rail__codes">
+            <CouponCodes salonId={salon.id} />
+          </div>
 
           <button type="button" className="btn btn--gold btn--block" onClick={() => book(null)}>
             {isSignedIn ? t('salon.chooseSlot') : t('salon.loginToBook')}

@@ -6,6 +6,7 @@ import { useToast } from '../components/Toast'
 import { useT } from '../lib/i18n'
 import { formatINR } from '../lib/money'
 import { api } from '../lib/api'
+import SiteRatingDialog from '../components/SiteRating'
 import './Simple.css'
 
 export default function Account() {
@@ -19,6 +20,7 @@ export default function Account() {
   const [pin, setPin] = useState('')
   const [pinBusy, setPinBusy] = useState(false)
   const [pinErr, setPinErr] = useState('')
+  const [rateOpen, setRateOpen] = useState(false)
 
   const applyPin = async () => {
     if (pin.length !== 6 || pinBusy) return
@@ -143,6 +145,15 @@ export default function Account() {
           {saving ? t('acc.saving') : t('acc.save')}
         </button>
       </form>
+
+      <div className="panel">
+        <h2 className="simple__heading">{t('site.rateTitle')}</h2>
+        <p className="field__hint" style={{ marginBottom: 12 }}>{t('site.rateSub')}</p>
+        <button type="button" className="btn btn--outline" onClick={() => setRateOpen(true)}>
+          {t('site.rateBtn')}
+        </button>
+      </div>
+      {rateOpen && <SiteRatingDialog onClose={() => setRateOpen(false)} />}
 
       <div className="panel">
         <h2 className="simple__heading">{t('acc.defaultCity')}</h2>

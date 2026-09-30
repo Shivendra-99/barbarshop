@@ -17,6 +17,7 @@ import settingsRoutes from './routes/settings.routes.js'
 import notificationRoutes from './routes/notifications.routes.js'
 import walletRoutes from './routes/wallet.routes.js'
 import withdrawalRoutes from './routes/withdrawals.routes.js'
+import siteReviewRoutes from './routes/siteReviews.routes.js'
 import { notFound, errorHandler } from './middleware/error.js'
 
 export function createApp() {
@@ -67,6 +68,7 @@ export function createApp() {
   app.use('/api/notifications', notificationRoutes)
   app.use('/api/wallet', walletRoutes)
   app.use('/api/withdrawals', withdrawalRoutes)
+  app.use('/api/site-reviews', siteReviewRoutes)
 
   app.use(notFound)
   app.use(errorHandler)

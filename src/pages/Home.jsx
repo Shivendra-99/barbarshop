@@ -1,6 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import Reveal from '../components/Reveal'
+import CouponCodes from '../components/CouponCodes'
+import SiteRatingDialog from '../components/SiteRating'
+import { api } from '../lib/api'
 import { useApp } from '../store/AppStore'
 import { usePrefs } from '../store/Prefs'
 import { useT } from '../lib/i18n'
@@ -68,6 +71,18 @@ export default function Home() {
   const t = useT()
   const [openFaq, setOpenFaq] = useState(0)
   const [locErr, setLocErr] = useState('')
+  const firstPct = settings.firstBookingPercent ?? 10
+  const [siteReviews, setSiteReviews] = useState(null) // { avg, count, recent }
+  const [rateOpen, setRateOpen] = useState(false)
+  const loadSiteReviews = () =>
+    api
+      .siteReviews()
+      .then(setSiteReviews)
+      .catch(() => {})
+  useEffect(() => {
+    loadSiteReviews()
+  }, [])
+  const realQuotes = siteReviews?.recent?.slice(0, 3) ?? []
 
   const inCity = publicSalons.filter((s) => s.city === city.id)
   const featured = [...inCity].sort((a, b) => b.rating - a.rating).slice(0, 3)
@@ -116,11 +131,12 @@ export default function Home() {
             <div className="eyebrow">{t('home.tagline')}</div>
             <h1 className="display choose__title">{t('home.chooseTitle')}</h1>
             <p className="lede choose__lede">{t('home.chooseLede', { city: city.label })}</p>
-            {!isSignedIn && (
+            {(!isSignedIn || isFirstBooking) && firstPct > 0 && (
               <p className="choose__offer">
-                <strong>{t('home.offerStrong')}</strong> {t('home.offerRest')}
+                <strong>{t('home.offerStrong', { pct: firstPct })}</strong> {t('home.offerRest')}
               </p>
             )}
+            <CouponCodes />
           </div>
 
           <div className="choose__cards">
@@ -285,9 +301,37 @@ export default function Home() {
         <Reveal className="section__centered">
           <div className="eyebrow">{t('home.testimonials')}</div>
           <h2 className="section-title">{t('home.whatMembersSay')}</h2>
+          <div className="siteRate">
+            {siteReviews?.count > 0 && (
+              <span className="siteRate__sum">
+                {t('site.summary', { avg: siteReviews.avg.toFixed(1), n: siteReviews.count })}
+              </span>
+            )}
+            <button
+              type="button"
+              className="btn btn--outline btn--sm"
+              onClick={() => (isSignedIn ? setRateOpen(true) : navigate('/login'))}
+            >
+              {isSignedIn ? t('site.rateBtn') : t('site.loginToRate')}
+            </button>
+          </div>
         </Reveal>
         <div className="grid3">
-          {TESTIMONIALS.map((item, i) => (
+          {realQuotes.map((item, i) => (
+            <Reveal
+              key={`${item.name}-${item.ts}`}
+              className="card quote"
+              style={{ transitionDelay: `${i * 90}ms` }}
+            >
+              <div className="quote__stars" aria-label={`Rated ${item.rating} out of 5`}>
+                {'★'.repeat(item.rating)}
+              </div>
+              <blockquote className="quote__text">“{item.comment}”</blockquote>
+              <div className="quote__name">{item.name}</div>
+            </Reveal>
+          ))}
+          {/* Until real reviews with comments exist, keep the launch quotes. */}
+          {realQuotes.length === 0 && TESTIMONIALS.map((item, i) => (
             <Reveal
               key={item.name}
               className="card quote"
@@ -303,6 +347,8 @@ export default function Home() {
           ))}
         </div>
       </section>
+
+      {rateOpen && <SiteRatingDialog onClose={() => setRateOpen(false)} onDone={loadSiteReviews} />}
 
       {/* ---------------- FAQ ---------------- */}
       <section className="shell shell--narrow faq">

@@ -10,22 +10,14 @@ const router = Router()
 const view = (s) => ({
   comingSoonEnabled: s.comingSoonEnabled,
   comingSoonMessage: s.comingSoonMessage,
+  firstBookingPercent: s.firstBookingPercent ?? 10,
 })
-
-/** Get/create the singleton settings doc. */
-async function getSettings() {
-  return Setting.findOneAndUpdate(
-    { key: 'global' },
-    { $setOnInsert: { key: 'global' } },
-    { upsert: true, new: true },
-  )
-}
 
 /* Public: current platform settings. */
 router.get(
   '/',
   asyncHandler(async (_req, res) => {
-    res.json({ settings: view(await getSettings()) })
+    res.json({ settings: view(await Setting.global()) })
   }),
 )
 
@@ -33,6 +25,7 @@ router.get(
 const updateSchema = z.object({
   comingSoonEnabled: z.boolean().optional(),
   comingSoonMessage: z.string().trim().max(200).optional(),
+  firstBookingPercent: z.number().int().min(0).max(50).optional(),
 })
 router.patch(
   '/',

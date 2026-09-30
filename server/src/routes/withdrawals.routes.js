@@ -17,9 +17,10 @@ export const MIN_WITHDRAWAL = 100
 export const FEE_RATES = { instant: 0.07, weekly: 0.04 }
 const pct = (method) => `${Math.round(FEE_RATES[method] * 100)}%`
 
+// Owners only request INSTANT withdrawals; weekly ones are automatic (below).
 const createSchema = z.object({
   amount: z.number().int().min(1),
-  method: z.enum(['instant', 'weekly']),
+  method: z.literal('instant').default('instant'),
 })
 
 const blank = (v) => (typeof v === 'string' && v.trim() === '' ? null : v)
@@ -85,7 +86,7 @@ router.put(
   }),
 )
 
-/** Owner: request a withdrawal. Debits the wallet (gross) immediately. */
+/** Owner: request an instant withdrawal. Debits the wallet (gross) immediately. */
 router.post(
   '/',
   requireAuth,
@@ -117,7 +118,7 @@ router.post(
       user: owner._id,
       type: 'debit',
       amount,
-      note: `${method === 'instant' ? 'Instant' : 'Weekly'} withdrawal (${pct(method)} fee ${formatINR(fee)})`,
+      note: `Instant withdrawal (${pct(method)} fee ${formatINR(fee)})`,
       balanceAfter: owner.walletBalance,
     })
 
@@ -128,8 +129,7 @@ router.post(
       net,
       method,
       destination: payoutOf(owner),
-      // Instant is actioned now; weekly waits for the Sunday batch.
-      status: method === 'instant' ? 'processing' : 'pending',
+      status: 'processing',
     })
 
     await notify([
@@ -137,10 +137,7 @@ router.post(
         audience: `owner:${owner._id.toString()}`,
         tone: 'success',
         title: 'Withdrawal requested',
-        body:
-          method === 'instant'
-            ? `${formatINR(net)} on its way (${pct(method)} fee ${formatINR(fee)}).`
-            : `${formatINR(net)} will be settled this Sunday (${pct(method)} fee ${formatINR(fee)}).`,
+        body: `${formatINR(net)} on its way (${pct(method)} fee ${formatINR(fee)}).`,
       },
       {
         audience: 'founder',
@@ -151,6 +148,114 @@ router.post(
     ])
 
     res.status(201).json({ withdrawal: withdrawal.toPublic(), balance: owner.walletBalance })
+  }),
+)
+
+/* ----------------------- Weekly auto payout ----------------------- */
+
+const IST_MS = 5.5 * 3600e3
+const DUP = 11000 // Mongo duplicate-key error
+
+/**
+ * Sunday 9 PM sweep: every owner's whole wallet balance (earnings from
+ * completed online bookings not yet withdrawn) becomes a weekly payout with the
+ * 4% fee, due for the founder to pay by 9 AM the next morning (IST).
+ * Balances under the minimum carry over; owners without UPI/bank details are
+ * told to add them and carried over too. Safe to run twice: one per owner per
+ * IST date (unique index), and the debit is conditional on the balance.
+ */
+export async function runWeeklyPayouts(now = new Date()) {
+  const ist = new Date(now.getTime() + IST_MS)
+  const week = ist.toISOString().slice(0, 10)
+  // 9 AM IST the next day = 03:30 UTC.
+  const dueBy = new Date(Date.UTC(ist.getUTCFullYear(), ist.getUTCMonth(), ist.getUTCDate() + 1, 3, 30))
+  const dueLabel = dueBy.toLocaleString('en-IN', {
+    timeZone: 'Asia/Kolkata', weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit',
+  })
+
+  const owners = await User.find({ role: 'owner', walletBalance: { $gte: MIN_WITHDRAWAL } })
+  const done = { week, dueBy, created: 0, total: 0, noPayoutDetails: 0 }
+
+  for (const o of owners) {
+    if (!hasPayout(o.payout)) {
+      done.noPayoutDetails += 1
+      await notify([{
+        audience: `owner:${o._id.toString()}`,
+        tone: 'warn',
+        title: 'Weekly payout on hold',
+        body: `Add your UPI ID or bank account in Wallet to receive your ${formatINR(o.walletBalance)}.`,
+      }])
+      continue
+    }
+    if (await Withdrawal.exists({ owner: o._id, week })) continue
+
+    const amount = o.walletBalance
+    const owner = await User.findOneAndUpdate(
+      { _id: o._id, walletBalance: { $gte: amount } },
+      { $inc: { walletBalance: -amount } },
+      { new: true },
+    )
+    if (!owner) continue // balance moved under us (instant withdrawal); next week
+
+    const fee = Math.round(amount * FEE_RATES.weekly)
+    const net = amount - fee
+    try {
+      await Withdrawal.create({
+        owner: owner._id, amount, fee, net, method: 'weekly',
+        destination: payoutOf(owner), status: 'pending', week, dueBy,
+      })
+    } catch (err) {
+      // A parallel run got there first: undo this debit.
+      await User.updateOne({ _id: owner._id }, { $inc: { walletBalance: amount } })
+      if (err?.code === DUP) continue
+      throw err
+    }
+    await WalletTxn.create({
+      user: owner._id,
+      type: 'debit',
+      amount,
+      note: `Weekly payout (${pct('weekly')} fee ${formatINR(fee)})`,
+      balanceAfter: owner.walletBalance,
+    })
+    await notify([{
+      audience: `owner:${owner._id.toString()}`,
+      tone: 'success',
+      title: 'Weekly payout on its way',
+      body: `${formatINR(net)} to ${destLabel(owner.payout)} by ${dueLabel} (${pct('weekly')} fee ${formatINR(fee)}).`,
+    }])
+    done.created += 1
+    done.total += net
+  }
+
+  if (done.created) {
+    await notify([{
+      audience: 'founder',
+      tone: 'info',
+      title: 'Weekly payouts ready',
+      body: `${done.created} owner${done.created > 1 ? 's' : ''}: ${formatINR(done.total)} to pay by ${dueLabel}.`,
+    }])
+  }
+  return done
+}
+
+/** Vercel Cron (Sunday 15:30 UTC = 9 PM IST). Needs CRON_SECRET. */
+router.get(
+  '/weekly-run',
+  asyncHandler(async (req, res) => {
+    if (!env.cronSecret || req.get('authorization') !== `Bearer ${env.cronSecret}`) {
+      throw new ApiError(401, 'Not authorised.')
+    }
+    res.json(await runWeeklyPayouts())
+  }),
+)
+
+/** Founder: run the weekly sweep now (fallback if the cron didn't fire). */
+router.post(
+  '/weekly-run',
+  requireAuth,
+  requireRole('founder'),
+  asyncHandler(async (_req, res) => {
+    res.json(await runWeeklyPayouts())
   }),
 )
 

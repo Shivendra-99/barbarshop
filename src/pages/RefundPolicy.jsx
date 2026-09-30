@@ -36,11 +36,13 @@ export default function RefundPolicy() {
           <strong>Minimum withdrawal:</strong> ₹100.
         </li>
         <li>
-          <strong>Instant withdrawal:</strong> available anytime with a 7% charge.
+          <strong>Instant withdrawal:</strong> available anytime with a 7% charge, when the owner
+          needs money before Sunday.
         </li>
         <li>
-          <strong>Weekly withdrawal:</strong> 4% charge — processed every Sunday by the
-          SalonSaathi team.
+          <strong>Weekly auto payout:</strong> 4% charge. Every Sunday at 9 PM the owner’s whole
+          wallet balance (₹100 or more) is paid out automatically, and reaches them by Monday 9 AM.
+          The owner does not need to request it.
         </li>
       </ul>
 

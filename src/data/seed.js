@@ -370,10 +370,10 @@ export const STEPS = [
 export const FAQS = [
   {
     q: 'Do I pay online or at the salon?',
-    a: 'Both work. Pay online and get 10% off your very first booking, or choose to pay cash at the salon — the booking is confirmed either way.',
+    a: 'Both work. Pay online and get a discount on your very first booking, or choose to pay cash at the salon — the booking is confirmed either way.',
   },
   {
-    q: 'Is the 10% discount available every time?',
+    q: 'Is the first-booking discount available every time?',
     a: 'No. It applies once, on your first ever booking, and only when you pay online. From your second booking onwards the full amount applies.',
   },
   {

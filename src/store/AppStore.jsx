@@ -41,7 +41,7 @@ export function AppProvider({ children }) {
   const [allBookings, setAllBookings] = useState([])
   const [notifications, setNotifications] = useState([])
   const [unreadCount, setUnreadCount] = useState(0)
-  const [settings, setSettings] = useState({ comingSoonEnabled: false, comingSoonMessage: '' })
+  const [settings, setSettings] = useState({ comingSoonEnabled: false, comingSoonMessage: '', firstBookingPercent: 10 })
 
   const role = session?.role ?? null
 

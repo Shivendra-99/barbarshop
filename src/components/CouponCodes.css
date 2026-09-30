@@ -1,0 +1,49 @@
+/* Coupon codes with a Copy button (home offer box, salon page). */
+.cc {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: inherit;
+}
+
+.cc__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  padding: 5px 6px 5px 10px;
+  border: 1px dashed var(--gold);
+  border-radius: var(--r-sm, 8px);
+  background: var(--surface);
+  font-size: 13px;
+  color: var(--muted-2);
+}
+
+.cc__code {
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--gold-deep);
+}
+
+.cc__what {
+  min-width: 0;
+}
+
+.cc__copy {
+  flex: none;
+  padding: 3px 10px;
+  border: 1px solid var(--gold-line);
+  border-radius: 999px;
+  background: var(--gold-wash);
+  color: var(--gold-deep);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.cc__copy:hover {
+  border-color: var(--gold);
+}

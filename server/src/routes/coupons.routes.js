@@ -53,30 +53,42 @@ router.post(
   }),
 )
 
-/* ---- Customer: coupons usable at a salon right now ---- */
+/* ---- Coupons usable right now ---- */
 
+/** Active, in-date, not used-up coupons: platform-wide, plus the salon's own. */
+async function liveCoupons(salonId) {
+  const now = new Date()
+  const id = String(salonId || '')
+  const scope = /^[a-f0-9]{24}$/i.test(id) ? [{ salon: null }, { salon: id }] : [{ salon: null }]
+  const found = await Coupon.find({
+    active: true,
+    $and: [
+      { $or: scope },
+      { $or: [{ validFrom: null }, { validFrom: { $lte: now } }] },
+      { $or: [{ validTo: null }, { validTo: { $gte: now } }] },
+    ],
+  })
+    .sort({ createdAt: -1 })
+    .limit(20)
+  return found.filter((c) => !(c.usageLimit > 0 && c.usedCount >= c.usageLimit))
+}
+
+const cardOf = (c) => ({
+  code: c.code,
+  description: c.description,
+  type: c.type,
+  value: c.value,
+  maxDiscount: c.maxDiscount,
+  minOrder: c.minOrder,
+})
+
+/* Customer: at a salon, minus codes they've already used up. */
 router.get(
   '/available',
   requireAuth,
   requireRole('customer'),
   asyncHandler(async (req, res) => {
-    const salonId = String(req.query.salonId || '')
-    const now = new Date()
-    const scope = /^[a-f0-9]{24}$/i.test(salonId)
-      ? [{ salon: null }, { salon: salonId }]
-      : [{ salon: null }]
-    const found = await Coupon.find({
-      active: true,
-      $and: [
-        { $or: scope },
-        { $or: [{ validFrom: null }, { validFrom: { $lte: now } }] },
-        { $or: [{ validTo: null }, { validTo: { $gte: now } }] },
-      ],
-    })
-      .sort({ createdAt: -1 })
-      .limit(20)
-
-    // Drop exhausted codes and ones this customer has already used up.
+    const found = await liveCoupons(req.query.salonId)
     const mine = await CouponRedemption.find(
       { user: req.user._id, coupon: { $in: found.map((c) => c._id) } },
       { coupon: 1 },
@@ -85,17 +97,17 @@ router.get(
     for (const r of mine) usedByMe.set(String(r.coupon), (usedByMe.get(String(r.coupon)) || 0) + 1)
 
     const coupons = found
-      .filter((c) => !(c.usageLimit > 0 && c.usedCount >= c.usageLimit))
       .filter((c) => !(c.perUserLimit > 0 && (usedByMe.get(String(c._id)) || 0) >= c.perUserLimit))
-      .map((c) => ({
-        code: c.code,
-        description: c.description,
-        type: c.type,
-        value: c.value,
-        maxDiscount: c.maxDiscount,
-        minOrder: c.minOrder,
-      }))
+      .map(cardOf)
     res.json({ coupons })
+  }),
+)
+
+/* Public: codes to show (and copy) on the home and salon pages. */
+router.get(
+  '/public',
+  asyncHandler(async (req, res) => {
+    res.json({ coupons: (await liveCoupons(req.query.salonId)).map(cardOf) })
   }),
 )
 

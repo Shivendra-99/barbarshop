@@ -114,6 +114,9 @@ export const api = {
   validateCoupon: (body) => request('/coupons/validate', { method: 'POST', body }),
   // Coupons a customer can use at this salon right now.
   availableCoupons: (salonId) => request(`/coupons/available?salonId=${encodeURIComponent(salonId)}`),
+  // Live codes to show (and copy) on the home / salon pages; no login needed.
+  publicCoupons: (salonId) =>
+    request(`/coupons/public${salonId ? `?salonId=${encodeURIComponent(salonId)}` : ''}`, { auth: false }),
   // Owner/founder coupon management.
   coupons: () => request('/coupons'),
   createCoupon: (body) => request('/coupons', { method: 'POST', body }),
@@ -161,12 +164,19 @@ export const api = {
   wallet: () => request('/wallet'),
   // Owner withdrawals
   withdrawals: () => request('/withdrawals'),
-  requestWithdrawal: (amount, method) =>
-    request('/withdrawals', { method: 'POST', body: { amount, method } }),
+  // Instant only; weekly payouts are created automatically every Sunday 9 PM.
+  requestWithdrawal: (amount) => request('/withdrawals', { method: 'POST', body: { amount, method: 'instant' } }),
   savePayoutDetails: (details) => request('/withdrawals/payout-details', { method: 'PUT', body: details }),
   // Founder payouts
   allWithdrawals: () => request('/withdrawals/all'),
   decideWithdrawal: (id, body) => request(`/withdrawals/${id}`, { method: 'PATCH', body }),
+  runWeeklyPayouts: () => request('/withdrawals/weekly-run', { method: 'POST' }),
+
+  // Website (SalonSaathi) ratings
+  siteReviews: () => request('/site-reviews', { auth: false }),
+  mySiteReview: () => request('/site-reviews/mine'),
+  rateSite: (body) => request('/site-reviews', { method: 'PUT', body }),
+  allSiteReviews: () => request('/site-reviews/all'),
   ownerPayoutDetails: (ownerId) => request(`/withdrawals/owner/${ownerId}/payout-details`),
   saveOwnerPayoutDetails: (ownerId, details) =>
     request(`/withdrawals/owner/${ownerId}/payout-details`, { method: 'PUT', body: details }),

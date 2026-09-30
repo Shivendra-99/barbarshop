@@ -5,7 +5,7 @@
  */
 
 export const COMMISSION_RATE = 0
-export const FIRST_BOOKING_DISCOUNT_RATE = 0.1
+export const FIRST_BOOKING_PERCENT = 10 // default; the founder can change it (Setting)
 export const BOOKING_FEE = 49 // platform fee, matches the frontend
 
 export const ONLINE_PAYEE = 'founder'
@@ -28,7 +28,7 @@ export function couponDiscount(coupon, subtotal) {
 
 /**
  * Quotes a booking. Automatic discounts are the salon offer (off the subtotal)
- * then the first-booking 10% (online + never-booked). A coupon (online only)
+ * then the first-booking % (online + never-booked). A coupon (online only)
  * does NOT stack: it competes with those, and the booking takes whichever single
  * path saves the customer more (coupon only wins when strictly greater, so the
  * automatic discounts stay the default). `coupon` is a validated object or null.
@@ -39,17 +39,18 @@ export function quote({
   isFirstBooking,
   homeServiceFee = 0,
   offerPercent = 0,
+  firstBookingPercent = FIRST_BOOKING_PERCENT,
   coupon = null,
 }) {
   const online = paymentMode === 'online'
   const homeFee = homeServiceFee || 0
 
-  // Path A — automatic: salon offer, then first-booking 10% on the remainder.
+  // Path A — automatic: salon offer, then first-booking % on the remainder.
   const pct = Math.max(0, Math.min(50, Math.round(offerPercent || 0)))
   const offerDiscount = pct > 0 ? Math.round((amount * pct) / 100) : 0
   const discountEligible = online && Boolean(isFirstBooking)
   const firstBookingDiscount = discountEligible
-    ? Math.round((amount - offerDiscount) * FIRST_BOOKING_DISCOUNT_RATE)
+    ? Math.round(((amount - offerDiscount) * Math.max(0, Math.min(50, firstBookingPercent || 0))) / 100)
     : 0
   const autoDiscount = offerDiscount + firstBookingDiscount
 

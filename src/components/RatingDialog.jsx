@@ -1,11 +1,15 @@
 import { useEffect, useRef, useState } from 'react'
 import { useT } from '../lib/i18n'
 
-/** Star-rating dialog. Reuses the .modal styles from Appointments.css. */
-export default function RatingDialog({ booking, onClose, onSubmit }) {
-  const [rating, setRating] = useState(booking.rating || 0)
+/**
+ * Star-rating dialog. Rates a salon for a `booking` by default; pass `title`,
+ * `subtitle`, `placeholder` and `initial` ({ rating, review }) to rate
+ * something else (SalonSaathi itself). Reuses the .modal styles from Appointments.css.
+ */
+export default function RatingDialog({ booking, title, subtitle, placeholder, initial, onClose, onSubmit }) {
+  const [rating, setRating] = useState(initial?.rating || booking?.rating || 0)
   const [hover, setHover] = useState(0)
-  const [review, setReview] = useState(booking.review || '')
+  const [review, setReview] = useState(initial?.review || booking?.review || '')
   const [busy, setBusy] = useState(false)
   const ref = useRef(null)
   const t = useT()
@@ -39,11 +43,9 @@ export default function RatingDialog({ booking, onClose, onSubmit }) {
         onMouseDown={(e) => e.stopPropagation()}
       >
         <h2 className="modal__title" id="rate-title" tabIndex={-1} ref={ref}>
-          {t('rate.title', { salon: booking.salonName })}
+          {title ?? t('rate.title', { salon: booking.salonName })}
         </h2>
-        <p className="modal__text">
-          {booking.serviceName} · {booking.dateLabel}
-        </p>
+        <p className="modal__text">{subtitle ?? `${booking.serviceName} · ${booking.dateLabel}`}</p>
 
         <div className="stars" role="radiogroup" aria-label="Rating">
           {[1, 2, 3, 4, 5].map((n) => (
@@ -67,7 +69,7 @@ export default function RatingDialog({ booking, onClose, onSubmit }) {
           rows={3}
           value={review}
           onChange={(e) => setReview(e.target.value)}
-          placeholder={t('rate.placeholder')}
+          placeholder={placeholder ?? t('rate.placeholder')}
           maxLength={500}
         />
 
