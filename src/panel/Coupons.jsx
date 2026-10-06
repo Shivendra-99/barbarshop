@@ -20,6 +20,7 @@ const BLANK = {
   minOrder: '',
   usageLimit: '',
   perUserLimit: '1',
+  firstBookingOnly: false,
   validTo: '',
   description: '',
 }
@@ -147,6 +148,7 @@ export default function Coupons() {
         minOrder: form.minOrder ? Number(form.minOrder) : 0,
         usageLimit: form.usageLimit ? Number(form.usageLimit) : 0,
         perUserLimit: form.perUserLimit === '' ? 1 : Number(form.perUserLimit),
+        firstBookingOnly: form.firstBookingOnly,
         validTo: form.validTo || null,
         description: form.description.trim(),
       })
@@ -317,6 +319,7 @@ export default function Coupons() {
                     <td>
                       <div className="ptable__strong">{c.code}</div>
                       {c.description && <div className="ptable__sub">{c.description}</div>}
+                      {c.firstBookingOnly && <div className="ptable__sub">First booking only</div>}
                     </td>
                     <td>{valueLabel(c)}</td>
                     <td className="ptable__money">{c.minOrder ? formatINR(c.minOrder) : '—'}</td>
@@ -460,6 +463,14 @@ export default function Coupons() {
                   <input className="field__input" value={form.description} onChange={set('description')} placeholder="New customer offer" maxLength={120} />
                 </label>
               </div>
+              <label className="check" style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 10 }}>
+                <input
+                  type="checkbox"
+                  checked={form.firstBookingOnly}
+                  onChange={(e) => setForm((f) => ({ ...f, firstBookingOnly: e.target.checked }))}
+                />
+                <span>Only for a customer’s first booking (customers who have booked before can’t use it)</span>
+              </label>
             </fieldset>
 
             {/* Live customer-eye preview */}

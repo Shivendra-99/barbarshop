@@ -35,8 +35,14 @@ export default function CouponCodes({ salonId }) {
             {c.type === 'percent'
               ? t('book.couponOffPct', { pct: c.value })
               : t('book.couponOffFlat', { amount: formatINR(c.value) })}
-            {c.type === 'percent' && c.maxDiscount > 0 && ` · ${t('offer.upTo', { amount: formatINR(c.maxDiscount) })}`}
-            {c.minOrder > 0 && ` · ${t('offer.min', { amount: formatINR(c.minOrder) })}`}
+            {c.firstBookingOnly ? (
+              ` · ${t('offer.firstOnly')}`
+            ) : (
+              <>
+                {c.type === 'percent' && c.maxDiscount > 0 && ` · ${t('offer.upTo', { amount: formatINR(c.maxDiscount) })}`}
+                {c.minOrder > 0 && ` · ${t('offer.min', { amount: formatINR(c.minOrder) })}`}
+              </>
+            )}
           </span>
           <CopyButton value={c.code} label={c.code} className="cc__copy" />
         </li>

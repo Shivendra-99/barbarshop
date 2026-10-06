@@ -1,5 +1,6 @@
 import { Coupon } from '../models/Coupon.js'
 import { CouponRedemption } from '../models/CouponRedemption.js'
+import { Booking } from '../models/Booking.js'
 import { ApiError } from '../middleware/error.js'
 import { formatINR } from './money.js'
 
@@ -37,6 +38,10 @@ export async function resolveCoupon({ code, salonId, user, subtotal }) {
   // would mean charging online then failing, which is worse.
   if (coupon.usageLimit > 0 && coupon.usedCount >= coupon.usageLimit) {
     throw new ApiError(400, 'This coupon has reached its usage limit.')
+  }
+  // Any earlier booking (even cancelled) counts, like the first-booking discount.
+  if (coupon.firstBookingOnly && (await Booking.exists({ customer: user._id }))) {
+    throw new ApiError(400, 'This coupon is only for your first booking.')
   }
   if (coupon.perUserLimit > 0) {
     const mine = await CouponRedemption.countDocuments({ coupon: coupon._id, user: user._id })

@@ -71,6 +71,20 @@ try {
   r = await call(null, 'GET', `/coupons/public?salonId=${salon.id}`)
   assert.deepEqual(r.body.coupons.map((x) => x.code).sort(), ['SALON15', 'WELCOME20'])
 
+  /* First-booking-only coupon: new customers only, and labelled so on the card. */
+  await Coupon.create({ ...common, code: 'FIRST10', value: 10, maxDiscount: 100, firstBookingOnly: true })
+  r = await call(null, 'GET', '/coupons/public')
+  assert.equal(r.body.coupons.find((x) => x.code === 'FIRST10').firstBookingOnly, true)
+  const withCode = { ...draft, couponCode: 'FIRST10' }
+  assert.equal((await priceBookingDraft(cust, withCode)).priced.couponDiscount, 100) // never booked: ok
+  r = await call(c, 'GET', `/coupons/available?salonId=${salon.id}`)
+  assert.ok(r.body.coupons.some((x) => x.code === 'FIRST10'))
+  const { Booking } = await import('../models/Booking.js')
+  await Booking.collection.insertOne({ customer: cust._id, status: 'cancelled' }) // any past booking counts
+  await assert.rejects(priceBookingDraft(cust, withCode), /only for your first booking/)
+  r = await call(c, 'GET', `/coupons/available?salonId=${salon.id}`)
+  assert.ok(!r.body.coupons.some((x) => x.code === 'FIRST10'))
+
   /* Website ratings. */
   assert.equal((await call(null, 'PUT', '/site-reviews', { rating: 5 })).status, 401)
   assert.equal((await call(c, 'PUT', '/site-reviews', { rating: 6 })).status, 400)

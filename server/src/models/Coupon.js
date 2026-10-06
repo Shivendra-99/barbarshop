@@ -29,6 +29,8 @@ const couponSchema = new mongoose.Schema(
     usageLimit: { type: Number, default: 0, min: 0 },
     usedCount: { type: Number, default: 0, min: 0 },
     perUserLimit: { type: Number, default: 1, min: 0 }, // 0 = unlimited per user
+    // Only for a customer who has never booked (their first booking).
+    firstBookingOnly: { type: Boolean, default: false },
 
     validFrom: { type: Date, default: null },
     validTo: { type: Date, default: null },
@@ -50,6 +52,7 @@ couponSchema.methods.toPublic = function toPublic() {
     usageLimit: this.usageLimit,
     usedCount: this.usedCount,
     perUserLimit: this.perUserLimit,
+    firstBookingOnly: this.firstBookingOnly,
     validFrom: this.validFrom,
     validTo: this.validTo,
     active: this.active,

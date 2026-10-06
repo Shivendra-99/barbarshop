@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { Coupon } from '../models/Coupon.js'
 import { CouponRedemption } from '../models/CouponRedemption.js'
 import { Salon } from '../models/Salon.js'
+import { Booking } from '../models/Booking.js'
 import { priceBookingDraft } from './bookings.routes.js'
 import { validate } from '../middleware/validate.js'
 import { requireAuth, requireRole } from '../middleware/auth.js'
@@ -80,6 +81,7 @@ const cardOf = (c) => ({
   value: c.value,
   maxDiscount: c.maxDiscount,
   minOrder: c.minOrder,
+  firstBookingOnly: c.firstBookingOnly,
 })
 
 /* Customer: at a salon, minus codes they've already used up. */
@@ -95,9 +97,11 @@ router.get(
     )
     const usedByMe = new Map()
     for (const r of mine) usedByMe.set(String(r.coupon), (usedByMe.get(String(r.coupon)) || 0) + 1)
+    const hasBooked = await Booking.exists({ customer: req.user._id })
 
     const coupons = found
       .filter((c) => !(c.perUserLimit > 0 && (usedByMe.get(String(c._id)) || 0) >= c.perUserLimit))
+      .filter((c) => !(c.firstBookingOnly && hasBooked))
       .map(cardOf)
     res.json({ coupons })
   }),
@@ -131,6 +135,7 @@ const createSchema = z
     minOrder: z.number().int().min(0).optional(),
     usageLimit: z.number().int().min(0).optional(),
     perUserLimit: z.number().int().min(0).optional(),
+    firstBookingOnly: z.boolean().optional(),
     validFrom: z.string().trim().optional().nullable(),
     validTo: z.string().trim().optional().nullable(),
     salonId: z.string().trim().optional().nullable(), // founder only
@@ -189,6 +194,7 @@ router.post(
       createdBy: req.user._id,
       usageLimit: b.usageLimit || 0,
       perUserLimit: b.perUserLimit ?? 1,
+      firstBookingOnly: Boolean(b.firstBookingOnly),
       validFrom: b.validFrom ? new Date(b.validFrom) : null,
       validTo: endOfDayIST(b.validTo),
     })
@@ -217,6 +223,7 @@ const updateSchema = z.object({
   description: z.string().trim().max(120).optional(),
   usageLimit: z.number().int().min(0).optional(),
   perUserLimit: z.number().int().min(0).optional(),
+  firstBookingOnly: z.boolean().optional(),
   validTo: z.string().trim().optional().nullable(),
 })
 
@@ -235,6 +242,7 @@ router.patch(
     if (b.description !== undefined) coupon.description = b.description
     if (b.usageLimit !== undefined) coupon.usageLimit = b.usageLimit
     if (b.perUserLimit !== undefined) coupon.perUserLimit = b.perUserLimit
+    if (b.firstBookingOnly !== undefined) coupon.firstBookingOnly = b.firstBookingOnly
     if (b.validTo !== undefined) coupon.validTo = endOfDayIST(b.validTo)
     await coupon.save()
     res.json({ coupon: coupon.toPublic() })
