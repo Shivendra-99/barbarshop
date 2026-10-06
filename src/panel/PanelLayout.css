@@ -31,9 +31,8 @@
   height: 38px;
   color: var(--gold);
   flex-shrink: 0;
-  background: #fbf7f0;
-  border-radius: 9px;
-  padding: 3px;
+  background: #fff;
+  border-radius: 50%;
 }
 
 .pnl__brandName {
