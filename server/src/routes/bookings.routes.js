@@ -13,7 +13,7 @@ import { validate } from '../middleware/validate.js'
 import { requireAuth, requireRole } from '../middleware/auth.js'
 import { asyncHandler, ApiError } from '../middleware/error.js'
 import { notify } from '../lib/notify.js'
-import { sendFlowSms, resolveOwnerPhones, bookingWhen } from '../lib/sms/flow.js'
+import { sendFlowSms, sendWhatsApp, resolveOwnerPhones, bookingWhen } from '../lib/sms/flow.js'
 import { env, razorpayEnabled } from '../config/env.js'
 import { refundPayment } from '../lib/razorpay.js'
 import { formatINR } from '../lib/money.js'
@@ -469,6 +469,13 @@ export async function createBookingRecord(user, body, payment = {}) {
         WHEN: when,
         OTP: booking.completionOtp,
       },
+      label: 'confirm',
+    }),
+    // Customer: the same confirmation on WhatsApp.
+    sendWhatsApp({
+      template: env.msg91.waBookingTemplate,
+      phone: user.phone,
+      params: [user.name || 'Customer', booking.ref, serviceName, when, booking.completionOtp],
       label: 'confirm',
     }),
     // Owner(s): new booking alert.

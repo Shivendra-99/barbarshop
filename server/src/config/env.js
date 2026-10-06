@@ -46,6 +46,13 @@ export const env = {
     salonCancelFlowId: process.env.MSG91_SALON_CANCEL_FLOW_ID || '',
     // Withdrawal paid → owner. Vars: NAME, AMOUNT, DEST, REF.
     payoutFlowId: process.env.MSG91_PAYOUT_FLOW_ID || '',
+    // WhatsApp (MSG91 WhatsApp Business API). waNumber = the business number
+    // connected in MSG91, digits with country code (917080076830). Templates
+    // are the Meta-approved template NAMES.
+    waNumber: (process.env.MSG91_WA_NUMBER || '').replace(/\D/g, ''),
+    waLang: process.env.MSG91_WA_LANG || 'en',
+    // Booking confirmed → customer. Body {{1}}..{{5}}: name, ref, service, when, OTP.
+    waBookingTemplate: process.env.MSG91_WA_BOOKING_TEMPLATE || '',
   },
 
   // Mappls (MapmyIndia) address autosuggest. Server-side OAuth credentials —

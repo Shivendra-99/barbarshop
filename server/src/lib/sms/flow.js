@@ -10,6 +10,7 @@ import { User } from '../../models/User.js'
  * the flow id or authkey isn't set it just logs, so local dev works without SMS.
  */
 const MSG91_FLOW = 'https://control.msg91.com/api/v5/flow/'
+const MSG91_WHATSAPP = 'https://api.msg91.com/api/v5/whatsapp/whatsapp-outbound-message/bulk/'
 
 /** Normalise any phone to a bare 10-digit Indian number (or null). */
 export const cleanPhone = (p) => {
@@ -66,5 +67,57 @@ export async function sendFlowSms({ flowId, phone, vars, label = 'sms' }) {
   } catch (err) {
     // eslint-disable-next-line no-console
     console.log(`[sms:${label}] failed +91 ${mobile}:`, err.message)
+  }
+}
+
+/** The JSON MSG91 expects for one WhatsApp template message; params fill {{1}}, {{2}}… */
+export function whatsAppPayload({ template, mobile, params }) {
+  return {
+    integrated_number: env.msg91.waNumber,
+    content_type: 'template',
+    payload: {
+      messaging_product: 'whatsapp',
+      type: 'template',
+      template: {
+        name: template,
+        language: { code: env.msg91.waLang, policy: 'deterministic' },
+        namespace: null,
+        to_and_components: [
+          {
+            to: [`91${mobile}`],
+            components: Object.fromEntries(
+              params.map((value, i) => [`body_${i + 1}`, { type: 'text', value: String(value ?? '') }]),
+            ),
+          },
+        ],
+      },
+    },
+  }
+}
+
+/**
+ * WhatsApp twin of sendFlowSms: a Meta-approved template via MSG91. Same rules —
+ * best-effort, never throws, logs and skips when not configured.
+ */
+export async function sendWhatsApp({ template, phone, params, label = 'wa' }) {
+  const mobile = cleanPhone(phone)
+  if (!mobile) return
+  if (!env.msg91.authkey || !env.msg91.waNumber || !template) {
+    // eslint-disable-next-line no-console
+    console.log(`[wa:${label}] +91 ${mobile} [not configured]`)
+    return
+  }
+  try {
+    const res = await fetch(MSG91_WHATSAPP, {
+      method: 'POST',
+      headers: { authkey: env.msg91.authkey, 'Content-Type': 'application/json' },
+      body: JSON.stringify(whatsAppPayload({ template, mobile, params })),
+    })
+    const data = await res.json().catch(() => ({}))
+    // eslint-disable-next-line no-console
+    console.log(`[wa:${label}] +91 ${mobile} →`, JSON.stringify(data))
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.log(`[wa:${label}] failed +91 ${mobile}:`, err.message)
   }
 }
