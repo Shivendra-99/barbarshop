@@ -346,12 +346,12 @@ export const BRAND = {
 
 // Support WhatsApp: display + wa.me (digits only, with country code).
 export const SUPPORT = {
-  whatsappDisplay: '+91 70811 26830',
-  whatsappNumber: '917081126830',
+  whatsappDisplay: '+91 70800 76830',
+  whatsappNumber: '917080076830',
   whatsappUrl: (msg = 'Hi SalonSaathi, I need help with') =>
-    `https://wa.me/917081126830?text=${encodeURIComponent(msg)}`,
-  phoneDisplay: '+91 70811 26830',
-  phoneTel: '+917081126830',
+    `https://wa.me/917080076830?text=${encodeURIComponent(msg)}`,
+  phoneDisplay: '+91 70800 76830',
+  phoneTel: '+917080076830',
   email: 'supportsalonsaathi@gmail.com',
 }
 
@@ -370,11 +370,11 @@ export const STEPS = [
 export const FAQS = [
   {
     q: 'Do I pay online or at the salon?',
-    a: 'Both work. Pay online and get a discount on your very first booking, or choose to pay cash at the salon — the booking is confirmed either way.',
+    a: 'Both work. Pay online (UPI, card or netbanking) or pay cash at the salon — the booking is confirmed either way. Coupon codes work on online payments.',
   },
   {
-    q: 'Is the first-booking discount available every time?',
-    a: 'No. It applies once, on your first ever booking, and only when you pay online. From your second booking onwards the full amount applies.',
+    q: 'How do I use a coupon code?',
+    a: 'Live codes are shown on the home page and on salon pages with a Copy button. Copy one, choose Pay online, and paste it in the coupon box at checkout. One discount applies per booking.',
   },
   {
     q: 'Can I get the service at home?',
@@ -391,7 +391,7 @@ export const FAQS = [
       'Need Help?\n' +
       'For any assistance, simply contact the SalonSaathi Team.\n' +
       'Email: supportsalonsaathi@gmail.com\n' +
-      'Phone: 7081126830',
+      'Phone: 7080076830',
   },
 ]
 

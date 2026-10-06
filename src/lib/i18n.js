@@ -99,10 +99,10 @@ const EN = {
   // --- FAQ ---
   'faq.1.q': 'Do I pay online or at the salon?',
   'faq.1.a':
-    'Both work. Pay online and get a discount on your very first booking, or choose to pay cash at the salon — the booking is confirmed either way.',
-  'faq.2.q': 'Is the first-booking discount available every time?',
+    'Both work. Pay online (UPI, card or netbanking) or pay cash at the salon — the booking is confirmed either way. Coupon codes work on online payments.',
+  'faq.2.q': 'How do I use a coupon code?',
   'faq.2.a':
-    'No. It applies once, on your first ever booking, and only when you pay online. From your second booking onwards the full amount applies.',
+    'Live codes are shown on the home page and on salon pages with a Copy button. Copy one, choose Pay online, and paste it in the coupon box at checkout. One discount applies per booking.',
   'faq.3.q': 'Can I get the service at home?',
   'faq.3.a':
     'Wherever the salon offers it. Each salon decides whether it does home service, and you will see a Home service option on its page when available.',
@@ -114,7 +114,7 @@ const EN = {
   'faq.5.a':
     'Contact our support team. After verification, we will register your number and you can login at salonsaathi.in and list your salon.\n\n' +
     'Need Help?\nFor any assistance, simply contact the SalonSaathi Team.\n' +
-    'Email: supportsalonsaathi@gmail.com\nPhone: 7081126830',
+    'Email: supportsalonsaathi@gmail.com\nPhone: 7080076830',
 
   // --- Footer ---
   'ftr.menu': 'Menu',
@@ -144,6 +144,7 @@ const EN = {
   'help.payOnline': 'Pay online',
   'help.payOnlineBody':
     'Settled to {brand} at the time of booking. Your first booking gets {pct}% off — once per customer, never on repeat bookings.',
+  'help.payOnlineBodyPlain': 'Settled to {brand} at the time of booking. Coupon codes work on online payments.',
   'help.payAtSalon': 'Pay at salon',
   'help.payAtSalonBody':
     'Cash goes directly to the salon. The booking still records the amount so both you and the salon have a record of it.',
@@ -545,10 +546,10 @@ const HI = {
   // --- FAQ ---
   'faq.1.q': 'क्या मैं ऑनलाइन भुगतान करूँ या सैलून पर?',
   'faq.1.a':
-    'दोनों तरीके ठीक हैं। ऑनलाइन भुगतान करें और अपनी पहली बुकिंग पर छूट पाएं, या सैलून पर नकद भुगतान चुनें — बुकिंग दोनों ही तरह से पक्की होती है।',
-  'faq.2.q': 'क्या पहली बुकिंग वाली छूट हर बार मिलती है?',
+    'दोनों तरीके ठीक हैं। ऑनलाइन (UPI, कार्ड या नेटबैंकिंग) भुगतान करें या सैलून पर नकद दें — बुकिंग दोनों तरह से पक्की होती है। कूपन कोड ऑनलाइन भुगतान पर लगते हैं।',
+  'faq.2.q': 'कूपन कोड कैसे इस्तेमाल करें?',
   'faq.2.a':
-    'नहीं। यह केवल एक बार, आपकी पहली बुकिंग पर और सिर्फ ऑनलाइन भुगतान पर लागू होती है। दूसरी बुकिंग से पूरी राशि लागू होती है।',
+    'चालू कोड होम पेज और सैलून पेज पर Copy बटन के साथ दिखते हैं। कोड कॉपी करें, ऑनलाइन भुगतान चुनें और चेकआउट पर कूपन बॉक्स में पेस्ट करें। हर बुकिंग पर एक ही छूट लगती है।',
   'faq.3.q': 'क्या मुझे घर पर सेवा मिल सकती है?',
   'faq.3.a':
     'जहाँ सैलून यह सुविधा देता है। हर सैलून तय करता है कि वह होम सर्विस देता है या नहीं, और उपलब्ध होने पर आपको उसके पेज पर होम सर्विस विकल्प दिखेगा।',
@@ -560,7 +561,7 @@ const HI = {
   'faq.5.a':
     'हमारी सहायता टीम से संपर्क करें। सत्यापन के बाद, हम आपका नंबर पंजीकृत करेंगे और आप salonsaathi.in पर लॉगिन करके अपना सैलून सूचीबद्ध कर सकते हैं।\n\n' +
     'मदद चाहिए?\nकिसी भी सहायता के लिए, बस SalonSaathi टीम से संपर्क करें।\n' +
-    'ईमेल: supportsalonsaathi@gmail.com\nफ़ोन: 7081126830',
+    'ईमेल: supportsalonsaathi@gmail.com\nफ़ोन: 7080076830',
 
   // --- Footer ---
   'ftr.menu': 'मेन्यू',
@@ -590,6 +591,7 @@ const HI = {
   'help.payOnline': 'ऑनलाइन भुगतान',
   'help.payOnlineBody':
     'बुकिंग के समय {brand} को भुगतान होता है। आपकी पहली बुकिंग पर {pct}% छूट — प्रति ग्राहक एक बार, दोबारा बुकिंग पर नहीं।',
+  'help.payOnlineBodyPlain': 'बुकिंग के समय {brand} को भुगतान होता है। कूपन कोड ऑनलाइन भुगतान पर लगते हैं।',
   'help.payAtSalon': 'सैलून पर भुगतान',
   'help.payAtSalonBody':
     'नकद सीधे सैलून को जाता है। बुकिंग में राशि दर्ज रहती है ताकि आपके और सैलून दोनों के पास रिकॉर्ड रहे।',

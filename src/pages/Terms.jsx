@@ -149,7 +149,7 @@ export default function Terms() {
         <br />
         Email: <a href="mailto:supportsalonsaathi@gmail.com">supportsalonsaathi@gmail.com</a>
         <br />
-        Phone: +91 7081126830
+        Phone: +91 7080076830
         <br />
         Address: Jakhamai, Post Tiwaripur, Kunda, Pratapgarh, Uttar Pradesh - 230202
       </p>

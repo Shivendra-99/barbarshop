@@ -71,7 +71,7 @@ export default function Home() {
   const t = useT()
   const [openFaq, setOpenFaq] = useState(0)
   const [locErr, setLocErr] = useState('')
-  const firstPct = settings.firstBookingPercent ?? 10
+  const firstPct = settings.firstBookingPercent ?? 0
   const [siteReviews, setSiteReviews] = useState(null) // { avg, count, recent }
   const [rateOpen, setRateOpen] = useState(false)
   const loadSiteReviews = () =>

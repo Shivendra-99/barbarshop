@@ -45,7 +45,7 @@ export default function Coupons() {
   // and checkout; the server prices bookings with it).
   const [firstPct, setFirstPct] = useState(null) // input text while editing
   const [firstBusy, setFirstBusy] = useState(false)
-  const firstShown = firstPct ?? String(settings.firstBookingPercent ?? 10)
+  const firstShown = firstPct ?? String(settings.firstBookingPercent ?? 0)
   const saveFirstPct = async () => {
     const n = Number(firstShown)
     if (!Number.isInteger(n) || n < 0 || n > 50) {

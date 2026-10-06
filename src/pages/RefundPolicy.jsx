@@ -97,7 +97,7 @@ export default function RefundPolicy() {
 
       <p className="legal__p">
         For any refund related query, contact us at{' '}
-        <a href="tel:+917081126830">+91-7081126830</a> or{' '}
+        <a href="tel:+917080076830">+91-7080076830</a> or{' '}
         <a href="mailto:supportsalonsaathi@gmail.com">supportsalonsaathi@gmail.com</a>.
       </p>
     </div>

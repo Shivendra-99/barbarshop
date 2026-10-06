@@ -55,7 +55,7 @@ export default function Salon() {
   const { salonId } = useParams()
   const navigate = useNavigate()
   const { publicSalons, salonsReady, isFirstBooking, isSignedIn, settings } = useApp()
-  const firstPct = settings.firstBookingPercent ?? 10
+  const firstPct = settings.firstBookingPercent ?? 0
   const t = useT()
   const [tab, setTab] = useState('services')
 

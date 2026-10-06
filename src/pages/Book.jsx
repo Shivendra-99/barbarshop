@@ -35,7 +35,7 @@ export default function Book() {
     walletBalance,
     settings,
   } = useApp()
-  const firstPct = settings.firstBookingPercent ?? 10
+  const firstPct = settings.firstBookingPercent ?? 0
   const { push } = useToast()
   const t = useT()
 

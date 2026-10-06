@@ -31,7 +31,7 @@ export default function ContactUs() {
           <li>
             <span className="contact__k">Support Mobile</span>
             <span className="contact__v">
-              <a href="tel:+917081126830">+91-7081126830</a>
+              <a href="tel:+917080076830">+91-7080076830</a>
             </span>
           </li>
           <li>

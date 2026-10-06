@@ -14,10 +14,9 @@ export default function Help() {
   const howItPays = [
     {
       title: t('help.payOnline'),
-      body: t('help.payOnlineBody', {
-        brand: BRAND.name,
-        pct: settings.firstBookingPercent ?? 10,
-      }),
+      body: settings.firstBookingPercent > 0
+        ? t('help.payOnlineBody', { brand: BRAND.name, pct: settings.firstBookingPercent })
+        : t('help.payOnlineBodyPlain', { brand: BRAND.name }),
     },
     {
       title: t('help.payAtSalon'),

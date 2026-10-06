@@ -11,7 +11,7 @@ import './Simple.css'
 
 export default function Account() {
   const navigate = useNavigate()
-  const { session, setName, logout, myBookings, walletBalance, isFirstBooking } = useApp()
+  const { session, setName, logout, myBookings, walletBalance, isFirstBooking, settings } = useApp()
   const { city, setCity, cities, setCityFromPincode, detectLocation, detecting } = usePrefs()
   const { push } = useToast()
   const t = useT()
@@ -89,12 +89,14 @@ export default function Account() {
           <div className="stat__label">{t('acc.wallet')}</div>
           <div className="stat__value money">{formatINR(walletBalance)}</div>
         </div>
-        <div className="stat">
-          <div className="stat__label">{t('acc.firstOffer')}</div>
-          <div className="stat__value stat__value--sm">
-            {isFirstBooking ? t('acc.availableOffer') : t('acc.used')}
+        {settings.firstBookingPercent > 0 && (
+          <div className="stat">
+            <div className="stat__label">{t('acc.firstOffer')}</div>
+            <div className="stat__value stat__value--sm">
+              {isFirstBooking ? t('acc.availableOffer') : t('acc.used')}
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       <form className="panel" onSubmit={saveName}>
