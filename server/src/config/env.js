@@ -51,7 +51,9 @@ export const env = {
     // are the Meta-approved template NAMES.
     waNumber: (process.env.MSG91_WA_NUMBER || '').replace(/\D/g, ''),
     waLang: process.env.MSG91_WA_LANG || 'en',
-    // Booking confirmed → customer. Body {{1}}..{{5}}: name, ref, service, when, OTP.
+    // The WhatsApp account's template namespace (shown in each template's Code { JSON }).
+    waNamespace: process.env.MSG91_WA_NAMESPACE || '',
+    // Booking confirmed → customer. Named vars: customer_name, booking_id, service, date_time, service_code.
     waBookingTemplate: process.env.MSG91_WA_BOOKING_TEMPLATE || '',
   },
 

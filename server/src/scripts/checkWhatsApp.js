@@ -8,6 +8,7 @@ process.env.MONGODB_URI = '' // never touch a real database
 process.env.MSG91_AUTHKEY = 'test-key' // fake: fetch to MSG91 is intercepted below
 process.env.MSG91_WA_NUMBER = '+91 70800 76830'
 process.env.MSG91_WA_BOOKING_TEMPLATE = 'booking_confirmed'
+process.env.MSG91_WA_NAMESPACE = 'fe37b378_2a79_431c_b224_a7b69f80a8b5'
 process.env.RAZORPAY_KEY_ID = ''
 const { env } = await import('../config/env.js')
 assert.equal(env.mongoUri, '', 'refusing to run against a real database')
@@ -67,21 +68,26 @@ try {
   assert.equal(wa[0].headers.authkey, 'test-key')
   const { integrated_number: from, content_type: type, payload } = wa[0].body
   assert.deepEqual([from, type, payload.type, payload.template.name], ['917080076830', 'template', 'template', 'booking_confirmed'])
+  assert.equal(payload.template.namespace, 'fe37b378_2a79_431c_b224_a7b69f80a8b5')
   assert.deepEqual(payload.template.language, { code: 'en', policy: 'deterministic' })
   const [rcpt] = payload.template.to_and_components
   assert.deepEqual(rcpt.to, ['919000000073'])
-  assert.deepEqual(Object.values(rcpt.components).map((c) => c.value), [
-    'Priya Sharma', booking.ref, 'Haircut', 'Fri 9 Oct, 4:30 PM', booking.completionOtp,
-  ])
-  assert.deepEqual(Object.keys(rcpt.components), ['body_1', 'body_2', 'body_3', 'body_4', 'body_5'])
+  // Keys and parameter names exactly as MSG91's Code { JSON } for booking_confirmed lists them.
+  assert.deepEqual(rcpt.components, {
+    body_customer_name: { type: 'text', value: 'Priya Sharma', parameter_name: 'customer_name' },
+    body_booking_id: { type: 'text', value: booking.ref, parameter_name: 'booking_id' },
+    body_service: { type: 'text', value: 'Haircut', parameter_name: 'service' },
+    body_date_time: { type: 'text', value: 'Fri 9 Oct, 4:30 PM', parameter_name: 'date_time' },
+    body_service_code: { type: 'text', value: booking.completionOtp, parameter_name: 'service_code' },
+  })
 
   // Not configured → skipped quietly; a provider failure never throws.
   sent.length = 0
   env.msg91.waBookingTemplate = ''
-  await sendWhatsApp({ template: env.msg91.waBookingTemplate, phone: cust.phone, params: ['x'] })
+  await sendWhatsApp({ template: env.msg91.waBookingTemplate, phone: cust.phone, params: { x: 'x' } })
   assert.equal(sent.length, 0)
   globalThis.fetch = async () => { throw new Error('network down') }
-  await sendWhatsApp({ template: 'booking_confirmed', phone: cust.phone, params: ['x'] })
+  await sendWhatsApp({ template: 'booking_confirmed', phone: cust.phone, params: { x: 'x' } })
 
   console.log('whatsapp: all checks passed')
 } finally {

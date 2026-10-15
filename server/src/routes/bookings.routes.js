@@ -475,7 +475,13 @@ export async function createBookingRecord(user, body, payment = {}) {
     sendWhatsApp({
       template: env.msg91.waBookingTemplate,
       phone: user.phone,
-      params: [user.name || 'Customer', booking.ref, serviceName, when, booking.completionOtp],
+      params: {
+        customer_name: user.name || 'Customer',
+        booking_id: booking.ref,
+        service: serviceName,
+        date_time: when,
+        service_code: booking.completionOtp,
+      },
       label: 'confirm',
     }),
     // Owner(s): new booking alert.

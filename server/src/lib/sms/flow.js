@@ -70,7 +70,12 @@ export async function sendFlowSms({ flowId, phone, vars, label = 'sms' }) {
   }
 }
 
-/** The JSON MSG91 expects for one WhatsApp template message; params fill {{1}}, {{2}}… */
+/**
+ * The JSON MSG91 expects for one WhatsApp template message. Templates use NAMED
+ * variables ({{customer_name}}), so `params` is { customer_name: 'Priya', … } and
+ * each value goes out as body_<name> — the keys MSG91 lists in the template's
+ * Code { JSON } ("variables" / "variable_type").
+ */
 export function whatsAppPayload({ template, mobile, params }) {
   return {
     integrated_number: env.msg91.waNumber,
@@ -81,12 +86,15 @@ export function whatsAppPayload({ template, mobile, params }) {
       template: {
         name: template,
         language: { code: env.msg91.waLang, policy: 'deterministic' },
-        namespace: null,
+        namespace: env.msg91.waNamespace || null,
         to_and_components: [
           {
             to: [`91${mobile}`],
             components: Object.fromEntries(
-              params.map((value, i) => [`body_${i + 1}`, { type: 'text', value: String(value ?? '') }]),
+              Object.entries(params).map(([name, value]) => [
+                `body_${name}`,
+                { type: 'text', value: String(value ?? ''), parameter_name: name },
+              ]),
             ),
           },
         ],
