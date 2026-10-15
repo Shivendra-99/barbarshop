@@ -55,6 +55,16 @@ export const env = {
     waNamespace: process.env.MSG91_WA_NAMESPACE || '',
     // Booking confirmed → customer. Named vars: customer_name, booking_id, service, date_time, service_code.
     waBookingTemplate: process.env.MSG91_WA_BOOKING_TEMPLATE || '',
+    // New booking → owner: booking_id, customer_name, service, date_time, amount.
+    waOwnerBookingTemplate: process.env.MSG91_WA_OWNER_BOOKING_TEMPLATE || '',
+    // Service completed → customer: booking_id.
+    waCompletedTemplate: process.env.MSG91_WA_COMPLETED_TEMPLATE || '',
+    // Customer cancelled → owner: booking_id, customer_name, service, date_time.
+    waOwnerCancelTemplate: process.env.MSG91_WA_OWNER_CANCEL_TEMPLATE || '',
+    // Salon cancelled → customer: customer_name, booking_id, service, date_time, reason.
+    waSalonCancelTemplate: process.env.MSG91_WA_SALON_CANCEL_TEMPLATE || '',
+    // Payout paid → owner: owner_name, amount, destination, reference.
+    waPayoutTemplate: process.env.MSG91_WA_PAYOUT_TEMPLATE || '',
   },
 
   // Mappls (MapmyIndia) address autosuggest. Server-side OAuth credentials —

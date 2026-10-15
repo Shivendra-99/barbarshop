@@ -9,7 +9,7 @@ import { asyncHandler, ApiError } from '../middleware/error.js'
 import { notify } from '../lib/notify.js'
 import { formatINR } from '../lib/money.js'
 import { env } from '../config/env.js'
-import { sendFlowSms } from '../lib/sms/flow.js'
+import { sendFlowSms, sendWhatsApp } from '../lib/sms/flow.js'
 
 const router = Router()
 
@@ -380,12 +380,25 @@ router.patch(
     // (MSG91_PAYOUT_FLOW_ID). Awaited so it fires on serverless; never throws.
     if (status === 'completed') {
       const owner = await User.findById(w.owner, { name: 1, phone: 1 }).catch(() => null)
-      await sendFlowSms({
-        flowId: env.msg91.payoutFlowId,
-        phone: owner?.phone,
-        vars: { NAME: owner?.name || 'Owner', AMOUNT: String(w.net), DEST: destLabel(w.destination), REF: utr || '-' },
-        label: 'payout-paid',
-      })
+      await Promise.allSettled([
+        sendFlowSms({
+          flowId: env.msg91.payoutFlowId,
+          phone: owner?.phone,
+          vars: { NAME: owner?.name || 'Owner', AMOUNT: String(w.net), DEST: destLabel(w.destination), REF: utr || '-' },
+          label: 'payout-paid',
+        }),
+        sendWhatsApp({
+          template: env.msg91.waPayoutTemplate,
+          phone: owner?.phone,
+          params: {
+            owner_name: owner?.name || 'Owner',
+            amount: String(w.net),
+            destination: destLabel(w.destination),
+            reference: utr || '-',
+          },
+          label: 'payout-paid',
+        }),
+      ])
     }
 
     res.json({ withdrawal: w.toPublic() })

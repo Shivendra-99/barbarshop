@@ -499,6 +499,20 @@ export async function createBookingRecord(user, body, payment = {}) {
         label: 'owner-new',
       }),
     ),
+    ...ownerPhones.map((phone) =>
+      sendWhatsApp({
+        template: env.msg91.waOwnerBookingTemplate,
+        phone,
+        params: {
+          booking_id: booking.ref,
+          customer_name: user.name || 'Customer',
+          service: serviceName,
+          date_time: when,
+          amount: String(booking.total || 0),
+        },
+        label: 'owner-new',
+      }),
+    ),
   ])
 
   return booking
@@ -851,12 +865,20 @@ router.patch(
 
     // Customer SMS: service complete.
     const customer = await User.findById(booking.customer).catch(() => null)
-    await sendFlowSms({
-      flowId: env.msg91.completedFlowId,
-      phone: customer?.phone,
-      vars: { REF: booking.ref },
-      label: 'completed',
-    })
+    await Promise.allSettled([
+      sendFlowSms({
+        flowId: env.msg91.completedFlowId,
+        phone: customer?.phone,
+        vars: { REF: booking.ref },
+        label: 'completed',
+      }),
+      sendWhatsApp({
+        template: env.msg91.waCompletedTemplate,
+        phone: customer?.phone,
+        params: { booking_id: booking.ref },
+        label: 'completed',
+      }),
+    ])
 
     res.json({ booking: booking.toPublic() })
   }),
@@ -960,6 +982,20 @@ router.post(
           },
           label: 'owner-cancelled',
         }),
+      ).concat(
+        ownerPhones.map((phone) =>
+          sendWhatsApp({
+            template: env.msg91.waOwnerCancelTemplate,
+            phone,
+            params: {
+              booking_id: booking.ref,
+              customer_name: req.user.name || 'Customer',
+              service: booking.serviceName,
+              date_time: bookingWhen(booking),
+            },
+            label: 'owner-cancelled',
+          }),
+        ),
       ),
     )
 
@@ -1191,18 +1227,32 @@ router.post(
     ])
 
     // Customer SMS: the salon cancelled, full refund on the way.
-    await sendFlowSms({
-      flowId: env.msg91.salonCancelFlowId,
-      phone: customer?.phone,
-      vars: {
-        CUSTOMER_NAME: customer?.name || 'Customer',
-        REF: booking.ref,
-        SERVICE: booking.serviceName,
-        WHEN: bookingWhen(booking),
-        REASON: reason || 'Salon unavailable',
-      },
-      label: 'salon-cancel',
-    })
+    await Promise.allSettled([
+      sendFlowSms({
+        flowId: env.msg91.salonCancelFlowId,
+        phone: customer?.phone,
+        vars: {
+          CUSTOMER_NAME: customer?.name || 'Customer',
+          REF: booking.ref,
+          SERVICE: booking.serviceName,
+          WHEN: bookingWhen(booking),
+          REASON: reason || 'Salon unavailable',
+        },
+        label: 'salon-cancel',
+      }),
+      sendWhatsApp({
+        template: env.msg91.waSalonCancelTemplate,
+        phone: customer?.phone,
+        params: {
+          customer_name: customer?.name || 'Customer',
+          booking_id: booking.ref,
+          service: booking.serviceName,
+          date_time: bookingWhen(booking),
+          reason: reason || 'Salon unavailable',
+        },
+        label: 'salon-cancel',
+      }),
+    ])
 
     res.json({ booking: booking.toPublic() })
   }),
